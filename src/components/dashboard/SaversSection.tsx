@@ -8,9 +8,12 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from 'recharts'
 import { getSaversWithProgress, updateSaverGoals } from '@/services/savers'
+import { getSaverChartColors, setSaverChartColor } from '@/lib/chartColors'
 import { formatMoney } from '@/lib/format'
+import { ChartColorPicker } from '@/components/ChartColorPicker'
 
 export function SaversSection() {
   const [, setRefresh] = useState(0)
@@ -18,6 +21,7 @@ export function SaversSection() {
   const [goalAmount, setGoalAmount] = useState('')
   const [targetDate, setTargetDate] = useState('')
   const [monthlyTransfer, setMonthlyTransfer] = useState('')
+  const [barColor, setBarColor] = useState<string | null>(null)
 
   const savers = getSaversWithProgress()
 
@@ -26,18 +30,22 @@ export function SaversSection() {
     setGoalAmount(saver.goal_amount != null ? String(saver.goal_amount / 100) : '')
     setTargetDate(saver.target_date ?? '')
     setMonthlyTransfer(saver.monthly_transfer != null ? String(saver.monthly_transfer / 100) : '')
+    setBarColor(getSaverChartColors()[saver.id] ?? null)
   }
 
   function handleSaveGoals() {
     if (!editingId) return
     const goalCents = goalAmount ? Math.round(parseFloat(goalAmount) * 100) : null
     const monthlyCents = monthlyTransfer ? Math.round(parseFloat(monthlyTransfer) * 100) : null
+    setSaverChartColor(editingId, barColor)
     updateSaverGoals(editingId, goalCents, targetDate || null, monthlyCents)
     setEditingId(null)
     setRefresh((r) => r + 1)
   }
 
   const totalBalance = savers.reduce((sum, s) => sum + s.current_balance, 0)
+
+  const saverColors = getSaverChartColors()
 
   type ChartRow = {
     id: string
@@ -46,6 +54,7 @@ export function SaversSection() {
     remaining: number
     goal: number
     saver: (typeof savers)[0]
+    currentFill: string
   }
 
   const chartData: ChartRow[] = savers.map((s) => {
@@ -59,6 +68,7 @@ export function SaversSection() {
       remaining: s.goal_amount != null && s.goal_amount > 0 ? remaining : 0,
       goal: goalDollars,
       saver: s,
+      currentFill: saverColors[s.id] ?? 'var(--vantura-primary)',
     }
   })
 
@@ -110,14 +120,16 @@ export function SaversSection() {
                   <Bar
                     dataKey="current"
                     stackId="a"
-                    fill="var(--vantura-primary)"
                     fillOpacity={0.3}
-                    stroke="var(--vantura-primary)"
                     strokeWidth={1}
                     onClick={(data: ChartRow) => openEdit(data.saver)}
                     cursor="pointer"
                     name="Saved"
-                  />
+                  >
+                    {chartData.map((row) => (
+                      <Cell key={row.id} fill={row.currentFill} stroke={row.currentFill} />
+                    ))}
+                  </Bar>
                   <Bar
                     dataKey="remaining"
                     stackId="a"
@@ -188,6 +200,15 @@ export function SaversSection() {
                 placeholder="Optional"
                 value={monthlyTransfer}
                 onChange={(e) => setMonthlyTransfer(e.target.value)}
+              />
+            </Form.Group>
+            <Form.Group className="mb-2">
+              <Form.Label id="saver-edit-bar-color-label">Bar color</Form.Label>
+              <ChartColorPicker
+                aria-label="Saver bar color"
+                value={barColor}
+                onChange={setBarColor}
+                allowReset
               />
             </Form.Group>
           </Form>

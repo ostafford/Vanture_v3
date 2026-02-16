@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { useStore } from 'zustand'
-import { Card } from 'react-bootstrap'
+import { Card, Modal, Button } from 'react-bootstrap'
 import {
   BarChart,
   Bar,
@@ -17,25 +18,51 @@ import {
 import { formatMoney, formatShortDate } from '@/lib/format'
 import { accentStore } from '@/stores/accentStore'
 import { ACCENT_PALETTES } from '@/lib/accentPalettes'
+import { getInsightsCategoryColors, setInsightsCategoryColor } from '@/lib/chartColors'
+import { ChartColorPicker } from '@/components/ChartColorPicker'
+
+type EditingCategory = { category_id: string; category_name: string; totalDollars: number }
 
 export function InsightsSection() {
+  const [, setRefresh] = useState(0)
+  const [editingCategory, setEditingCategory] = useState<EditingCategory | null>(null)
+  const [categoryBarColor, setCategoryBarColor] = useState<string | null>(null)
+
   const accent = useStore(accentStore, (s) => s.accent)
   const { startStr, endStr } = getWeekRange()
   const insights = getWeeklyInsights()
   const categories = getWeeklyCategoryBreakdown()
   const chartPalette = ACCENT_PALETTES[accent].chartPalette
+  const categoryColors = getInsightsCategoryColors()
 
   const chartData = categories.map((c, index) => ({
     category_id: c.category_id,
     name: c.category_name,
     totalDollars: c.total / 100,
-    fill: chartPalette[index % chartPalette.length],
-    stroke: chartPalette[index % chartPalette.length],
+    fill: categoryColors[c.category_id] ?? chartPalette[index % chartPalette.length],
+    stroke: categoryColors[c.category_id] ?? chartPalette[index % chartPalette.length],
   }))
 
   const maxDomain = Math.max(...chartData.map((d) => d.totalDollars), 1)
 
+  function openCategoryEdit(payload: { category_id: string; name: string; totalDollars: number }) {
+    setEditingCategory({
+      category_id: payload.category_id,
+      category_name: payload.name,
+      totalDollars: payload.totalDollars,
+    })
+    setCategoryBarColor(categoryColors[payload.category_id] ?? null)
+  }
+
+  function handleSaveCategoryColor() {
+    if (!editingCategory) return
+    setInsightsCategoryColor(editingCategory.category_id, categoryBarColor)
+    setEditingCategory(null)
+    setRefresh((r) => r + 1)
+  }
+
   return (
+    <>
     <Card>
       <Card.Header>
         Weekly Insights ({formatShortDate(startStr)} – {formatShortDate(endStr)})
@@ -66,6 +93,19 @@ export function InsightsSection() {
               <Tooltip
                 formatter={(value: number) => [`$${value.toFixed(2)}`, 'Spend']}
                 labelFormatter={(label) => label}
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null
+                  const p = payload[0].payload
+                  return (
+                    <div className="bg-surface border rounded shadow-sm p-2 small">
+                      <strong>{p.name}</strong>
+                      <div>${p.totalDollars.toFixed(2)} spent</div>
+                      <Button variant="link" size="sm" className="p-0 mt-1" onClick={() => openCategoryEdit(p)}>
+                        Edit colour
+                      </Button>
+                    </div>
+                  )
+                }}
               />
               <Bar
                 dataKey="totalDollars"
@@ -73,6 +113,8 @@ export function InsightsSection() {
                 strokeWidth={1}
                 name="Spend"
                 radius={[0, 4, 4, 0]}
+                onClick={(data: { category_id: string; name: string; totalDollars: number }) => openCategoryEdit(data)}
+                cursor="pointer"
               />
             </BarChart>
           </ResponsiveContainer>
@@ -81,5 +123,36 @@ export function InsightsSection() {
         )}
       </Card.Body>
     </Card>
+
+    <Modal show={editingCategory != null} onHide={() => setEditingCategory(null)} aria-labelledby="insights-color-modal-title">
+      <Modal.Header closeButton>
+        <Modal.Title id="insights-color-modal-title">Edit category bar colour</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {editingCategory && (
+          <>
+            <p className="mb-2">
+              <strong>{editingCategory.category_name}</strong>
+              <span className="text-muted small ms-1">${editingCategory.totalDollars.toFixed(2)} this week</span>
+            </p>
+            <ChartColorPicker
+              aria-label="Category bar colour"
+              value={categoryBarColor}
+              onChange={setCategoryBarColor}
+              allowReset
+            />
+          </>
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={() => setEditingCategory(null)}>
+          Cancel
+        </Button>
+        <Button variant="primary" onClick={handleSaveCategoryColor}>
+          Save
+        </Button>
+      </Modal.Footer>
+    </Modal>
+    </>
   )
 }
