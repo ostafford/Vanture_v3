@@ -16,7 +16,7 @@ import { getSaverChartColors, setSaverChartColor } from '@/lib/chartColors'
 import { formatMoney } from '@/lib/format'
 import { ChartColorPicker } from '@/components/ChartColorPicker'
 
-const SAVER_AXIS_WIDTH = 50
+const SAVER_AXIS_WIDTH = 70
 
 export function SaversSection() {
   const [, setRefresh] = useState(0)
