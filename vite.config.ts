@@ -3,15 +3,18 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath } from 'node:url'
 
+const base = '/Vanture_v3/'
+
 export default defineConfig({
-  base: '/Vanture_v3/',
+  base,
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        navigateFallback: '/index.html',
+        navigateFallback: `${base}index.html`,
+        navigateFallbackDenylist: [/^\/api/, /^\/_/, /^\/[^/]+\.[a-z0-9]+$/],
       },
       manifest: {
         name: 'Vantura',
