@@ -12,8 +12,9 @@ export interface WeekRange {
 }
 
 /**
- * Week Monday–Sunday in local time. Optional weekOffset: 0 = current week, -1 = previous week, etc.
- * startStr/endStr are full ISO for SQL (settled_at comparison); start/end are local Date objects for display.
+ * Week Monday–Sunday. Optional weekOffset: 0 = current week, -1 = previous week, etc.
+ * start/end are local Date objects for display. startStr/endStr use UTC boundaries for SQL so
+ * insights match the Transactions page and Up Bank (settled_at in UTC).
  */
 export function getWeekRange(weekOffset?: number): WeekRange {
   const today = new Date()
@@ -30,11 +31,17 @@ export function getWeekRange(weekOffset?: number): WeekRange {
   monday.setHours(0, 0, 0, 0)
   const endOfSundayLocal = new Date(sunday)
   endOfSundayLocal.setHours(23, 59, 59, 999)
+  const startStr = new Date(
+    Date.UTC(monday.getFullYear(), monday.getMonth(), monday.getDate(), 0, 0, 0, 0)
+  ).toISOString()
+  const endStr = new Date(
+    Date.UTC(sunday.getFullYear(), sunday.getMonth(), sunday.getDate(), 23, 59, 59, 999)
+  ).toISOString()
   return {
     start: monday,
     end: endOfSundayLocal,
-    startStr: monday.toISOString(),
-    endStr: endOfSundayLocal.toISOString(),
+    startStr,
+    endStr,
   }
 }
 
