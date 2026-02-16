@@ -4,6 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath } from 'node:url'
 
 export default defineConfig({
+  base: '/Vanture_v3/',
   plugins: [
     react(),
     VitePWA({

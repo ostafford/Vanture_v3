@@ -8,6 +8,8 @@
 
 **Phase 5 (Polish & Testing)** has been audited and marked complete (audit 2025-02-16: 28/28 requirements verified, 100% accuracy); see [Phase5_Checklist.md](Phase5_Checklist.md) for requirement-to-implementation mapping and [README.md](../README.md) for a short summary.
 
+**Phase 6 (Deployment)** has been audited and marked complete; see [Phase6_Checklist.md](Phase6_Checklist.md) for requirement-to-implementation mapping and [README.md](../README.md) for a short summary.
+
 Phase 1: Foundation (Week 1-2)
 
 ✅ Setup Vite + React + Bootstrap project
@@ -51,9 +53,11 @@ Phase 5: Polish & Testing (Week 9-10) — **Complete**
 ✅ Performance optimization (large transaction sets) — Transactions pagination (50/page, Load more); idx_transactions_round_up_parent_id; sql.js evaluation in 02_Technical_Stack
 ✅ PWA setup (service worker, installable) — vite-plugin-pwa, manifest, index.html meta; README GitHub Pages base
 
-Phase 6: Deployment (Week 11)
+Phase 6: Deployment (Week 11) — **Complete**
 
-✅ Build production bundle
-✅ Deploy to GitHub Pages
-✅ Documentation (README, setup guide)
-✅ User testing with real Up Bank accounts
+**Phase 6** has been audited and marked complete; see [Phase6_Checklist.md](Phase6_Checklist.md) for requirement-to-implementation mapping and [README.md](../README.md) for a short summary.
+
+✅ Build production bundle — `package.json` build script; `vite.config.ts` base: '/Vanture_v3/'; post-build 404.html copy
+✅ Deploy to GitHub Pages — `.github/workflows/deploy.yml`; Settings > Pages > Source: "GitHub Actions"
+✅ Documentation (README, setup guide) — README Deployment, Setup, Phase 6; [Phase6_Checklist.md](Phase6_Checklist.md), [Phase6_User_Testing_Checklist.md](Phase6_User_Testing_Checklist.md)
+✅ User testing with real Up Bank accounts — [Phase6_User_Testing_Checklist.md](Phase6_User_Testing_Checklist.md)

@@ -49,6 +49,16 @@ Phase 5 (Polish & Testing) is complete. Independent audit (2025-02-16): 28/28 re
 
 Detailed Phase 5 requirements and implementation references: [Arch_Docs/09_Development_Phases.md](Arch_Docs/09_Development_Phases.md) (Phase 5 section), [Arch_Docs/Phase5_Checklist.md](Arch_Docs/Phase5_Checklist.md).
 
+## Phase 6: Deployment — Implemented
+
+Phase 6 (Deployment) is complete. Implemented behaviour:
+
+- **Production build:** `npm run build` outputs to `dist/` with base `/Vanture_v3/` for GitHub Pages repo-path deployment. Post-build: `dist/index.html` copied to `dist/404.html` for SPA routing on GitHub Pages.
+- **GitHub Pages:** GitHub Actions workflow at `.github/workflows/deploy.yml` runs on push to `main`; deploys to `https://<owner>.github.io/Vanture_v3/`. Enable Pages in Settings > Pages > Source: "GitHub Actions".
+- **Documentation:** README Deployment and Setup sections; [Arch_Docs/Phase6_Checklist.md](Arch_Docs/Phase6_Checklist.md), [Arch_Docs/Phase6_User_Testing_Checklist.md](Arch_Docs/Phase6_User_Testing_Checklist.md).
+
+Detailed Phase 6 requirements: [Arch_Docs/09_Development_Phases.md](Arch_Docs/09_Development_Phases.md) (Phase 6 section), [Arch_Docs/Phase6_Checklist.md](Arch_Docs/Phase6_Checklist.md).
+
 ## Documentation
 
 - [Arch_Docs/01_Overview.md](Arch_Docs/01_Overview.md) — Product overview
@@ -59,9 +69,29 @@ Detailed Phase 5 requirements and implementation references: [Arch_Docs/09_Devel
 
 ## Setup
 
+**Requirements:** Node.js 18+.
+
 ```bash
 npm install
 npm run dev
 ```
 
-Build: `npm run build`.
+**Build:** `npm run build`.
+
+**Up Bank Personal Access Token:** Create in Up app > Profile > Data sharing > Personal access tokens. You will enter this during onboarding (step 3); it is validated, encrypted with a key derived from your passphrase, and stored locally. Your passphrase is never stored.
+
+**First run:** Onboarding walks through passphrase creation, API token, payday schedule, and initial sync. After onboarding, you see an Unlock screen on each app open until you enter your passphrase.
+
+**Troubleshooting:**
+
+- "Could not load app storage" — IndexedDB failed to initialise; try another browser, clear site data and retry, or check storage quota.
+- Sync errors — Verify API token is valid and has required scopes; Up API rate limit (~60/min) may apply; wait a minute and retry.
+- Invalid token — Re-onboard: clear site data and start again (passphrase cannot be recovered if forgotten).
+
+## Deployment
+
+**GitHub Pages:** Enable Pages in repo Settings > Pages > Build and deployment > Source: "GitHub Actions". Push to `main` to trigger deploy. Live site: `https://<owner>.github.io/Vanture_v3/`.
+
+**Custom domain at root:** Set `base: '/'` in `vite.config.ts` if deploying to a custom domain at root.
+
+**Local preview:** `npm run preview` (serves at `/`; use `npm run preview -- --base /Vanture_v3/` to mimic production base path).
