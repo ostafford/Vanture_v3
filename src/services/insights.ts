@@ -12,15 +12,20 @@ export interface WeekRange {
 }
 
 /**
- * Current week Monday–Sunday.
+ * Week Monday–Sunday. Optional weekOffset: 0 = current week, -1 = previous week, etc.
  */
-export function getWeekRange(): WeekRange {
+export function getWeekRange(weekOffset?: number): WeekRange {
   const today = new Date()
   const dayOfWeek = today.getDay()
   const monday = new Date(today)
   monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7))
   const sunday = new Date(monday)
   sunday.setDate(monday.getDate() + 6)
+  if (weekOffset !== undefined && weekOffset !== 0) {
+    const days = weekOffset * 7
+    monday.setDate(monday.getDate() + days)
+    sunday.setDate(sunday.getDate() + days)
+  }
   const endOfSunday = new Date(sunday)
   endOfSunday.setUTCHours(23, 59, 59, 999)
   return {
@@ -39,10 +44,10 @@ export interface WeeklyInsightsData {
   payments: number
 }
 
-export function getWeeklyInsights(): WeeklyInsightsData {
+export function getWeeklyInsights(weekRange?: WeekRange): WeeklyInsightsData {
   const db = getDb()
   if (!db) return { moneyIn: 0, moneyOut: 0, saverChanges: 0, charges: 0, payments: 0 }
-  const { startStr, endStr } = getWeekRange()
+  const { startStr, endStr } = weekRange ?? getWeekRange()
   const endIso = new Date(endStr).toISOString()
 
   const runOne = (sql: string, params: (string | number)[]): number => {
@@ -91,10 +96,10 @@ export interface CategoryBreakdownRow {
   total: number
 }
 
-export function getWeeklyCategoryBreakdown(): CategoryBreakdownRow[] {
+export function getWeeklyCategoryBreakdown(weekRange?: WeekRange): CategoryBreakdownRow[] {
   const db = getDb()
   if (!db) return []
-  const { startStr, endStr } = getWeekRange()
+  const { startStr, endStr } = weekRange ?? getWeekRange()
   const endIso = new Date(endStr).toISOString()
   const stmt = db.prepare(
     `SELECT t.category_id, c.name, COALESCE(SUM(ABS(t.amount)), 0) as total

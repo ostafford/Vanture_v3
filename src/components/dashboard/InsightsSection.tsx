@@ -25,13 +25,15 @@ type EditingCategory = { category_id: string; category_name: string; totalDollar
 
 export function InsightsSection() {
   const [, setRefresh] = useState(0)
+  const [weekOffset, setWeekOffset] = useState(0)
   const [editingCategory, setEditingCategory] = useState<EditingCategory | null>(null)
   const [categoryBarColor, setCategoryBarColor] = useState<string | null>(null)
 
   const accent = useStore(accentStore, (s) => s.accent)
-  const { startStr, endStr } = getWeekRange()
-  const insights = getWeeklyInsights()
-  const categories = getWeeklyCategoryBreakdown()
+  const weekRange = getWeekRange(weekOffset)
+  const { startStr, endStr } = weekRange
+  const insights = getWeeklyInsights(weekRange)
+  const categories = getWeeklyCategoryBreakdown(weekRange)
   const chartPalette = ACCENT_PALETTES[accent].chartPalette
   const categoryColors = getInsightsCategoryColors()
 
@@ -64,8 +66,27 @@ export function InsightsSection() {
   return (
     <>
     <Card>
-      <Card.Header>
-        Weekly Insights ({formatShortDate(startStr)} – {formatShortDate(endStr)})
+      <Card.Header className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <span>Weekly Insights ({formatShortDate(startStr)} – {formatShortDate(endStr)})</span>
+        <div className="d-flex gap-1">
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            onClick={() => setWeekOffset((o) => o - 1)}
+            aria-label="Previous week"
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            onClick={() => setWeekOffset((o) => o + 1)}
+            disabled={weekOffset >= 0}
+            aria-label="Next week"
+          >
+            Next
+          </Button>
+        </div>
       </Card.Header>
       <Card.Body>
         <div className="d-flex flex-wrap gap-3 gap-md-4 mb-3 small">
