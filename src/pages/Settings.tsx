@@ -192,6 +192,11 @@ export function Settings() {
           <div className="mb-4">
             <h6 className="text-muted mb-2">Re-sync with Up Bank</h6>
             <p className="small text-muted mb-2">
+              Sync downloads your Up Bank transactions to this device only. No
+              cloud storage is used; we don&apos;t have servers that store your
+              data.
+            </p>
+            <p className="small text-muted mb-2">
               Last synced: {formatLastSync(lastSync)}
             </p>
             <Button

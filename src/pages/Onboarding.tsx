@@ -148,7 +148,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               <p className="text-muted small mb-3">
                 Vantura syncs with your Up Bank account to give you powerful
                 desktop-based financial insights. Your data is stored locally
-                and never leaves your device.
+                and never leaves your device. When you sync, transactions are
+                downloaded to this device only—no cloud storage; we don&apos;t
+                have servers that store your data.
               </p>
               <Button className="btn-gradient-primary" onClick={() => setStep(2)}>Get Started</Button>
             </>
