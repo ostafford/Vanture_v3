@@ -1,31 +1,55 @@
 /* Theme: applied only after DB + theme read (no flash). See 07_UI_UX_Design.md */
+/* Phase 8: Purple React design tokens */
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap');
+
 :root,
 [data-theme='light'] {
-  --vantura-primary: #ff7a59;
-  --vantura-secondary: #8b5cf6;
-  --vantura-background: #ffffff;
-  --vantura-surface: #f7f7f7;
-  --vantura-text: #1a1a1a;
-  --vantura-text-secondary: #6b6b6b;
+  --vantura-primary: #b66dff;
+  --vantura-primary-gradient: linear-gradient(to right, #da8cff, #9a55ff);
+  --vantura-secondary: #d8d8d8;
+  --vantura-success: #1bcfb4;
+  --vantura-info: #198ae3;
+  --vantura-warning: #fed713;
+  --vantura-danger: #fe7c96;
+  --vantura-content-bg: #f2edf3;
+  --vantura-background: #f2edf3;
+  --vantura-surface: #ffffff;
+  --vantura-border: #ebedf2;
+  --vantura-text: #343a40;
+  --vantura-text-secondary: #9c9fa6;
+  --vantura-sidebar-bg: #ffffff;
+  --vantura-sidebar-menu-color: #3e4b5b;
+  --vantura-sidebar-active-bg: transparent;
+  --vantura-sidebar-active-color: #b66dff;
+  --vantura-sidebar-hover-bg: #f8f8f8;
+  --vantura-navbar-bg: #ffffff;
 }
 
 [data-theme='dark'] {
-  --vantura-primary: #ff7a59;
-  --vantura-secondary: #a78bfa;
-  --vantura-background: #121212;
-  --vantura-surface: #1e1e1e;
+  --vantura-primary: #b66dff;
+  --vantura-primary-gradient: linear-gradient(to right, #da8cff, #9a55ff);
+  --vantura-secondary: #d8d8d8;
+  --vantura-success: #1bcfb4;
+  --vantura-info: #198ae3;
+  --vantura-warning: #fed713;
+  --vantura-danger: #fe7c96;
+  --vantura-content-bg: #1a142d;
+  --vantura-background: #1a142d;
+  --vantura-surface: #282037;
+  --vantura-border: #3e3a4a;
   --vantura-text: #ffffff;
   --vantura-text-secondary: #a0a0a0;
+  --vantura-sidebar-bg: #18151e;
+  --vantura-sidebar-menu-color: #ffffff;
+  --vantura-sidebar-active-bg: #282037;
+  --vantura-sidebar-active-color: rgba(255, 255, 255, 0.7);
+  --vantura-sidebar-hover-bg: rgba(255, 255, 255, 0.08);
+  --vantura-navbar-bg: #18151e;
 }
 
 :root {
-  font-family:
-    'Inter',
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
-  font-size: 16px;
+  font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
   line-height: 1.5;
   font-weight: 400;
   color: var(--vantura-text);
@@ -45,4 +69,299 @@ body {
 
 #root {
   min-height: 100vh;
+}
+
+/* Phase 8: Purple React layout structure */
+.container-scroller {
+  overflow: hidden;
+}
+.page-body-wrapper {
+  min-height: calc(100vh - 70px);
+  padding-top: 70px;
+  display: flex;
+  flex-direction: row;
+  padding-left: 0;
+  padding-right: 0;
+}
+.content-wrapper {
+  background: var(--vantura-content-bg);
+  padding: 2.75rem 2.25rem;
+  width: 100%;
+  flex-grow: 1;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Phase 8: Purple React card overrides */
+.card {
+  border: 0;
+}
+.card .card-body {
+  padding: 2.5rem;
+}
+@media (max-width: 767px) {
+  .card .card-body {
+    padding: 2rem;
+  }
+}
+.card .card-title {
+  color: var(--vantura-text);
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+  font-size: 1.125rem;
+}
+.card .card-description {
+  color: var(--vantura-text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+/* Phase 8: Purple React utilities */
+.grid-margin {
+  margin-bottom: 2.5rem;
+}
+.stretch-card {
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+.stretch-card > .card {
+  width: 100%;
+  min-width: 100%;
+}
+
+/* Phase 8: Purple React page header */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 1.5rem 0;
+}
+.page-title {
+  color: var(--vantura-text);
+  font-size: 1.125rem;
+  margin-bottom: 0;
+}
+.page-title-icon {
+  display: inline-block;
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  text-align: center;
+  line-height: 36px;
+  background: var(--vantura-primary-gradient);
+  color: white;
+  margin-right: 0.5rem;
+  box-shadow: 0 3px 8.3px 0.7px rgba(163, 93, 255, 0.35);
+}
+
+/* Phase 8: Purple React gradient button */
+.btn-gradient-primary {
+  background: var(--vantura-primary-gradient);
+  border: 0;
+  color: white;
+}
+.btn-gradient-primary:hover,
+.btn-gradient-primary:focus {
+  background: var(--vantura-primary-gradient);
+  color: white;
+  opacity: 0.9;
+}
+.btn-gradient-primary:active {
+  background: var(--vantura-primary);
+  color: white;
+}
+
+/* Phase 8: Purple React gradient card backgrounds */
+.bg-gradient-primary {
+  background: var(--vantura-primary-gradient);
+  color: white;
+}
+.bg-gradient-success {
+  background: linear-gradient(to right, #84d9d2, #07cdae);
+  color: white;
+}
+.bg-gradient-info {
+  background: linear-gradient(to right, #90caf9, #047edf 99%);
+  color: white;
+}
+.bg-gradient-danger {
+  background: linear-gradient(to right, #ffbf96, #fe7096);
+  color: white;
+}
+
+/* Phase 8: Purple React sidebar */
+.sidebar {
+  min-height: calc(100vh - 70px);
+  padding: 0;
+  z-index: 11;
+  transition: width 0.25s ease, background 0.25s ease;
+}
+.sidebar .nav {
+  overflow: hidden;
+  flex-wrap: nowrap;
+  flex-direction: column;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.sidebar .nav-item {
+  padding: 0 2.25rem;
+  transition: background 0.25s;
+}
+.sidebar .nav-link {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  padding: 1.125rem 0;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.45s;
+}
+.sidebar .nav-link:hover {
+  color: inherit;
+  text-decoration: none;
+}
+.sidebar .nav-link .menu-icon {
+  font-size: 1.125rem;
+  line-height: 1;
+  margin-left: auto;
+  color: rgba(187, 168, 191, 0.96);
+}
+.sidebar .nav-item.active .nav-link {
+  color: var(--vantura-sidebar-active-color);
+}
+.sidebar .nav-item.active .nav-link .menu-icon {
+  color: var(--vantura-primary);
+}
+.sidebar .nav-item:hover {
+  background: var(--vantura-sidebar-hover-bg);
+}
+.sidebar .menu-title {
+  font-size: 0.875rem;
+  line-height: 1;
+  vertical-align: middle;
+}
+.sidebar .sidebar-brand {
+  min-height: 70px;
+  padding: 0.25rem 0;
+  display: flex;
+  align-items: center;
+  padding-left: 2.25rem;
+  padding-right: 2.25rem;
+  border-bottom: 1px solid var(--vantura-border);
+}
+.sidebar .sidebar-brand .brand-text {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--vantura-sidebar-menu-color);
+}
+[data-theme='dark'] .sidebar .sidebar-brand .brand-text {
+  color: var(--vantura-sidebar-menu-color);
+}
+.sidebar.collapsed .nav-link {
+  justify-content: center;
+  padding: 0.8125rem 1rem;
+}
+.sidebar.collapsed .menu-title {
+  display: none;
+}
+.sidebar.collapsed .menu-icon {
+  margin-left: 0;
+  margin-right: 0;
+}
+.sidebar.collapsed .nav-item {
+  padding: 0;
+}
+
+/* Phase 8: Purple React navbar */
+.vantura-navbar {
+  height: 70px;
+  display: flex;
+  flex-direction: row;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1030;
+}
+.vantura-navbar .navbar-brand-wrapper {
+  width: 260px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--vantura-navbar-bg);
+  transition: width 0.25s ease, background 0.25s ease;
+}
+.vantura-navbar.collapsed .navbar-brand-wrapper {
+  width: 70px;
+}
+.vantura-navbar .navbar-brand-wrapper .navbar-toggler {
+  border: 0;
+  background: transparent;
+  color: var(--vantura-sidebar-menu-color);
+  padding: 0.5rem 1rem;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+.vantura-navbar .navbar-menu-wrapper {
+  flex: 1;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  padding-left: 24px;
+  padding-right: 24px;
+  background: var(--vantura-surface);
+  border-bottom: 1px solid var(--vantura-border);
+  color: var(--vantura-text-secondary);
+}
+
+/* Phase 8: Purple React progress bar gradient */
+.progress .bg-primary {
+  background: var(--vantura-primary-gradient) !important;
+}
+.progress .bg-success {
+  background: linear-gradient(to right, #84d9d2, #07cdae) !important;
+}
+
+/* Phase 8: Purple React form inputs */
+.form-control {
+  border-radius: 2px;
+}
+.form-control::placeholder {
+  color: #c9c8c8;
+}
+
+/* Phase 8: Bootstrap primary override for purple theme */
+.btn-primary {
+  background-color: var(--vantura-primary);
+  border-color: var(--vantura-primary);
+}
+.btn-primary:hover {
+  background-color: #9a55ff;
+  border-color: #9a55ff;
+}
+.text-primary {
+  color: var(--vantura-primary) !important;
+}
+.bg-primary {
+  background-color: var(--vantura-primary) !important;
+}
+
+/* Phase 8: Auth screens gradient background */
+.auth-full-bg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+  background: linear-gradient(135deg, #1a142d 0%, #282037 50%, #18151e 100%);
+}
+.auth-full-bg .card,
+.auth-full-bg .auth-card {
+  background: rgba(255, 255, 255, 0.98);
+  border: 0;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }

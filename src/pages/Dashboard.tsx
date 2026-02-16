@@ -8,11 +8,18 @@ import { UpcomingSection } from '@/components/dashboard/UpcomingSection'
 export function Dashboard() {
   return (
     <div>
-      <h1 className="mb-3">Dashboard</h1>
-      <div className="mb-4">
+      <div className="page-header">
+        <h3 className="page-title">
+          <span className="page-title-icon">
+            <i className="mdi mdi-home" aria-hidden />
+          </span>
+          Dashboard
+        </h3>
+      </div>
+      <div className="grid-margin">
         <BalanceCard />
       </div>
-      <Row className="g-4 mb-4">
+      <Row className="g-4 grid-margin">
         <Col md={4}>
           <SaversSection />
         </Col>

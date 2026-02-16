@@ -9,6 +9,7 @@ export function ThemeToggle() {
 
   const next: Theme = theme === 'light' ? 'dark' : 'light'
   const label = theme === 'light' ? 'Dark' : 'Light'
+  const iconClass = theme === 'light' ? 'mdi-weather-sunny' : 'mdi-weather-night'
 
   return (
     <Button
@@ -17,7 +18,7 @@ export function ThemeToggle() {
       onClick={() => setTheme(next)}
       aria-label={`Switch to ${label} theme`}
     >
-      {label}
+      <i className={`mdi ${iconClass}`} aria-hidden />
     </Button>
   )
 }

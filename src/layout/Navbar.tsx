@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Button, Navbar as BSNavbar, Container, Spinner } from 'react-bootstrap'
+import { Button, Spinner } from 'react-bootstrap'
 import { useStore } from 'zustand'
 import { uiStore } from '@/stores/uiStore'
 import { sessionStore } from '@/stores/sessionStore'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from './Sidebar'
 import { getAppSetting } from '@/db'
 import { performSync } from '@/services/sync'
 
@@ -30,9 +29,6 @@ export function Navbar({ sidebarCollapsed }: NavbarProps) {
   const [lastSync, setLastSync] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [syncError, setSyncError] = useState<string | null>(null)
-  const sidebarWidth = sidebarCollapsed
-    ? SIDEBAR_COLLAPSED_WIDTH
-    : SIDEBAR_WIDTH
 
   useEffect(() => {
     setLastSync(getAppSetting('last_sync'))
@@ -60,28 +56,23 @@ export function Navbar({ sidebarCollapsed }: NavbarProps) {
   }
 
   return (
-    <BSNavbar
-      sticky="top"
-      style={{
-        height: 70,
-        backgroundColor: 'var(--vantura-surface)',
-        borderBottom: '1px solid var(--vantura-text-secondary)',
-        marginLeft: sidebarWidth,
-      }}
+    <nav
+      className={`vantura-navbar ${sidebarCollapsed ? 'collapsed' : ''}`}
     >
-      <Container fluid className="d-flex align-items-center">
-        <Button
-          variant="outline-secondary"
-          size="sm"
-          className="me-3"
+      <div className="navbar-brand-wrapper">
+        <button
+          type="button"
+          className="navbar-toggler"
           onClick={toggleSidebar}
           aria-label="Toggle sidebar"
         >
-          Menu
-        </Button>
+          <i className="mdi mdi-menu" aria-hidden />
+        </button>
+      </div>
+      <div className="navbar-menu-wrapper">
         <div className="me-3 d-flex align-items-center gap-2">
           <Button
-            variant="outline-primary"
+            className="btn-gradient-primary"
             size="sm"
             onClick={handleSync}
             disabled={syncing}
@@ -90,11 +81,14 @@ export function Navbar({ sidebarCollapsed }: NavbarProps) {
           >
             {syncing ? (
               <>
-                <Spinner animation="border" size="sm" className="me-1" role="status" aria-hidden="true" />
+                <Spinner animation="border" size="sm" className="me-1" role="status" aria-hidden />
                 Syncing…
               </>
             ) : (
-              'Sync'
+              <>
+                <i className="mdi mdi-sync me-1" aria-hidden />
+                Sync
+              </>
             )}
           </Button>
           {syncError && (
@@ -103,7 +97,7 @@ export function Navbar({ sidebarCollapsed }: NavbarProps) {
             </span>
           )}
         </div>
-        <div className="me-3 d-none d-md-block text-muted small">
+        <div className="me-3 d-none d-md-block small" style={{ color: 'var(--vantura-text-secondary)' }}>
           Last synced: {formatLastSync(lastSync)}
         </div>
         <div className="ms-auto d-flex align-items-center gap-2">
@@ -113,11 +107,12 @@ export function Navbar({ sidebarCollapsed }: NavbarProps) {
             onClick={handleLock}
             aria-label="Lock"
           >
+            <i className="mdi mdi-lock me-1" aria-hidden />
             Lock
           </Button>
           <ThemeToggle />
         </div>
-      </Container>
-    </BSNavbar>
+      </div>
+    </nav>
   )
 }

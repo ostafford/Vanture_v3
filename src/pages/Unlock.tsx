@@ -35,17 +35,8 @@ export function Unlock() {
   }
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        backgroundColor: 'var(--vantura-background)',
-        padding: 24,
-      }}
-    >
-      <Card style={{ width: '100%', maxWidth: 400 }}>
+    <div className="auth-full-bg">
+      <Card style={{ width: '100%', maxWidth: 400 }} className="auth-card">
         <Card.Body>
           <Card.Title className="mb-3">Unlock Vantura</Card.Title>
           <Card.Text className="text-muted small mb-3">
@@ -83,7 +74,7 @@ export function Unlock() {
                 {error}
               </div>
             )}
-            <Button type="submit" variant="primary" disabled={loading}>
+            <Button type="submit" className="btn-gradient-primary" disabled={loading}>
               {loading ? 'Unlocking…' : 'Unlock'}
             </Button>
           </Form>

@@ -127,17 +127,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     : paydayDayOptions[0]?.value ?? 1
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        backgroundColor: 'var(--vantura-background)',
-        padding: 24,
-      }}
-    >
-      <Card style={{ width: '100%', maxWidth: 480 }}>
+    <div className="auth-full-bg">
+      <Card style={{ width: '100%', maxWidth: 480 }} className="auth-card">
         <Card.Body>
           <div className="d-flex justify-content-between align-items-center mb-3">
             <Card.Title className="mb-0">Setup</Card.Title>
@@ -159,7 +150,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 desktop-based financial insights. Your data is stored locally
                 and never leaves your device.
               </p>
-              <Button onClick={() => setStep(2)}>Get Started</Button>
+              <Button className="btn-gradient-primary" onClick={() => setStep(2)}>Get Started</Button>
             </>
           )}
 
@@ -198,7 +189,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   {error}
                 </div>
               )}
-              <Button type="submit">Continue</Button>
+              <Button type="submit" className="btn-gradient-primary">Continue</Button>
             </Form>
           )}
 
@@ -239,7 +230,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   {error}
                 </div>
               )}
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" className="btn-gradient-primary" disabled={loading}>
                 {loading ? 'Validating…' : 'Continue'}
               </Button>
             </Form>
@@ -290,7 +281,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   {error}
                 </div>
               )}
-              <Button type="submit">Continue</Button>
+              <Button type="submit" className="btn-gradient-primary">Continue</Button>
             </Form>
           )}
 
@@ -338,7 +329,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 monitor spending, view Spendable to see safe-to-spend amount,
                 and set saver goals to reach financial targets.
               </p>
-              <Button onClick={handleStep6Go}>Go to Dashboard</Button>
+              <Button className="btn-gradient-primary" onClick={handleStep6Go}>Go to Dashboard</Button>
             </>
           )}
         </Card.Body>

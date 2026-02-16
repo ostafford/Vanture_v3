@@ -130,8 +130,15 @@ export function Transactions() {
 
   return (
     <>
-      <Card className="mb-3">
-        <Card.Header>Transactions</Card.Header>
+      <div className="page-header">
+        <h3 className="page-title">
+          <span className="page-title-icon">
+            <i className="mdi mdi-credit-card-multiple" aria-hidden />
+          </span>
+          Transactions
+        </h3>
+      </div>
+      <Card className="mb-3 grid-margin">
         <Card.Body>
           <Row className="g-2 mb-3">
             <Col md={2}>

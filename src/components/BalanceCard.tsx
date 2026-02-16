@@ -19,26 +19,25 @@ export function BalanceCard() {
   const spendable = getSpendableBalance()
 
   return (
-    <Card>
+    <Card className="bg-gradient-primary">
       <Card.Body>
-        <h6 className="text-muted">Available</h6>
-        <h2 className="mb-0">${formatMoney(available)}</h2>
-        <hr />
-        <h6 className="text-muted d-flex align-items-center gap-1">
+        <h6 className="opacity-75 mb-1">Available</h6>
+        <h2 className="mb-3 text-white">${formatMoney(available)}</h2>
+        <hr className="border-white border-opacity-50" />
+        <h6 className="opacity-75 d-flex align-items-center gap-1 mb-1">
           Spendable
           <OverlayTrigger placement="top" overlay={spendableTooltip}>
             <span
-              className="text-muted"
               style={{ cursor: 'help', fontSize: '0.9rem' }}
               role="img"
               aria-label="Info"
             >
-              &#8505;
+              <i className="mdi mdi-information-outline text-white" aria-hidden />
             </span>
           </OverlayTrigger>
         </h6>
-        <h2 className="text-success mb-1">${formatMoney(spendable)}</h2>
-        <small className="text-muted">${formatMoney(reserved)} reserved for upcoming</small>
+        <h2 className="text-white mb-1">${formatMoney(spendable)}</h2>
+        <small className="opacity-75">${formatMoney(reserved)} reserved for upcoming</small>
       </Card.Body>
     </Card>
   )

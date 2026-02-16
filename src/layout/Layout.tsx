@@ -29,41 +29,35 @@ export function Layout() {
   const setPersistError = useStore(persistErrorStore, (s) => s.setPersistError)
 
   return (
-    <>
+    <div className="container-scroller">
       <Sidebar collapsed={sidebarCollapsed} />
       <Navbar sidebarCollapsed={sidebarCollapsed} />
-      <main
-        style={{
-          marginLeft: sidebarWidth,
-          marginTop: 70,
-          padding: 30,
-          maxWidth: 1400,
-          marginRight: 'auto',
-          marginBottom: 0,
-          minHeight: 'calc(100vh - 70px)',
-          backgroundColor: 'var(--vantura-background)',
-        }}
+      <div
+        className="page-body-wrapper"
+        style={{ marginLeft: sidebarWidth }}
       >
-        {persistError && (
-          <div
-            className="d-flex align-items-center justify-content-between px-3 py-2 small mb-3 rounded"
-            style={{
-              backgroundColor: 'var(--vantura-surface)',
-              border: '1px solid var(--vantura-text-secondary)',
-            }}
-            role="alert"
-          >
-            <span>{persistError}</span>
-            <button
-              type="button"
-              className="btn-close btn-close-sm"
-              aria-label="Dismiss"
-              onClick={() => setPersistError(null)}
-            />
-          </div>
-        )}
-        <Outlet />
-      </main>
-    </>
+        <main className="content-wrapper" style={{ minHeight: 'calc(100vh - 70px)' }}>
+          {persistError && (
+            <div
+              className="d-flex align-items-center justify-content-between px-3 py-2 small mb-3 rounded"
+              style={{
+                backgroundColor: 'var(--vantura-surface)',
+                border: '1px solid var(--vantura-text-secondary)',
+              }}
+              role="alert"
+            >
+              <span>{persistError}</span>
+              <button
+                type="button"
+                className="btn-close btn-close-sm"
+                aria-label="Dismiss"
+                onClick={() => setPersistError(null)}
+              />
+            </div>
+          )}
+          <Outlet />
+        </main>
+      </div>
+    </div>
   )
 }

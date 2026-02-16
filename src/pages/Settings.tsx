@@ -61,9 +61,16 @@ export function Settings() {
 
   return (
     <div>
-      <h1 className="mb-4">Settings</h1>
+      <div className="page-header">
+        <h3 className="page-title">
+          <span className="page-title-icon">
+            <i className="mdi mdi-cog" aria-hidden />
+          </span>
+          Settings
+        </h3>
+      </div>
 
-      <Card className="mb-4">
+      <Card className="grid-margin">
         <Card.Header as="h5" className="mb-0">
           Data
         </Card.Header>
@@ -74,7 +81,7 @@ export function Settings() {
               Last synced: {formatLastSync(lastSync)}
             </p>
             <Button
-              variant="outline-primary"
+              className="btn-gradient-primary"
               size="sm"
               onClick={handleReSync}
               disabled={syncing}

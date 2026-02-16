@@ -2,25 +2,28 @@
 7.1 Theme
 **Initial load (no theme flash):** The root layout must not apply theme-specific styles until the database is ready and the theme has been read from `app_settings` (or a default chosen). Use a minimal loading state (e.g. neutral or light background, no sidebar/navbar) until then. This is documented in [02_Technical_Stack.md](02_Technical_Stack.md) under Storage / Theme and bootstrap.
 
-Colors (Up Bank inspired):
+Colors (Purple React aligned, Phase 8):
 scss// Light Theme
-$primary: #FF7A59;      // Up's coral/orange
-$secondary: #8B5CF6;    // Purple for savers
-$background: #FFFFFF;
-$surface: #F7F7F7;
-$text: #1A1A1A;
-$text-secondary: #6B6B6B;
+$primary: #b66dff;
+$primary-gradient: linear-gradient(to right, #da8cff, #9a55ff);
+$content-bg: #f2edf3;
+$surface: #ffffff;
+$text: #343a40;
+$text-secondary: #9c9fa6;
+$sidebar-bg: #ffffff;
+$sidebar-dark-bg: #18151e;
 
 // Dark Theme
-$primary: #FF7A59;
-$secondary: #A78BFA;
-$background: #121212;
-$surface: #1E1E1E;
-$text: #FFFFFF;
-$text-secondary: #A0A0A0;
+$primary: #b66dff;
+$content-bg: #1a142d;
+$surface: #282037;
+$text: #ffffff;
+$text-secondary: #a0a0a0;
+$sidebar-bg: #18151e;
+$sidebar-active-bg: #282037;
 Typography:
-scss$font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-$font-size-base: 16px;
+scss$font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+$font-size-base: 14px;
 $font-size-lg: 20px;
 $font-size-xl: 28px;
 
