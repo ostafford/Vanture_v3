@@ -12,7 +12,8 @@ export interface WeekRange {
 }
 
 /**
- * Week Monday–Sunday. Optional weekOffset: 0 = current week, -1 = previous week, etc.
+ * Week Monday–Sunday in local time. Optional weekOffset: 0 = current week, -1 = previous week, etc.
+ * startStr/endStr are full ISO for SQL (settled_at comparison); start/end are local Date objects for display.
  */
 export function getWeekRange(weekOffset?: number): WeekRange {
   const today = new Date()
@@ -26,13 +27,14 @@ export function getWeekRange(weekOffset?: number): WeekRange {
     monday.setDate(monday.getDate() + days)
     sunday.setDate(sunday.getDate() + days)
   }
-  const endOfSunday = new Date(sunday)
-  endOfSunday.setUTCHours(23, 59, 59, 999)
+  monday.setHours(0, 0, 0, 0)
+  const endOfSundayLocal = new Date(sunday)
+  endOfSundayLocal.setHours(23, 59, 59, 999)
   return {
     start: monday,
-    end: sunday,
-    startStr: monday.toISOString().slice(0, 10),
-    endStr: endOfSunday.toISOString(),
+    end: endOfSundayLocal,
+    startStr: monday.toISOString(),
+    endStr: endOfSundayLocal.toISOString(),
   }
 }
 
@@ -48,7 +50,6 @@ export function getWeeklyInsights(weekRange?: WeekRange): WeeklyInsightsData {
   const db = getDb()
   if (!db) return { moneyIn: 0, moneyOut: 0, saverChanges: 0, charges: 0, payments: 0 }
   const { startStr, endStr } = weekRange ?? getWeekRange()
-  const endIso = new Date(endStr).toISOString()
 
   const runOne = (sql: string, params: (string | number)[]): number => {
     const stmt = db.prepare(sql)
@@ -62,29 +63,29 @@ export function getWeeklyInsights(weekRange?: WeekRange): WeeklyInsightsData {
   const moneyIn = runOne(
     `SELECT COALESCE(SUM(amount), 0) FROM transactions
      WHERE amount > 0 AND settled_at >= ? AND settled_at <= ?`,
-    [startStr, endIso]
+    [startStr, endStr]
   )
   const moneyOut = runOne(
     `SELECT COALESCE(SUM(ABS(amount)), 0) FROM transactions
      WHERE amount < 0 AND is_round_up = 0 AND transfer_account_id IS NULL
      AND settled_at >= ? AND settled_at <= ?`,
-    [startStr, endIso]
+    [startStr, endStr]
   )
   const saverChanges = runOne(
     `SELECT COALESCE(SUM(amount), 0) FROM transactions
      WHERE transfer_account_id IN (SELECT id FROM accounts WHERE account_type = 'SAVER')
      AND settled_at >= ? AND settled_at <= ?`,
-    [startStr, endIso]
+    [startStr, endStr]
   )
   const charges = runOne(
     `SELECT COUNT(*) FROM transactions
      WHERE amount < 0 AND is_round_up = 0 AND settled_at >= ? AND settled_at <= ?`,
-    [startStr, endIso]
+    [startStr, endStr]
   )
   const payments = runOne(
     `SELECT COUNT(*) FROM transactions
      WHERE transfer_type IS NOT NULL AND settled_at >= ? AND settled_at <= ?`,
-    [startStr, endIso]
+    [startStr, endStr]
   )
 
   return { moneyIn, moneyOut, saverChanges, charges, payments }
@@ -100,7 +101,6 @@ export function getWeeklyCategoryBreakdown(weekRange?: WeekRange): CategoryBreak
   const db = getDb()
   if (!db) return []
   const { startStr, endStr } = weekRange ?? getWeekRange()
-  const endIso = new Date(endStr).toISOString()
   const stmt = db.prepare(
     `SELECT t.category_id, c.name, COALESCE(SUM(ABS(t.amount)), 0) as total
      FROM transactions t
@@ -109,7 +109,7 @@ export function getWeeklyCategoryBreakdown(weekRange?: WeekRange): CategoryBreak
      AND t.settled_at >= ? AND t.settled_at <= ?
      GROUP BY t.category_id ORDER BY total DESC LIMIT 15`
   )
-  stmt.bind([startStr, endIso])
+  stmt.bind([startStr, endStr])
   const list: CategoryBreakdownRow[] = []
   while (stmt.step()) {
     const row = stmt.get() as [string, string | null, number]
