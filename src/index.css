@@ -23,6 +23,8 @@
   --vantura-sidebar-active-color: #b66dff;
   --vantura-sidebar-hover-bg: #f8f8f8;
   --vantura-navbar-bg: #ffffff;
+  /* Phase 11: Chart translucent fills — Purple React style */
+  --vantura-chart-opacity: 0.3;
 }
 
 [data-theme='dark'] {

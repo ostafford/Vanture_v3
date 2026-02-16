@@ -90,3 +90,13 @@ Phase 10: Dark theme card and surface fix — **Complete**
 ✅ Dashboard tooltips/surfaces theme-aware — `src/index.css`: .bg-surface utility; `src/components/dashboard/SaversSection.tsx`: chart tooltip uses .bg-surface
 ✅ .text-muted and form controls use theme variables — `src/index.css`: .text-muted, .form-control, .form-select
 ✅ Documentation — [Phase10_Checklist.md](Phase10_Checklist.md); 09_Development_Phases.md Phase 10 subsection
+
+Phase 11: Chart UI — Translucent backgrounds and gradient flow — **Complete**
+
+**Phase 11** has been implemented; see [Phase11_Checklist.md](Phase11_Checklist.md) for requirement-to-implementation mapping. Savers and Weekly Insights bar charts now use translucent fills (fillOpacity) and stroke for definition, aligned with Purple React chart-js style and the BalanceCard gradient flow.
+
+✅ Chart opacity token — `src/index.css`: --vantura-chart-opacity: 0.3
+✅ Savers bar chart: translucent Saved and Remaining — `src/components/dashboard/SaversSection.tsx`: fillOpacity, stroke, strokeWidth on Bar components
+✅ Weekly Insights bar chart: gradient palette, translucent — `src/components/dashboard/InsightsSection.tsx`: CHART_PALETTE (#da8cff, #b66dff, #9a55ff), fill/stroke functions, fillOpacity
+✅ Theme-aware (light and dark) — Uses var(--vantura-primary), var(--vantura-border)
+✅ Documentation — [Phase11_Checklist.md](Phase11_Checklist.md); 09_Development_Phases.md Phase 11 subsection

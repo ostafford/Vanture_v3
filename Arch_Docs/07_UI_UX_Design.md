@@ -24,6 +24,8 @@ $sidebar-active-bg: #282037;
 
 **7.1.1 Dark theme surfaces (Phase 10):** In both light and dark themes, cards, modals, and form surfaces use the design token `--vantura-surface` (and related text/border tokens). In light theme this keeps cards and modals white (surface is `#ffffff`). In dark theme they use the dark surface (`#282037`) so the main content area and all panels have a consistent dark purple/grey look with white/grey text, matching the Purple React dark dashboard reference. Custom tooltips or popovers that need a panel background should use the `.bg-surface` utility (or equivalent use of `var(--vantura-surface)`) so they respect the theme. Implementation: Phase 10; see [Phase10_Checklist.md](Phase10_Checklist.md) for requirement-to-implementation mapping and the what/why/how summary.
 
+**7.1.2 Chart colors (Phase 11):** Savers and Weekly Insights bar charts use translucent fills (`fillOpacity` 0.3–0.5) and stroke for definition, aligned with the Purple React chart-js style. Weekly Insights cycles through a gradient palette (`#da8cff`, `#b66dff`, `#9a55ff`); Savers uses `var(--vantura-primary)` and `var(--vantura-border)`. See [Phase11_Checklist.md](Phase11_Checklist.md).
+
 Typography:
 scss$font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 $font-size-base: 14px;

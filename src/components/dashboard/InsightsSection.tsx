@@ -15,15 +15,19 @@ import {
 } from '@/services/insights'
 import { formatMoney, formatShortDate } from '@/lib/format'
 
+const CHART_PALETTE = ['#da8cff', '#b66dff', '#9a55ff'] as const
+
 export function InsightsSection() {
   const { startStr, endStr } = getWeekRange()
   const insights = getWeeklyInsights()
   const categories = getWeeklyCategoryBreakdown()
 
-  const chartData = categories.map((c) => ({
+  const chartData = categories.map((c, index) => ({
     category_id: c.category_id,
     name: c.category_name,
     totalDollars: c.total / 100,
+    fill: CHART_PALETTE[index % CHART_PALETTE.length],
+    stroke: CHART_PALETTE[index % CHART_PALETTE.length],
   }))
 
   const maxDomain = Math.max(...chartData.map((d) => d.totalDollars), 1)
@@ -62,7 +66,8 @@ export function InsightsSection() {
               />
               <Bar
                 dataKey="totalDollars"
-                fill="var(--vantura-primary)"
+                fillOpacity={0.3}
+                strokeWidth={1}
                 name="Spend"
                 radius={[0, 4, 4, 0]}
               />

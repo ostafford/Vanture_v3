@@ -111,6 +111,9 @@ export function SaversSection() {
                     dataKey="current"
                     stackId="a"
                     fill="var(--vantura-primary)"
+                    fillOpacity={0.3}
+                    stroke="var(--vantura-primary)"
+                    strokeWidth={1}
                     onClick={(data: ChartRow) => openEdit(data.saver)}
                     cursor="pointer"
                     name="Saved"
@@ -119,6 +122,9 @@ export function SaversSection() {
                     dataKey="remaining"
                     stackId="a"
                     fill="var(--vantura-border)"
+                    fillOpacity={0.5}
+                    stroke="var(--vantura-border)"
+                    strokeWidth={1}
                     onClick={(data: ChartRow) => openEdit(data.saver)}
                     cursor="pointer"
                     name="Remaining"
