@@ -55,16 +55,20 @@ export function Unlock() {
           <Form onSubmit={handleSubmit}>
             {/* Hidden username field for a11y / password-manager heuristic (single passphrase form) */}
             <input
+              id="unlock-username"
               type="text"
               name="username"
               autoComplete="username"
+              aria-label="Username"
               tabIndex={-1}
               aria-hidden="true"
               style={{ position: 'absolute', left: '-9999px', width: 1, height: 1 }}
             />
             <Form.Group className="mb-3">
-              <Form.Label>Passphrase</Form.Label>
+              <Form.Label htmlFor="unlock-passphrase">Passphrase</Form.Label>
               <Form.Control
+                id="unlock-passphrase"
+                name="passphrase"
                 type="password"
                 value={passphrase}
                 onChange={(e) => setPassphrase(e.target.value)}
