@@ -26,3 +26,6 @@ Thumbs.db
 # npm
 .npm-cache
 node_modules
+
+# Internal architecture docs (not in public repo)
+Arch_Docs
