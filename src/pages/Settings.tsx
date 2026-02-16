@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useStore } from 'zustand'
 import { Card, Button, Modal, Spinner, Form } from 'react-bootstrap'
 import { getAppSetting, setAppSetting, deleteDatabase } from '@/db'
+import { accentStore } from '@/stores/accentStore'
+import { ACCENT_PALETTES, type AccentId } from '@/lib/accentPalettes'
 import { sessionStore } from '@/stores/sessionStore'
 import { performSync } from '@/services/sync'
 import { deriveKeyFromPassphrase, decryptToken, encryptToken } from '@/lib/crypto'
@@ -31,6 +34,8 @@ export function Settings() {
   const [updateTokenError, setUpdateTokenError] = useState<string | null>(null)
   const [updateTokenLoading, setUpdateTokenLoading] = useState(false)
   const [updateTokenSuccess, setUpdateTokenSuccess] = useState(false)
+  const accent = useStore(accentStore, (s) => s.accent)
+  const setAccent = useStore(accentStore, (s) => s.setAccent)
 
   useEffect(() => {
     setLastSync(getAppSetting('last_sync'))
@@ -135,6 +140,49 @@ export function Settings() {
           Settings
         </h3>
       </div>
+
+      <Card className="grid-margin mb-4">
+        <Card.Header as="h5" className="mb-0">
+          Appearance
+        </Card.Header>
+        <Card.Body>
+          <h6 className="text-muted mb-2">Accent color</h6>
+          <p className="small text-muted mb-3">
+            Choose a color for buttons, charts, and highlights.
+          </p>
+          <div className="d-flex flex-wrap gap-2">
+            {(Object.keys(ACCENT_PALETTES) as AccentId[]).map((id) => {
+              const palette = ACCENT_PALETTES[id]
+              const isSelected = accent === id
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className="border rounded-circle p-0 d-flex align-items-center justify-content-center"
+                  style={{
+                    width: 40,
+                    height: 40,
+                    background: palette.primary,
+                    borderWidth: isSelected ? 3 : 1,
+                    borderColor: isSelected ? 'var(--vantura-text)' : 'var(--vantura-border)',
+                  }}
+                  onClick={() => setAccent(id)}
+                  aria-label={`Select ${palette.label} accent`}
+                  aria-pressed={isSelected}
+                >
+                  {isSelected && (
+                    <i
+                      className="mdi mdi-check"
+                      style={{ fontSize: '1.25rem', color: 'white', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+                      aria-hidden
+                    />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </Card.Body>
+      </Card>
 
       <Card className="grid-margin">
         <Card.Header as="h5" className="mb-0">

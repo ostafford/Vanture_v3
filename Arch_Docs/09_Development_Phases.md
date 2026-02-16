@@ -100,3 +100,16 @@ Phase 11: Chart UI — Translucent backgrounds and gradient flow — **Complete*
 ✅ Weekly Insights bar chart: gradient palette, translucent — `src/components/dashboard/InsightsSection.tsx`: CHART_PALETTE (#da8cff, #b66dff, #9a55ff), fill/stroke functions, fillOpacity
 ✅ Theme-aware (light and dark) — Uses var(--vantura-primary), var(--vantura-border)
 ✅ Documentation — [Phase11_Checklist.md](Phase11_Checklist.md); 09_Development_Phases.md Phase 11 subsection
+
+Phase 12: User-selectable accent color — **Complete**
+
+**Phase 12** has been implemented; see [Phase12_Checklist.md](Phase12_Checklist.md) for requirement-to-implementation mapping. Users can choose an accent color (Purple, Blue, Teal, Green, Amber, Rose) from Settings; choice persists across lock and reload; affects BalanceCard, buttons, charts, sidebar.
+
+✅ Accent palette config — `src/lib/accentPalettes.ts`
+✅ Accent store with persist — `src/stores/accentStore.ts`
+✅ data-accent on document, boot and change — `src/App.tsx`
+✅ CSS overrides per accent — `src/index.css` [data-accent] blocks
+✅ Settings Appearance section with swatches — `src/pages/Settings.tsx`
+✅ Charts use accent palette — `src/components/dashboard/InsightsSection.tsx`
+✅ app_settings.accent_color — `Arch_Docs/03_Database_Schema.md`
+✅ Documentation — [Phase12_Checklist.md](Phase12_Checklist.md); 09_Development_Phases.md Phase 12 subsection

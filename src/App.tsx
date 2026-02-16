@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { initDb, getAppSetting } from '@/db'
 import { advanceNextPaydayIfNeeded, recalculateTrackers } from '@/services/sync'
 import { themeStore } from '@/stores/themeStore'
+import { accentStore } from '@/stores/accentStore'
 import { sessionStore } from '@/stores/sessionStore'
 import { Layout } from '@/layout/Layout'
 import { Dashboard } from '@/pages/Dashboard'
@@ -19,11 +20,16 @@ function AppContent() {
     null
   )
   const theme = useStore(themeStore, (s) => s.theme)
+  const accent = useStore(accentStore, (s) => s.accent)
   const unlocked = useStore(sessionStore, (s) => s.unlocked)
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-accent', accent)
+  }, [accent])
 
   useEffect(() => {
     let cancelled = false
@@ -42,12 +48,16 @@ function AppContent() {
       if (cancelled) return
       themeStore.getState().hydrateFromDb()
       if (cancelled) return
+      accentStore.getState().hydrateFromDb()
+      if (cancelled) return
       advanceNextPaydayIfNeeded()
       if (cancelled) return
       recalculateTrackers()
       if (cancelled) return
       const theme = themeStore.getState().theme
+      const accent = accentStore.getState().accent
       document.documentElement.setAttribute('data-theme', theme)
+      document.documentElement.setAttribute('data-accent', accent)
       if (!cancelled) setReady(true)
     }
     boot()

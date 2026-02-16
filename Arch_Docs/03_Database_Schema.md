@@ -154,5 +154,6 @@ CREATE TABLE app_settings (
 -- 'next_payday': ISO date
 -- 'payday_day': Day of week (1-7) or day of month (1-31)
 -- 'onboarding_complete': '0' | '1'
+-- 'accent_color': User-selected accent (Phase 12). One of: 'purple', 'blue', 'teal', 'green', 'amber', 'rose'. Default purple.
 
 **Schema versioning and migrations:** When creating the DB for the first time, set `app_settings.schema_version` to the current schema version (e.g. 1). When the documented schema in this file is updated (new tables, new columns, or breaking changes), increment the schema version and implement migration logic: on app init, read stored `schema_version`; if it is less than the version required by the code, run the appropriate migration(s) (e.g. ALTER TABLE, new tables), then set `schema_version` to the new value. Phase 1 creates schema version 1 only.

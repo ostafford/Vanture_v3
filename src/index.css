@@ -49,6 +49,38 @@
   --vantura-navbar-bg: #18151e;
 }
 
+/* Phase 12: Accent color overrides — user choice from Settings */
+[data-accent='purple'] {
+  --vantura-primary: #b66dff;
+  --vantura-primary-gradient: linear-gradient(to right, #da8cff, #9a55ff);
+  --vantura-sidebar-active-color: #b66dff;
+}
+[data-accent='blue'] {
+  --vantura-primary: #198ae3;
+  --vantura-primary-gradient: linear-gradient(to right, #5eb8ff, #047edf);
+  --vantura-sidebar-active-color: #198ae3;
+}
+[data-accent='teal'] {
+  --vantura-primary: #1bcfb4;
+  --vantura-primary-gradient: linear-gradient(to right, #84d9d2, #07cdae);
+  --vantura-sidebar-active-color: #1bcfb4;
+}
+[data-accent='green'] {
+  --vantura-primary: #46c35f;
+  --vantura-primary-gradient: linear-gradient(to right, #7dd97d, #2a9d3a);
+  --vantura-sidebar-active-color: #46c35f;
+}
+[data-accent='amber'] {
+  --vantura-primary: #f2a654;
+  --vantura-primary-gradient: linear-gradient(to right, #fed89a, #e08620);
+  --vantura-sidebar-active-color: #f2a654;
+}
+[data-accent='rose'] {
+  --vantura-primary: #fe7c96;
+  --vantura-primary-gradient: linear-gradient(to right, #ffa8b8, #e8456a);
+  --vantura-sidebar-active-color: #fe7c96;
+}
+
 :root {
   font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 14px;
@@ -414,8 +446,8 @@ body {
   border-color: var(--vantura-primary);
 }
 .btn-primary:hover {
-  background-color: #9a55ff;
-  border-color: #9a55ff;
+  background-color: var(--vantura-primary);
+  border-color: var(--vantura-primary);
 }
 .text-primary {
   color: var(--vantura-primary) !important;

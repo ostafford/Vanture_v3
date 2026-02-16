@@ -1,3 +1,4 @@
+import { useStore } from 'zustand'
 import { Card } from 'react-bootstrap'
 import {
   BarChart,
@@ -14,20 +15,22 @@ import {
   getWeeklyCategoryBreakdown,
 } from '@/services/insights'
 import { formatMoney, formatShortDate } from '@/lib/format'
-
-const CHART_PALETTE = ['#da8cff', '#b66dff', '#9a55ff'] as const
+import { accentStore } from '@/stores/accentStore'
+import { ACCENT_PALETTES } from '@/lib/accentPalettes'
 
 export function InsightsSection() {
+  const accent = useStore(accentStore, (s) => s.accent)
   const { startStr, endStr } = getWeekRange()
   const insights = getWeeklyInsights()
   const categories = getWeeklyCategoryBreakdown()
+  const chartPalette = ACCENT_PALETTES[accent].chartPalette
 
   const chartData = categories.map((c, index) => ({
     category_id: c.category_id,
     name: c.category_name,
     totalDollars: c.total / 100,
-    fill: CHART_PALETTE[index % CHART_PALETTE.length],
-    stroke: CHART_PALETTE[index % CHART_PALETTE.length],
+    fill: chartPalette[index % chartPalette.length],
+    stroke: chartPalette[index % chartPalette.length],
   }))
 
   const maxDomain = Math.max(...chartData.map((d) => d.totalDollars), 1)
