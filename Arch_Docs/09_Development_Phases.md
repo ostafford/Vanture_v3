@@ -83,7 +83,7 @@ Phase 9: API Token Management — **Complete**
 
 Phase 10: Dark theme card and surface fix — **Complete**
 
-**Phase 10** has been implemented; see [Phase10_Checklist.md](Phase10_Checklist.md) for requirement-to-implementation mapping.
+**Phase 10** has been implemented; see [Phase10_Checklist.md](Phase10_Checklist.md) for requirement-to-implementation mapping. Cards, modals, and form controls now use theme surface tokens so dark mode shows consistent dark backgrounds; see Phase10_Checklist.md for what, why, and how.
 
 ✅ Cards and card headers use --vantura-surface in both themes — `src/index.css`: .card and .card .card-header; Savers, Trackers, Insights, Upcoming, Settings, Transactions cards now dark in dark mode
 ✅ Modals use theme surface and borders — `src/index.css`: .modal-content, .modal-header, .modal-footer

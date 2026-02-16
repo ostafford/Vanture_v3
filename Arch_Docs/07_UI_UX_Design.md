@@ -21,6 +21,9 @@ $text: #ffffff;
 $text-secondary: #a0a0a0;
 $sidebar-bg: #18151e;
 $sidebar-active-bg: #282037;
+
+**7.1.1 Dark theme surfaces (Phase 10):** In both light and dark themes, cards, modals, and form surfaces use the design token `--vantura-surface` (and related text/border tokens). In light theme this keeps cards and modals white (surface is `#ffffff`). In dark theme they use the dark surface (`#282037`) so the main content area and all panels have a consistent dark purple/grey look with white/grey text, matching the Purple React dark dashboard reference. Custom tooltips or popovers that need a panel background should use the `.bg-surface` utility (or equivalent use of `var(--vantura-surface)`) so they respect the theme. Implementation: Phase 10; see [Phase10_Checklist.md](Phase10_Checklist.md) for requirement-to-implementation mapping and the what/why/how summary.
+
 Typography:
 scss$font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 $font-size-base: 14px;

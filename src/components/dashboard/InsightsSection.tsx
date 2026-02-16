@@ -1,5 +1,14 @@
 import { Card } from 'react-bootstrap'
 import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
+import {
   getWeekRange,
   getWeeklyInsights,
   getWeeklyCategoryBreakdown,
@@ -10,7 +19,14 @@ export function InsightsSection() {
   const { startStr, endStr } = getWeekRange()
   const insights = getWeeklyInsights()
   const categories = getWeeklyCategoryBreakdown()
-  const maxCategory = Math.max(...categories.map((c) => c.total), 1)
+
+  const chartData = categories.map((c) => ({
+    category_id: c.category_id,
+    name: c.category_name,
+    totalDollars: c.total / 100,
+  }))
+
+  const maxDomain = Math.max(...chartData.map((d) => d.totalDollars), 1)
 
   return (
     <Card>
@@ -18,51 +34,42 @@ export function InsightsSection() {
         Weekly Insights ({formatShortDate(startStr)} – {formatShortDate(endStr)})
       </Card.Header>
       <Card.Body>
-        <div className="mb-3">
-          <div className="d-flex justify-content-between small">
-            <span className="text-muted">Money In</span>
-            <span className="text-success">${formatMoney(insights.moneyIn)}</span>
-          </div>
-          <div className="d-flex justify-content-between small">
-            <span className="text-muted">Money Out</span>
-            <span>${formatMoney(insights.moneyOut)}</span>
-          </div>
-          <div className="d-flex justify-content-between small">
-            <span className="text-muted">Changes in Savers</span>
-            <span>{insights.saverChanges >= 0 ? '+' : ''}${formatMoney(insights.saverChanges)}</span>
-          </div>
-          <div className="d-flex justify-content-between small">
-            <span className="text-muted">Charges</span>
-            <span>{insights.charges}</span>
-          </div>
-          <div className="d-flex justify-content-between small">
-            <span className="text-muted">Payments made</span>
-            <span>{insights.payments}</span>
-          </div>
+        <div className="d-flex flex-wrap gap-3 gap-md-4 mb-3 small">
+          <span className="text-muted">Money In</span>
+          <span className="text-success">${formatMoney(insights.moneyIn)}</span>
+          <span className="text-muted">Money Out</span>
+          <span>${formatMoney(insights.moneyOut)}</span>
+          <span className="text-muted">Savers</span>
+          <span>{insights.saverChanges >= 0 ? '+' : ''}${formatMoney(insights.saverChanges)}</span>
+          <span className="text-muted">Charges</span>
+          <span>{insights.charges}</span>
+          <span className="text-muted">Payments made</span>
+          <span>{insights.payments}</span>
         </div>
-        {categories.length > 0 && (
-          <>
-            <h6 className="text-muted small">Categories</h6>
-            <div className="d-flex flex-column gap-1">
-              {categories.map((c) => (
-                <div key={c.category_id} className="d-flex align-items-center gap-2 small">
-                  <div
-                    style={{
-                      width: `${Math.min(100, (c.total / maxCategory) * 100)}%`,
-                      height: 8,
-                      backgroundColor: 'var(--vantura-primary)',
-                      borderRadius: 4,
-                      minWidth: 4,
-                    }}
-                  />
-                  <span className="text-nowrap" style={{ minWidth: 120 }}>
-                    {c.category_name}
-                  </span>
-                  <span>${formatMoney(c.total)}</span>
-                </div>
-              ))}
-            </div>
-          </>
+        {categories.length > 0 ? (
+          <ResponsiveContainer width="100%" height={Math.max(200, chartData.length * 32)}>
+            <BarChart
+              data={chartData}
+              layout="vertical"
+              margin={{ top: 8, right: 24, left: 88, bottom: 8 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--vantura-border, #ebedf2)" />
+              <XAxis type="number" domain={[0, maxDomain]} tickFormatter={(v) => `$${v}`} />
+              <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 12 }} />
+              <Tooltip
+                formatter={(value: number) => [`$${value.toFixed(2)}`, 'Spend']}
+                labelFormatter={(label) => label}
+              />
+              <Bar
+                dataKey="totalDollars"
+                fill="var(--vantura-primary)"
+                name="Spend"
+                radius={[0, 4, 4, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <p className="text-muted small mb-0">No spending by category this week.</p>
         )}
       </Card.Body>
     </Card>
