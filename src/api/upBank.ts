@@ -1,0 +1,150 @@
+/**
+ * Up Bank API client. Base URL: https://api.up.com.au
+ * Auth: Bearer token. Rate limit: ~60/min; 1s delay between paginated requests.
+ */
+
+const BASE_URL = 'https://api.up.com.au'
+
+export interface UpAccount {
+  id: string
+  type: string
+  attributes: {
+    displayName: string
+    accountType: 'TRANSACTIONAL' | 'SAVER'
+    balance: { value: string; valueInBaseUnits: number }
+    createdAt: string
+  }
+}
+
+export interface UpTransaction {
+  id: string
+  type: string
+  attributes: {
+    status: string
+    rawText: string | null
+    description: string
+    message: string | null
+    isCategorizable: boolean
+    roundUp: { amount: { value: string; valueInBaseUnits: number } } | null
+    amount: { currencyCode: string; value: string; valueInBaseUnits: number }
+    settledAt: string | null
+    createdAt: string
+  }
+  relationships: {
+    account: { data: { id: string } }
+    category?: { data: { id: string } | null }
+    parentCategory?: { data: { id: string } | null }
+    transferAccount?: { data: { id: string } | null }
+  }
+}
+
+export interface UpCategory {
+  id: string
+  type: string
+  attributes: { name: string }
+  relationships?: { parent?: { data: { id: string } | null } }
+}
+
+interface UpListResponse<T> {
+  data: T[]
+  links?: { next?: string | null; prev?: string | null }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function fetchWithAuth(
+  url: string,
+  token: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  })
+  if (res.status === 429) {
+    throw new Error('Too many requests. Please wait a minute and try again.')
+  }
+  return res
+}
+
+/**
+ * Validate token by fetching accounts. Throws if invalid.
+ */
+export async function validateUpBankToken(token: string): Promise<boolean> {
+  const res = await fetchWithAuth(`${BASE_URL}/api/v1/accounts`, token)
+  if (!res.ok) {
+    if (res.status === 401) return false
+    throw new Error(`Up Bank API error: ${res.status}`)
+  }
+  return true
+}
+
+/**
+ * Fetch all accounts.
+ */
+export async function fetchAccounts(token: string): Promise<UpAccount[]> {
+  const res = await fetchWithAuth(`${BASE_URL}/api/v1/accounts`, token)
+  if (!res.ok) throw new Error(`Up Bank API error: ${res.status}`)
+  const json = (await res.json()) as UpListResponse<UpAccount>
+  return json.data ?? []
+}
+
+/**
+ * Build initial transactions URL. sinceDate null = all time.
+ */
+function buildTransactionsUrl(sinceDate: string | null, pageSize: number): string {
+  const params = new URLSearchParams()
+  params.set('page[size]', String(pageSize))
+  if (sinceDate) params.set('filter[since]', sinceDate)
+  return `${BASE_URL}/api/v1/transactions?${params.toString()}`
+}
+
+/**
+ * Fetch one page of transactions. Pass nextUrl from links.next for pagination.
+ */
+export async function fetchTransactionsPage(
+  token: string,
+  url: string
+): Promise<{ data: UpTransaction[]; nextUrl: string | null }> {
+  const res = await fetchWithAuth(url, token)
+  if (!res.ok) throw new Error(`Up Bank API error: ${res.status}`)
+  const json = (await res.json()) as UpListResponse<UpTransaction>
+  const nextUrl = json.links?.next ?? null
+  return { data: json.data ?? [], nextUrl }
+}
+
+/**
+ * Fetch all transactions in batches (cursor-based). 1s delay between requests.
+ */
+export async function fetchAllTransactions(
+  token: string,
+  sinceDate: string | null,
+  progressCallback: (progress: { fetched: number; hasMore: boolean }) => void
+): Promise<UpTransaction[]> {
+  const all: UpTransaction[] = []
+  let nextUrl: string | null = buildTransactionsUrl(sinceDate, 100)
+  while (nextUrl) {
+    const { data, nextUrl: next } = await fetchTransactionsPage(token, nextUrl)
+    all.push(...data)
+    progressCallback({ fetched: all.length, hasMore: next !== null })
+    nextUrl = next
+    if (nextUrl) await sleep(1000)
+  }
+  return all
+}
+
+/**
+ * Fetch all categories.
+ */
+export async function fetchCategories(token: string): Promise<UpCategory[]> {
+  const res = await fetchWithAuth(`${BASE_URL}/api/v1/categories`, token)
+  if (!res.ok) throw new Error(`Up Bank API error: ${res.status}`)
+  const json = (await res.json()) as UpListResponse<UpCategory>
+  return json.data ?? []
+}

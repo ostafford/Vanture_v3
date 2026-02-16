@@ -1,0 +1,48 @@
+/* Theme: applied only after DB + theme read (no flash). See 07_UI_UX_Design.md */
+:root,
+[data-theme='light'] {
+  --vantura-primary: #ff7a59;
+  --vantura-secondary: #8b5cf6;
+  --vantura-background: #ffffff;
+  --vantura-surface: #f7f7f7;
+  --vantura-text: #1a1a1a;
+  --vantura-text-secondary: #6b6b6b;
+}
+
+[data-theme='dark'] {
+  --vantura-primary: #ff7a59;
+  --vantura-secondary: #a78bfa;
+  --vantura-background: #121212;
+  --vantura-surface: #1e1e1e;
+  --vantura-text: #ffffff;
+  --vantura-text-secondary: #a0a0a0;
+}
+
+:root {
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--vantura-text);
+  background-color: var(--vantura-background);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Phase 5: Viewport targets 13"-27" (~1280px–2560px). Layout max-width 1400px in Layout.tsx. */
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+}
