@@ -62,7 +62,7 @@ export function getWeeklyInsights(weekRange?: WeekRange): WeeklyInsightsData {
 
   const moneyIn = runOne(
     `SELECT COALESCE(SUM(amount), 0) FROM transactions
-     WHERE amount > 0 AND settled_at >= ? AND settled_at <= ?`,
+     WHERE amount > 0 AND transfer_account_id IS NULL AND settled_at >= ? AND settled_at <= ?`,
     [startStr, endStr]
   )
   const moneyOut = runOne(
@@ -79,7 +79,7 @@ export function getWeeklyInsights(weekRange?: WeekRange): WeeklyInsightsData {
   )
   const charges = runOne(
     `SELECT COUNT(*) FROM transactions
-     WHERE amount < 0 AND is_round_up = 0 AND settled_at >= ? AND settled_at <= ?`,
+     WHERE amount < 0 AND is_round_up = 0 AND transfer_account_id IS NULL AND settled_at >= ? AND settled_at <= ?`,
     [startStr, endStr]
   )
   const payments = runOne(
