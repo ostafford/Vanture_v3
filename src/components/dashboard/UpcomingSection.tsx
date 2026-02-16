@@ -13,7 +13,11 @@ import { formatMoney, formatShortDate } from '@/lib/format'
 
 const FREQUENCIES = ['WEEKLY', 'FORTNIGHTLY', 'MONTHLY', 'QUARTERLY', 'YEARLY', 'ONCE']
 
-export function UpcomingSection() {
+export interface UpcomingSectionProps {
+  onUpcomingChange?: () => void
+}
+
+export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
   const [, setRefresh] = useState(0)
   const [showModal, setShowModal] = useState(false)
   const [editingCharge, setEditingCharge] = useState<UpcomingChargeRow | null>(null)
@@ -75,6 +79,7 @@ export function UpcomingSection() {
     }
     setShowModal(false)
     setRefresh((r) => r + 1)
+    onUpcomingChange?.()
   }
 
   function handleDelete() {
@@ -82,6 +87,7 @@ export function UpcomingSection() {
       deleteUpcomingCharge(editingCharge.id)
       setShowModal(false)
       setRefresh((r) => r + 1)
+      onUpcomingChange?.()
     }
   }
 
@@ -112,6 +118,7 @@ export function UpcomingSection() {
                   onClick={() => {
                     deleteUpcomingCharge(c.id)
                     setRefresh((r) => r + 1)
+                    onUpcomingChange?.()
                   }}
                 >
                   Delete

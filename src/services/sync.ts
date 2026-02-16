@@ -146,18 +146,18 @@ function setupSavers(accounts: UpAccount[]): void {
     const a = acc.attributes
     const balance = a.balance?.valueInBaseUnits ?? 0
     run(
-      `INSERT OR REPLACE INTO savers (id, name, icon, current_balance, goal_amount, target_date, monthly_transfer, auto_transfer_day, is_goal_based, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO savers (id, name, icon, current_balance, goal_amount, target_date, monthly_transfer, auto_transfer_day, is_goal_based, created_at, updated_at)
+       VALUES (?, ?, ?, ?, NULL, NULL, NULL, NULL, 0, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         name = excluded.name,
+         icon = excluded.icon,
+         current_balance = excluded.current_balance,
+         updated_at = excluded.updated_at`,
       [
         acc.id,
         a.displayName ?? 'Saver',
         null,
         balance,
-        null,
-        null,
-        null,
-        null,
-        0,
         now,
         now,
       ]

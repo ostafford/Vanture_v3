@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Row, Col } from 'react-bootstrap'
 import {
@@ -13,6 +14,7 @@ import { UpcomingSection } from '@/components/dashboard/UpcomingSection'
 import { StatCard } from '@/components/StatCard'
 
 export function Dashboard() {
+  const [, setDataVersion] = useState(0)
   return (
     <div>
       <div className="page-header">
@@ -76,7 +78,7 @@ export function Dashboard() {
       </Row>
       <Row className="grid-margin">
         <Col xs={12} className="grid-margin">
-          <UpcomingSection />
+          <UpcomingSection onUpcomingChange={() => setDataVersion((v) => v + 1)} />
         </Col>
       </Row>
     </div>
