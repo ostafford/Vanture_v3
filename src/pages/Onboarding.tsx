@@ -164,8 +164,10 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 token in Up Bank.
               </p>
               <Form.Group className="mb-2">
-                <Form.Label>Passphrase</Form.Label>
+                <Form.Label htmlFor="onboarding-passphrase">Passphrase</Form.Label>
                 <Form.Control
+                  id="onboarding-passphrase"
+                  name="passphrase"
                   type="password"
                   value={passphrase}
                   onChange={(e) => setPassphrase(e.target.value)}
@@ -175,8 +177,10 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 />
               </Form.Group>
               <Form.Group className="mb-3">
-                <Form.Label>Confirm passphrase</Form.Label>
+                <Form.Label htmlFor="onboarding-passphrase-confirm">Confirm passphrase</Form.Label>
                 <Form.Control
+                  id="onboarding-passphrase-confirm"
+                  name="passphraseConfirm"
                   type="password"
                   value={passphraseConfirm}
                   onChange={(e) => setPassphraseConfirm(e.target.value)}
@@ -206,8 +210,10 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 stored in plain form.
               </p>
               <Form.Group className="mb-3">
-                <Form.Label>API Token</Form.Label>
+                <Form.Label htmlFor="onboarding-api-token">API Token</Form.Label>
                 <Form.Control
+                  id="onboarding-api-token"
+                  name="apiToken"
                   type="password"
                   value={apiToken}
                   onChange={(e) => setApiToken(e.target.value)}
@@ -243,8 +249,10 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 This helps calculate your Spendable balance.
               </p>
               <Form.Group className="mb-2">
-                <Form.Label>Frequency</Form.Label>
+                <Form.Label htmlFor="onboarding-payday-frequency">Frequency</Form.Label>
                 <Form.Select
+                  id="onboarding-payday-frequency"
+                  name="paydayFrequency"
                   value={paydayFrequency}
                   onChange={(e) =>
                     setPaydayFrequency(e.target.value as PaydayFrequency)
@@ -256,8 +264,10 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 </Form.Select>
               </Form.Group>
               <Form.Group className="mb-2">
-                <Form.Label>Day</Form.Label>
+                <Form.Label htmlFor="onboarding-payday-day">Day</Form.Label>
                 <Form.Select
+                  id="onboarding-payday-day"
+                  name="paydayDay"
                   value={effectivePaydayDay}
                   onChange={(e) => setPaydayDay(Number(e.target.value))}
                 >
@@ -269,8 +279,10 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 </Form.Select>
               </Form.Group>
               <Form.Group className="mb-3">
-                <Form.Label>Next payday</Form.Label>
+                <Form.Label htmlFor="onboarding-next-payday">Next payday</Form.Label>
                 <Form.Control
+                  id="onboarding-next-payday"
+                  name="nextPayday"
                   type="date"
                   value={nextPayday}
                   onChange={(e) => setNextPayday(e.target.value)}

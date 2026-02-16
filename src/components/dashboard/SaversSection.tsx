@@ -1,7 +1,16 @@
 import { useState } from 'react'
-import { Card, ProgressBar, Button, Modal, Form } from 'react-bootstrap'
+import { Card, Button, Modal, Form } from 'react-bootstrap'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
 import { getSaversWithProgress, updateSaverGoals } from '@/services/savers'
-import { formatMoney, formatDate } from '@/lib/format'
+import { formatMoney } from '@/lib/format'
 
 export function SaversSection() {
   const [, setRefresh] = useState(0)
@@ -30,6 +39,34 @@ export function SaversSection() {
 
   const totalBalance = savers.reduce((sum, s) => sum + s.current_balance, 0)
 
+  type ChartRow = {
+    id: string
+    name: string
+    current: number
+    remaining: number
+    goal: number
+    saver: (typeof savers)[0]
+  }
+
+  const chartData: ChartRow[] = savers.map((s) => {
+    const currentDollars = s.current_balance / 100
+    const goalDollars = s.goal_amount != null && s.goal_amount > 0 ? s.goal_amount / 100 : currentDollars
+    const remaining = Math.max(0, goalDollars - currentDollars)
+    return {
+      id: s.id,
+      name: s.name,
+      current: currentDollars,
+      remaining: s.goal_amount != null && s.goal_amount > 0 ? remaining : 0,
+      goal: goalDollars,
+      saver: s,
+    }
+  })
+
+  const maxDomain = Math.max(
+    ...chartData.map((d) => d.current + d.remaining),
+    1
+  )
+
   return (
     <>
       <Card>
@@ -43,45 +80,64 @@ export function SaversSection() {
               No saver accounts yet. They&apos;ll appear after you sync with Up Bank.
             </p>
           ) : (
-            <div className="d-flex flex-column gap-3">
-              {savers.map((saver) => (
-                <div key={saver.id}>
-                  <div className="d-flex justify-content-between align-items-start">
-                    <div>
-                      <strong>{saver.name}</strong>
-                      {saver.goal_amount != null && saver.goal_amount > 0 && (
-                        <div className="small text-muted">
-                          ${formatMoney(saver.current_balance)} of ${formatMoney(saver.goal_amount)}
-                          {saver.target_date && ` · Target ${formatDate(saver.target_date)}`}
+            <>
+              <ResponsiveContainer width="100%" height={Math.max(200, chartData.length * 48)}>
+                <BarChart
+                  data={chartData}
+                  layout="vertical"
+                  margin={{ top: 8, right: 24, left: 80, bottom: 8 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--vantura-border, #ebedf2)" />
+                  <XAxis type="number" domain={[0, maxDomain]} tickFormatter={(v) => `$${v}`} />
+                  <YAxis type="category" dataKey="name" width={72} tick={{ fontSize: 12 }} />
+                  <Tooltip
+                    formatter={(value: number) => [`$${value.toFixed(2)}`, '']}
+                    labelFormatter={(label) => label}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length || !payload[0].payload.saver) return null
+                      const { saver } = payload[0].payload
+                      return (
+                        <div className="bg-white border rounded shadow-sm p-2 small">
+                          <strong>{saver.name}</strong>
+                          <div>${formatMoney(saver.current_balance)} of ${formatMoney(saver.goal_amount ?? 0)}</div>
+                          <Button variant="link" size="sm" className="p-0 mt-1" onClick={() => openEdit(saver)}>
+                            Edit goals
+                          </Button>
                         </div>
-                      )}
-                    </div>
-                    <Button variant="outline-secondary" size="sm" onClick={() => openEdit(saver)}>
-                      Edit
-                    </Button>
-                  </div>
-                  {saver.goal_amount != null && saver.goal_amount > 0 ? (
-                    <>
-                      <ProgressBar
-                        now={Math.min(100, saver.progress)}
-                        variant={saver.onTrack ? 'success' : 'warning'}
-                        className="mt-1"
-                        label={`${Math.round(saver.progress)}%`}
-                      />
-                      {saver.monthly_transfer != null && saver.monthly_transfer > 0 && (
-                        <small className="text-muted">
-                          ${formatMoney(saver.monthly_transfer)}/mo
-                          {saver.monthsRemaining > 0 &&
-                            ` · ~$${formatMoney(saver.recommendedMonthly)} recommended`}
-                        </small>
-                      )}
-                    </>
-                  ) : (
-                    <div className="small text-muted">${formatMoney(saver.current_balance)}</div>
-                  )}
-                </div>
-              ))}
-            </div>
+                      )
+                    }}
+                  />
+                  <Bar
+                    dataKey="current"
+                    stackId="a"
+                    fill="var(--vantura-primary)"
+                    onClick={(data: ChartRow) => openEdit(data.saver)}
+                    cursor="pointer"
+                    name="Saved"
+                  />
+                  <Bar
+                    dataKey="remaining"
+                    stackId="a"
+                    fill="var(--vantura-border)"
+                    onClick={(data: ChartRow) => openEdit(data.saver)}
+                    cursor="pointer"
+                    name="Remaining"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="mt-2 d-flex flex-wrap gap-2">
+                {savers.map((saver) => (
+                  <Button
+                    key={saver.id}
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={() => openEdit(saver)}
+                  >
+                    Edit {saver.name}
+                  </Button>
+                ))}
+              </div>
+            </>
           )}
         </Card.Body>
       </Card>
@@ -93,8 +149,10 @@ export function SaversSection() {
         <Modal.Body>
           <Form>
             <Form.Group className="mb-2">
-              <Form.Label>Goal amount ($)</Form.Label>
+              <Form.Label htmlFor="saver-edit-goal-amount">Goal amount ($)</Form.Label>
               <Form.Control
+                id="saver-edit-goal-amount"
+                name="goalAmount"
                 type="number"
                 step="0.01"
                 min="0"
@@ -104,16 +162,20 @@ export function SaversSection() {
               />
             </Form.Group>
             <Form.Group className="mb-2">
-              <Form.Label>Target date</Form.Label>
+              <Form.Label htmlFor="saver-edit-target-date">Target date</Form.Label>
               <Form.Control
+                id="saver-edit-target-date"
+                name="targetDate"
                 type="date"
                 value={targetDate}
                 onChange={(e) => setTargetDate(e.target.value)}
               />
             </Form.Group>
             <Form.Group className="mb-2">
-              <Form.Label>Monthly transfer ($)</Form.Label>
+              <Form.Label htmlFor="saver-edit-monthly-transfer">Monthly transfer ($)</Form.Label>
               <Form.Control
+                id="saver-edit-monthly-transfer"
+                name="monthlyTransfer"
                 type="number"
                 step="0.01"
                 min="0"

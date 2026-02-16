@@ -1,7 +1,7 @@
 import { Card, OverlayTrigger, Tooltip } from 'react-bootstrap'
 import { formatMoney } from '@/lib/format'
 
-const circleImg = '/images/circle.svg'
+const circleImg = `${import.meta.env.BASE_URL}images/circle.svg`
 
 type GradientVariant = 'primary' | 'danger' | 'info' | 'success'
 

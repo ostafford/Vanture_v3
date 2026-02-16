@@ -169,16 +169,20 @@ export function TrackersSection() {
         <Modal.Body>
           <Form>
             <Form.Group className="mb-2">
-              <Form.Label>Name</Form.Label>
+              <Form.Label htmlFor="tracker-edit-name">Name</Form.Label>
               <Form.Control
+                id="tracker-edit-name"
+                name="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Food & Drink"
               />
             </Form.Group>
             <Form.Group className="mb-2">
-              <Form.Label>Budget ($)</Form.Label>
+              <Form.Label htmlFor="tracker-edit-budget">Budget ($)</Form.Label>
               <Form.Control
+                id="tracker-edit-budget"
+                name="budget"
                 type="number"
                 step="0.01"
                 min="0"
@@ -187,8 +191,10 @@ export function TrackersSection() {
               />
             </Form.Group>
             <Form.Group className="mb-2">
-              <Form.Label>Reset frequency</Form.Label>
+              <Form.Label htmlFor="tracker-edit-frequency">Reset frequency</Form.Label>
               <Form.Select
+                id="tracker-edit-frequency"
+                name="frequency"
                 value={frequency}
                 onChange={(e) => setFrequency(e.target.value as TrackerResetFrequency)}
               >
@@ -201,8 +207,10 @@ export function TrackersSection() {
             </Form.Group>
             {frequency !== 'PAYDAY' && (
               <Form.Group className="mb-2">
-                <Form.Label>Reset day</Form.Label>
+                <Form.Label htmlFor="tracker-edit-reset-day">Reset day</Form.Label>
                 <Form.Select
+                  id="tracker-edit-reset-day"
+                  name="resetDay"
                   value={resetDay}
                   onChange={(e) => setResetDay(Number(e.target.value))}
                 >

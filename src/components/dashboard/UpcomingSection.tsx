@@ -165,12 +165,19 @@ export function UpcomingSection() {
         <Modal.Body>
           <Form>
             <Form.Group className="mb-2">
-              <Form.Label>Name</Form.Label>
-              <Form.Control value={name} onChange={(e) => setName(e.target.value)} />
+              <Form.Label htmlFor="upcoming-charge-name">Name</Form.Label>
+              <Form.Control
+                id="upcoming-charge-name"
+                name="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
             </Form.Group>
             <Form.Group className="mb-2">
-              <Form.Label>Amount ($)</Form.Label>
+              <Form.Label htmlFor="upcoming-charge-amount">Amount ($)</Form.Label>
               <Form.Control
+                id="upcoming-charge-amount"
+                name="amount"
                 type="number"
                 step="0.01"
                 min="0"
@@ -179,8 +186,13 @@ export function UpcomingSection() {
               />
             </Form.Group>
             <Form.Group className="mb-2">
-              <Form.Label>Frequency</Form.Label>
-              <Form.Select value={frequency} onChange={(e) => setFrequency(e.target.value)}>
+              <Form.Label htmlFor="upcoming-charge-frequency">Frequency</Form.Label>
+              <Form.Select
+                id="upcoming-charge-frequency"
+                name="frequency"
+                value={frequency}
+                onChange={(e) => setFrequency(e.target.value)}
+              >
                 {FREQUENCIES.map((f) => (
                   <option key={f} value={f}>
                     {f.charAt(0) + f.slice(1).toLowerCase()}
@@ -189,16 +201,23 @@ export function UpcomingSection() {
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-2">
-              <Form.Label>Next charge date</Form.Label>
+              <Form.Label htmlFor="upcoming-charge-next-date">Next charge date</Form.Label>
               <Form.Control
+                id="upcoming-charge-next-date"
+                name="nextChargeDate"
                 type="date"
                 value={nextChargeDate}
                 onChange={(e) => setNextChargeDate(e.target.value)}
               />
             </Form.Group>
             <Form.Group className="mb-2">
-              <Form.Label>Category</Form.Label>
-              <Form.Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+              <Form.Label htmlFor="upcoming-charge-category">Category</Form.Label>
+              <Form.Select
+                id="upcoming-charge-category"
+                name="categoryId"
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+              >
                 <option value="">None</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -210,7 +229,8 @@ export function UpcomingSection() {
             <Form.Group className="mb-2">
               <Form.Check
                 type="checkbox"
-                id="is-reserved"
+                id="upcoming-charge-is-reserved"
+                name="isReserved"
                 label="Include in Spendable (reserve this amount)"
                 checked={isReserved}
                 onChange={(e) => setIsReserved(e.target.checked)}

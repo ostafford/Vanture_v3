@@ -143,6 +143,8 @@ export function Transactions() {
           <Row className="g-2 mb-3">
             <Col md={2}>
               <Form.Control
+                id="transactions-filter-date-from"
+                name="dateFrom"
                 type="date"
                 value={filters.dateFrom ?? ''}
                 onChange={(e) => updateFilter('dateFrom', e.target.value || undefined)}
@@ -151,6 +153,8 @@ export function Transactions() {
             </Col>
             <Col md={2}>
               <Form.Control
+                id="transactions-filter-date-to"
+                name="dateTo"
                 type="date"
                 value={filters.dateTo ?? ''}
                 onChange={(e) => updateFilter('dateTo', e.target.value || undefined)}
@@ -159,6 +163,8 @@ export function Transactions() {
             </Col>
             <Col md={2}>
               <Form.Select
+                id="transactions-filter-category"
+                name="categoryId"
                 value={filters.categoryId ?? ''}
                 onChange={(e) =>
                   updateFilter('categoryId', e.target.value || undefined)
@@ -174,6 +180,8 @@ export function Transactions() {
             </Col>
             <Col md={1}>
               <Form.Control
+                id="transactions-filter-amount-min"
+                name="amountMin"
                 type="number"
                 placeholder="Min $"
                 value={
@@ -187,6 +195,8 @@ export function Transactions() {
             </Col>
             <Col md={1}>
               <Form.Control
+                id="transactions-filter-amount-max"
+                name="amountMax"
                 type="number"
                 placeholder="Max $"
                 value={
@@ -200,6 +210,8 @@ export function Transactions() {
             </Col>
             <Col md={2}>
               <Form.Control
+                id="transactions-filter-search"
+                name="search"
                 type="search"
                 placeholder="Search"
                 value={filters.search ?? ''}
@@ -208,6 +220,8 @@ export function Transactions() {
             </Col>
             <Col md={2}>
               <Form.Select
+                id="transactions-sort"
+                name="sort"
                 value={sort}
                 onChange={(e) => updateSort(e.target.value as TransactionSort)}
               >
