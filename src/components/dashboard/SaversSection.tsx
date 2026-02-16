@@ -9,11 +9,14 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  Text,
 } from 'recharts'
 import { getSaversWithProgress, updateSaverGoals } from '@/services/savers'
 import { getSaverChartColors, setSaverChartColor } from '@/lib/chartColors'
 import { formatMoney } from '@/lib/format'
 import { ChartColorPicker } from '@/components/ChartColorPicker'
+
+const SAVER_AXIS_WIDTH = 130
 
 export function SaversSection() {
   const [, setRefresh] = useState(0)
@@ -95,11 +98,26 @@ export function SaversSection() {
                 <BarChart
                   data={chartData}
                   layout="vertical"
-                  margin={{ top: 8, right: 24, left: 80, bottom: 8 }}
+                  margin={{ top: 8, right: 24, left: SAVER_AXIS_WIDTH, bottom: 8 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--vantura-border, #ebedf2)" />
                   <XAxis type="number" domain={[0, maxDomain]} tickFormatter={(v) => `$${v}`} />
-                  <YAxis type="category" dataKey="name" width={72} tick={{ fontSize: 12 }} />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={SAVER_AXIS_WIDTH}
+                    tick={(props) => {
+                      const displayValue =
+                        props.tickFormatter && props.payload
+                          ? props.tickFormatter(props.payload.value, props.index)
+                          : props.payload?.value
+                      return (
+                        <Text {...props} width={undefined}>
+                          {displayValue}
+                        </Text>
+                      )
+                    }}
+                  />
                   <Tooltip
                     formatter={(value: number) => [`$${value.toFixed(2)}`, '']}
                     labelFormatter={(label) => label}
