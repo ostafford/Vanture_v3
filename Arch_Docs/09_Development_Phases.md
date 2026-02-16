@@ -2,7 +2,7 @@
 
 **Phase 2 (Onboarding & Sync)** has been audited and marked complete; see [Phase2_Checklist.md](Phase2_Checklist.md) for requirement-to-implementation mapping and [README.md](../README.md) for a short summary.
 
-**Phase 3 (Core Features)** has been audited and marked complete; see [Phase3_Checklist.md](Phase3_Checklist.md) for requirement-to-implementation mapping and [README.md](../README.md) for a short summary.
+**Phase 3 (Core Features)** has been audited and marked complete; see [Phase3_Checklist.md](Phase3_Checklist.md) for requirement-to-implementation mapping and [README.md](../README.md) for a short summary. Post-audit refinements (2025-02-16): Savers goals persist across sync/refresh; Spendable and Reserved update live when upcoming charges change — see Phase3_Checklist.md.
 
 **Phase 4 (Transactions & Filtering)** has been audited and marked complete; see [Phase4_Checklist.md](Phase4_Checklist.md) for requirement-to-implementation mapping and [README.md](../README.md) for a short summary.
 
@@ -72,3 +72,11 @@ Phase 7: Settings Completion — **Complete**
 ✅ Re-sync — Settings "Re-sync now" button; same incremental sync as Navbar; Last synced and error state
 ✅ Settings UI — Data section (Card) with Re-sync and Clear all data; React-Bootstrap Modal for destructive confirm
 ✅ Documentation — [Phase7_Checklist.md](Phase7_Checklist.md); 08_Security.md implementation ref for clear-all-data
+
+Phase 9: API Token Management — **Complete**
+
+**Phase 9** has been implemented; see [Phase9_Checklist.md](Phase9_Checklist.md) for requirement-to-implementation mapping.
+
+✅ Update API token in Settings — Passphrase + new token; verify passphrase (decrypt current token), validate new token with Up Bank, re-encrypt and replace stored token only; no data loss (`src/pages/Settings.tsx`: API token section, Update API token modal and submit flow)
+✅ 401 from Up Bank surfaced with guidance — `src/api/upBank.ts` `UpBankUnauthorizedError` and `SYNC_401_MESSAGE`; Settings and Navbar sync show "Your API token may have expired. Update it in Settings." when sync fails with 401
+✅ Documentation — [Phase9_Checklist.md](Phase9_Checklist.md); 08_Security.md subsection for Update API token

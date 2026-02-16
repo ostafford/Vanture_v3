@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Card, Button, Modal, Spinner } from 'react-bootstrap'
-import { getAppSetting, deleteDatabase } from '@/db'
+import { Card, Button, Modal, Spinner, Form } from 'react-bootstrap'
+import { getAppSetting, setAppSetting, deleteDatabase } from '@/db'
 import { sessionStore } from '@/stores/sessionStore'
 import { performSync } from '@/services/sync'
+import { deriveKeyFromPassphrase, decryptToken, encryptToken } from '@/lib/crypto'
+import { validateUpBankToken, UpBankUnauthorizedError, SYNC_401_MESSAGE } from '@/api/upBank'
 
 function formatLastSync(iso: string | null): string {
   if (!iso) return 'Never'
@@ -23,6 +25,12 @@ export function Settings() {
   const [syncError, setSyncError] = useState<string | null>(null)
   const [showClearModal, setShowClearModal] = useState(false)
   const [clearing, setClearing] = useState(false)
+  const [showUpdateTokenModal, setShowUpdateTokenModal] = useState(false)
+  const [updateTokenPassphrase, setUpdateTokenPassphrase] = useState('')
+  const [updateTokenNewToken, setUpdateTokenNewToken] = useState('')
+  const [updateTokenError, setUpdateTokenError] = useState<string | null>(null)
+  const [updateTokenLoading, setUpdateTokenLoading] = useState(false)
+  const [updateTokenSuccess, setUpdateTokenSuccess] = useState(false)
 
   useEffect(() => {
     setLastSync(getAppSetting('last_sync'))
@@ -38,7 +46,11 @@ export function Settings() {
       setLastSync(getAppSetting('last_sync'))
     } catch (err) {
       setSyncError(
-        err instanceof Error ? err.message : 'Sync failed. Please try again.'
+        err instanceof UpBankUnauthorizedError
+          ? SYNC_401_MESSAGE
+          : err instanceof Error
+            ? err.message
+            : 'Sync failed. Please try again.'
       )
     } finally {
       setSyncing(false)
@@ -56,6 +68,60 @@ export function Settings() {
         err instanceof Error ? err.message : 'Failed to clear data. Please try again.'
       )
       setClearing(false)
+    }
+  }
+
+  async function handleUpdateTokenSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setUpdateTokenError(null)
+    const passphrase = updateTokenPassphrase.trim()
+    const newToken = updateTokenNewToken.trim()
+    if (!passphrase || !newToken) {
+      setUpdateTokenError('Please enter your passphrase and new API token.')
+      return
+    }
+    setUpdateTokenLoading(true)
+    try {
+      const salt = getAppSetting('encryption_salt')
+      const encrypted = getAppSetting('api_token_encrypted')
+      if (!salt || !encrypted) {
+        setUpdateTokenError('No stored credentials. Please complete onboarding first.')
+        setUpdateTokenLoading(false)
+        return
+      }
+      const key = await deriveKeyFromPassphrase(passphrase, salt)
+      await decryptToken(encrypted, key)
+      const valid = await validateUpBankToken(newToken)
+      if (!valid) {
+        setUpdateTokenError('Invalid API token. Please check and try again.')
+        setUpdateTokenLoading(false)
+        return
+      }
+      const newEncrypted = await encryptToken(newToken, key)
+      setAppSetting('api_token_encrypted', newEncrypted)
+      sessionStore.getState().setUnlocked(newToken)
+      setUpdateTokenPassphrase('')
+      setUpdateTokenNewToken('')
+      setUpdateTokenError(null)
+      setShowUpdateTokenModal(false)
+      setUpdateTokenSuccess(true)
+      setLastSync(getAppSetting('last_sync'))
+      setTimeout(() => setUpdateTokenSuccess(false), 5000)
+    } catch (err) {
+      setUpdateTokenError(
+        err instanceof Error ? err.message : 'Invalid passphrase or failed to update token.'
+      )
+    } finally {
+      setUpdateTokenLoading(false)
+    }
+  }
+
+  function closeUpdateTokenModal() {
+    if (!updateTokenLoading) {
+      setShowUpdateTokenModal(false)
+      setUpdateTokenPassphrase('')
+      setUpdateTokenNewToken('')
+      setUpdateTokenError(null)
     }
   }
 
@@ -106,6 +172,32 @@ export function Settings() {
             {syncError && (
               <span className="d-block mt-2 text-danger small" role="alert">
                 {syncError}
+              </span>
+            )}
+          </div>
+
+          <hr />
+
+          <div className="mb-4">
+            <h6 className="text-muted mb-2">API token</h6>
+            <p className="small text-muted mb-2">
+              If your token has expired (e.g. 48-hour token from Up Bank), update
+              it here. Your passphrase is required; other data is not deleted.
+            </p>
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={() => {
+                setUpdateTokenError(null)
+                setShowUpdateTokenModal(true)
+              }}
+              aria-label="Update API token"
+            >
+              Update API token
+            </Button>
+            {updateTokenSuccess && (
+              <span className="d-block mt-2 text-success small" role="status">
+                API token updated. You can re-sync now.
               </span>
             )}
           </div>
@@ -176,6 +268,87 @@ export function Settings() {
             )}
           </Button>
         </Modal.Footer>
+      </Modal>
+
+      <Modal
+        show={showUpdateTokenModal}
+        onHide={closeUpdateTokenModal}
+        aria-labelledby="update-token-modal-title"
+        aria-describedby="update-token-modal-description"
+      >
+        <Modal.Header closeButton={!updateTokenLoading}>
+          <Modal.Title id="update-token-modal-title">
+            Update API token
+          </Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={handleUpdateTokenSubmit}>
+          <Modal.Body id="update-token-modal-description">
+            <p className="small text-muted mb-3">
+              Enter your passphrase and a new API token from the Up Bank app.
+              Your existing data (savers, trackers, etc.) will be kept.
+            </p>
+            <Form.Group className="mb-3">
+              <Form.Label htmlFor="update-token-passphrase">Passphrase</Form.Label>
+              <Form.Control
+                id="update-token-passphrase"
+                type="password"
+                value={updateTokenPassphrase}
+                onChange={(e) => setUpdateTokenPassphrase(e.target.value)}
+                placeholder="Enter passphrase"
+                autoComplete="current-password"
+                disabled={updateTokenLoading}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label htmlFor="update-token-new">New API token</Form.Label>
+              <Form.Control
+                id="update-token-new"
+                type="password"
+                value={updateTokenNewToken}
+                onChange={(e) => setUpdateTokenNewToken(e.target.value)}
+                placeholder="Paste new token from Up Bank app"
+                autoComplete="off"
+                disabled={updateTokenLoading}
+              />
+            </Form.Group>
+            {updateTokenError && (
+              <div className="text-danger small mb-2" role="alert">
+                {updateTokenError}
+              </div>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={closeUpdateTokenModal}
+              disabled={updateTokenLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="btn-gradient-primary"
+              disabled={updateTokenLoading}
+              aria-busy={updateTokenLoading}
+            >
+              {updateTokenLoading ? (
+                <>
+                  <Spinner
+                    animation="border"
+                    size="sm"
+                    className="me-1"
+                    role="status"
+                    aria-hidden="true"
+                  />
+                  Updating…
+                </>
+              ) : (
+                'Update token'
+              )}
+            </Button>
+          </Modal.Footer>
+        </Form>
       </Modal>
     </div>
   )

@@ -85,3 +85,10 @@ Source: [09_Development_Phases.md](09_Development_Phases.md), [04_Core_Features.
 | tracker_categories | OK | db/schema.ts CREATE TABLE tracker_categories (tracker_id, category_id) PK, FK CASCADE |
 | savers | OK | db/schema.ts CREATE TABLE savers (id, name, icon, current_balance, goal_amount, target_date, monthly_transfer, ...) |
 | upcoming_charges | OK | db/schema.ts CREATE TABLE upcoming_charges (id, name, amount, frequency, next_charge_date, category_id, is_reserved, created_at) |
+
+## Post-audit refinements (2025-02-16)
+
+| # | Refinement | Status | Implementation |
+|---|------------|--------|----------------|
+| R1 | Savers goals persist across Sync and across refresh/lock-unlock | OK | sync.ts setupSavers: INSERT ... ON CONFLICT(id) DO UPDATE SET name, icon, current_balance, updated_at only (goal_amount, target_date, monthly_transfer, is_goal_based preserved) |
+| R2 | Spendable and Reserved cards update immediately when user adds/edits/deletes upcoming charge | OK | Dashboard.tsx dataVersion state + onUpcomingChange callback; UpcomingSection.tsx onUpcomingChange prop called after create/update/delete |

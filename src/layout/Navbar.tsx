@@ -6,6 +6,7 @@ import { sessionStore } from '@/stores/sessionStore'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { getAppSetting } from '@/db'
 import { performSync } from '@/services/sync'
+import { UpBankUnauthorizedError, SYNC_401_MESSAGE } from '@/api/upBank'
 
 interface NavbarProps {
   sidebarCollapsed: boolean
@@ -44,7 +45,11 @@ export function Navbar({ sidebarCollapsed }: NavbarProps) {
       setLastSync(getAppSetting('last_sync'))
     } catch (err) {
       setSyncError(
-        err instanceof Error ? err.message : 'Sync failed. Please try again.'
+        err instanceof UpBankUnauthorizedError
+          ? SYNC_401_MESSAGE
+          : err instanceof Error
+            ? err.message
+            : 'Sync failed. Please try again.'
       )
     } finally {
       setSyncing(false)

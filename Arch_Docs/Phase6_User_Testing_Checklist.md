@@ -39,6 +39,8 @@
 - [x] Insights section — Money In, Money Out, Categories breakdown
 - [x] Trackers section — create tracker; progress, days left, transaction list
 - [x] Upcoming section — add upcoming charge; grouped Next pay / Later
+- [ ] Savers goals persist — Edit a saver goal (goal amount/target date/monthly transfer) via modal and Save; click Sync in navbar; confirm goals still show. Then refresh the page (or lock and unlock); confirm goals still show (not just total).
+- [ ] Spendable/Reserved live update — Add an upcoming charge with "Include in Spendable" checked and Save; confirm Spendable and Reserved cards at the top update immediately without refreshing. Edit or delete an upcoming charge; confirm cards update again.
 
 ### Transactions
 

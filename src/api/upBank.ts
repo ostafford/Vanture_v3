@@ -5,6 +5,22 @@
 
 const BASE_URL = 'https://api.up.com.au'
 
+/**
+ * Thrown when the Up Bank API returns 401 (e.g. expired or revoked token).
+ * UI can show specific guidance to update the token in Settings.
+ */
+export class UpBankUnauthorizedError extends Error {
+  override name = 'UpBankUnauthorizedError'
+  constructor(message = 'Up Bank API returned 401. Your API token may have expired or been revoked.') {
+    super(message)
+    Object.setPrototypeOf(this, UpBankUnauthorizedError.prototype)
+  }
+}
+
+/** Message shown when sync fails due to 401 (expired/revoked token). */
+export const SYNC_401_MESSAGE =
+  'Your API token may have expired. Update it in Settings.'
+
 export interface UpAccount {
   id: string
   type: string
@@ -70,19 +86,25 @@ async function fetchWithAuth(
   if (res.status === 429) {
     throw new Error('Too many requests. Please wait a minute and try again.')
   }
+  if (res.status === 401) {
+    throw new UpBankUnauthorizedError()
+  }
   return res
 }
 
 /**
- * Validate token by fetching accounts. Throws if invalid.
+ * Validate token by fetching accounts. Returns false on 401 (for onboarding);
+ * throws UpBankUnauthorizedError is not used here so callers get boolean.
  */
 export async function validateUpBankToken(token: string): Promise<boolean> {
-  const res = await fetchWithAuth(`${BASE_URL}/api/v1/accounts`, token)
-  if (!res.ok) {
-    if (res.status === 401) return false
-    throw new Error(`Up Bank API error: ${res.status}`)
+  try {
+    const res = await fetchWithAuth(`${BASE_URL}/api/v1/accounts`, token)
+    if (!res.ok) throw new Error(`Up Bank API error: ${res.status}`)
+    return true
+  } catch (e) {
+    if (e instanceof UpBankUnauthorizedError) return false
+    throw e
   }
-  return true
 }
 
 /**

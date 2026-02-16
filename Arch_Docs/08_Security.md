@@ -21,6 +21,8 @@
 
 **Implementation (complete):** `src/lib/crypto.ts`: `PBKDF2_ITERATIONS = 100_000`, `KEY_LENGTH_BITS = 256`, `SALT_LENGTH_BYTES = 16`, `IV_LENGTH_BYTES = 12`. Key derivation: `deriveKeyFromPassphrase(passphrase, saltBase64)`; encryption: `encryptToken(plaintext, key)` returns base64(IV || ciphertext); decryption: `decryptToken(ivAndCiphertextBase64, key)`. App settings keys: `encryption_salt`, `api_token_encrypted`; session token held only in memory via `src/stores/sessionStore.ts` (cleared on lock / beforeunload).
 
+**Update API token (Phase 9):** Settings page "Update API token" allows replacing the stored token without clearing data (e.g. for 48-hour expiring tokens). Passphrase is required; verified by decrypting the current stored token before any replace. New token is validated with Up Bank before storage. Only `app_settings.api_token_encrypted` is updated; passphrase and plaintext token are not stored. Implementation: `src/pages/Settings.tsx` (API token section, modal with passphrase + new token; submit flow uses `deriveKeyFromPassphrase`, `decryptToken`, `validateUpBankToken`, `encryptToken`, `setAppSetting`, `sessionStore.setUnlocked`).
+
 
 8.2 Data Privacy
 Local-First Principles:
