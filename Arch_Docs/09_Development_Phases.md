@@ -80,3 +80,13 @@ Phase 9: API Token Management — **Complete**
 ✅ Update API token in Settings — Passphrase + new token; verify passphrase (decrypt current token), validate new token with Up Bank, re-encrypt and replace stored token only; no data loss (`src/pages/Settings.tsx`: API token section, Update API token modal and submit flow)
 ✅ 401 from Up Bank surfaced with guidance — `src/api/upBank.ts` `UpBankUnauthorizedError` and `SYNC_401_MESSAGE`; Settings and Navbar sync show "Your API token may have expired. Update it in Settings." when sync fails with 401
 ✅ Documentation — [Phase9_Checklist.md](Phase9_Checklist.md); 08_Security.md subsection for Update API token
+
+Phase 10: Dark theme card and surface fix — **Complete**
+
+**Phase 10** has been implemented; see [Phase10_Checklist.md](Phase10_Checklist.md) for requirement-to-implementation mapping.
+
+✅ Cards and card headers use --vantura-surface in both themes — `src/index.css`: .card and .card .card-header; Savers, Trackers, Insights, Upcoming, Settings, Transactions cards now dark in dark mode
+✅ Modals use theme surface and borders — `src/index.css`: .modal-content, .modal-header, .modal-footer
+✅ Dashboard tooltips/surfaces theme-aware — `src/index.css`: .bg-surface utility; `src/components/dashboard/SaversSection.tsx`: chart tooltip uses .bg-surface
+✅ .text-muted and form controls use theme variables — `src/index.css`: .text-muted, .form-control, .form-select
+✅ Documentation — [Phase10_Checklist.md](Phase10_Checklist.md); 09_Development_Phases.md Phase 10 subsection

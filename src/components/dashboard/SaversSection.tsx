@@ -97,7 +97,7 @@ export function SaversSection() {
                       if (!active || !payload?.length || !payload[0].payload.saver) return null
                       const { saver } = payload[0].payload
                       return (
-                        <div className="bg-white border rounded shadow-sm p-2 small">
+                        <div className="bg-surface border rounded shadow-sm p-2 small">
                           <strong>{saver.name}</strong>
                           <div>${formatMoney(saver.current_balance)} of ${formatMoney(saver.goal_amount ?? 0)}</div>
                           <Button variant="link" size="sm" className="p-0 mt-1" onClick={() => openEdit(saver)}>

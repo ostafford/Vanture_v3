@@ -94,8 +94,16 @@ body {
 }
 
 /* Phase 8: Purple React card overrides */
+/* Phase 10: Cards use theme surface so dark mode has dark card background */
 .card {
   border: 0;
+  background-color: var(--vantura-surface);
+  color: var(--vantura-text);
+}
+.card .card-header {
+  background-color: var(--vantura-surface);
+  border-color: var(--vantura-border);
+  color: var(--vantura-text);
 }
 .card .card-body {
   padding: 2.5rem;
@@ -114,6 +122,31 @@ body {
 .card .card-description {
   color: var(--vantura-text-secondary);
   margin-bottom: 1.5rem;
+}
+
+/* Phase 10: Dark theme modal and surfaces */
+.modal-content {
+  background-color: var(--vantura-surface);
+  color: var(--vantura-text);
+  border-color: var(--vantura-border);
+}
+.modal-header,
+.modal-footer {
+  border-color: var(--vantura-border);
+  background-color: var(--vantura-surface);
+}
+.text-muted {
+  color: var(--vantura-text-secondary) !important;
+}
+.form-control,
+.form-select {
+  background-color: var(--vantura-surface);
+  border-color: var(--vantura-border);
+  color: var(--vantura-text);
+}
+.bg-surface {
+  background-color: var(--vantura-surface);
+  border-color: var(--vantura-border);
 }
 
 /* Phase 8: Purple React utilities */
