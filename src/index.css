@@ -155,6 +155,34 @@ body {
   box-shadow: 0 3px 8.3px 0.7px rgba(163, 93, 255, 0.35);
 }
 
+/* Phase 8: Purple React breadcrumb */
+.breadcrumb {
+  border: 1px solid var(--vantura-border);
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0;
+  font-size: 0.875rem;
+  background: transparent;
+}
+.breadcrumb-item {
+  color: var(--vantura-text-secondary);
+}
+.breadcrumb-item a {
+  color: var(--vantura-primary);
+  text-decoration: none;
+}
+.breadcrumb-item a:hover {
+  text-decoration: underline;
+}
+.breadcrumb-item.active {
+  color: var(--vantura-text);
+}
+.breadcrumb-item + .breadcrumb-item::before {
+  color: var(--vantura-text-secondary);
+}
+.icon-sm {
+  font-size: 1rem;
+}
+
 /* Phase 8: Purple React gradient button */
 .btn-gradient-primary {
   background: var(--vantura-primary-gradient);
@@ -170,6 +198,17 @@ body {
 .btn-gradient-primary:active {
   background: var(--vantura-primary);
   color: white;
+}
+
+/* Phase 8: Purple React card decoration (stat cards) */
+.card-img-holder {
+  position: relative;
+}
+.card-img-holder .card-img-absolute {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
 }
 
 /* Phase 8: Purple React gradient card backgrounds */
