@@ -14,6 +14,7 @@ import {
   getWeekRange,
   getWeeklyInsights,
   getWeeklyCategoryBreakdown,
+  getWeeklyInsightsRawCount,
 } from '@/services/insights'
 import { formatMoney, formatShortDate } from '@/lib/format'
 import { accentStore } from '@/stores/accentStore'
@@ -34,6 +35,7 @@ export function InsightsSection() {
   const { startStr, endStr } = weekRange
   const insights = getWeeklyInsights(weekRange)
   const categories = getWeeklyCategoryBreakdown(weekRange)
+  const rawCount = import.meta.env.DEV ? getWeeklyInsightsRawCount(weekRange) : 0
   const chartPalette = ACCENT_PALETTES[accent].chartPalette
   const categoryColors = getInsightsCategoryColors()
 
@@ -88,6 +90,11 @@ export function InsightsSection() {
           </Button>
         </div>
       </Card.Header>
+      {import.meta.env.DEV && (
+        <Card.Body className="py-1 small text-muted border-bottom">
+          Range: {startStr} – {endStr} · {rawCount} transactions in range
+        </Card.Body>
+      )}
       <Card.Body>
         <div className="d-flex flex-wrap gap-3 gap-md-4 mb-3 small">
           <span className="text-muted">Money In</span>

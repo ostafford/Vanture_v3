@@ -13,9 +13,16 @@ export interface WeekRange {
 
 /**
  * Week Monday–Sunday. Optional weekOffset: 0 = current week, -1 = previous week, etc.
- * start/end are local Date objects for display. startStr/endStr use UTC boundaries for SQL so
- * insights match the Transactions page and Up Bank (settled_at in UTC).
+ * start/end are local Date objects for display. startStr/endStr match the Transactions page
+ * (date-only start, end with T23:59:59.999Z) so insights use the same settled_at range.
  */
+function toDateOnly(d: Date): string {
+  const y = d.getFullYear()
+  const m = d.getMonth()
+  const day = d.getDate()
+  return `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
 export function getWeekRange(weekOffset?: number): WeekRange {
   const today = new Date()
   const dayOfWeek = today.getDay()
@@ -31,18 +38,31 @@ export function getWeekRange(weekOffset?: number): WeekRange {
   monday.setHours(0, 0, 0, 0)
   const endOfSundayLocal = new Date(sunday)
   endOfSundayLocal.setHours(23, 59, 59, 999)
-  const startStr = new Date(
-    Date.UTC(monday.getFullYear(), monday.getMonth(), monday.getDate(), 0, 0, 0, 0)
-  ).toISOString()
-  const endStr = new Date(
-    Date.UTC(sunday.getFullYear(), sunday.getMonth(), sunday.getDate(), 23, 59, 59, 999)
-  ).toISOString()
+  const startStr = toDateOnly(monday)
+  const endStr = toDateOnly(sunday) + 'T23:59:59.999Z'
   return {
     start: monday,
     end: endOfSundayLocal,
     startStr,
     endStr,
   }
+}
+
+/**
+ * Raw count of transactions in the week range (no filters). For debug only.
+ */
+export function getWeeklyInsightsRawCount(weekRange?: WeekRange): number {
+  const db = getDb()
+  if (!db) return 0
+  const { startStr, endStr } = weekRange ?? getWeekRange()
+  const stmt = db.prepare(
+    `SELECT COUNT(*) FROM transactions WHERE settled_at >= ? AND settled_at <= ?`
+  )
+  stmt.bind([startStr, endStr])
+  stmt.step()
+  const row = stmt.get()
+  stmt.free()
+  return row ? Number(row[0]) : 0
 }
 
 export interface WeeklyInsightsData {
