@@ -127,7 +127,7 @@ export async function initDb(): Promise<void> {
   if (db) return
 
   const SQL = await initSqlJs({
-    locateFile: (file) => `/${file}`,
+    locateFile: (file) => `${import.meta.env.BASE_URL}${file}`,
   })
 
   const idb = await openIndexedDB()
