@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useLayoutEffect } from 'react'
 import { Card, Button, Modal, Form } from 'react-bootstrap'
 import {
   BarChart,
@@ -16,10 +16,14 @@ import { getSaverChartColors, setSaverChartColor } from '@/lib/chartColors'
 import { formatMoney } from '@/lib/format'
 import { ChartColorPicker } from '@/components/ChartColorPicker'
 
-const SAVER_AXIS_WIDTH = 100
+const AXIS_WIDTH_PADDING = 16
+const AXIS_WIDTH_MIN = 80
+const AXIS_WIDTH_MAX = 240
 
 export function SaversSection() {
   const [, setRefresh] = useState(0)
+  const [axisWidth, setAxisWidth] = useState(100)
+  const measurerRef = useRef<HTMLSpanElement>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [goalAmount, setGoalAmount] = useState('')
   const [targetDate, setTargetDate] = useState('')
@@ -80,6 +84,18 @@ export function SaversSection() {
     1
   )
 
+  const longestName =
+    chartData.length > 0
+      ? chartData.reduce((a, b) => (a.name.length >= b.name.length ? a : b)).name
+      : ''
+
+  useLayoutEffect(() => {
+    if (!measurerRef.current || !longestName) return
+    const w = measurerRef.current.getBoundingClientRect().width
+    const next = Math.round(w) + AXIS_WIDTH_PADDING
+    setAxisWidth(Math.min(AXIS_WIDTH_MAX, Math.max(AXIS_WIDTH_MIN, next)))
+  }, [longestName])
+
   return (
     <>
       <Card>
@@ -94,18 +110,32 @@ export function SaversSection() {
             </p>
           ) : (
             <>
+              <span
+                ref={measurerRef}
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  left: -9999,
+                  visibility: 'hidden',
+                  fontSize: 12,
+                  fontFamily: 'inherit',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {longestName}
+              </span>
               <ResponsiveContainer width="100%" height={Math.max(260, chartData.length * 52)}>
                 <BarChart
                   data={chartData}
                   layout="vertical"
-                  margin={{ top: 8, right: 24, left: SAVER_AXIS_WIDTH, bottom: 8 }}
+                  margin={{ top: 8, right: 24, left: axisWidth, bottom: 8 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--vantura-border, #ebedf2)" />
                   <XAxis type="number" domain={[0, maxDomain]} tickFormatter={(v) => `$${v}`} />
                   <YAxis
                     type="category"
                     dataKey="name"
-                    width={SAVER_AXIS_WIDTH}
+                    width={axisWidth}
                     tick={(props) => {
                       const displayValue =
                         props.tickFormatter && props.payload
