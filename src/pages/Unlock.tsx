@@ -53,6 +53,15 @@ export function Unlock() {
             stored.
           </Card.Text>
           <Form onSubmit={handleSubmit}>
+            {/* Hidden username field for a11y / password-manager heuristic (single passphrase form) */}
+            <input
+              type="text"
+              name="username"
+              autoComplete="username"
+              tabIndex={-1}
+              aria-hidden="true"
+              style={{ position: 'absolute', left: '-9999px', width: 1, height: 1 }}
+            />
             <Form.Group className="mb-3">
               <Form.Label>Passphrase</Form.Label>
               <Form.Control

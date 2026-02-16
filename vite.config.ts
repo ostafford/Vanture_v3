@@ -27,7 +27,7 @@ export default defineConfig({
         display: 'standalone',
         icons: [
           {
-            src: '/vite.svg',
+            src: `${base}vite.svg`,
             sizes: 'any',
             type: 'image/svg+xml',
             purpose: 'any',
