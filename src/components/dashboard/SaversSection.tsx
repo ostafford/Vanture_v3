@@ -91,7 +91,7 @@ export function SaversSection() {
             </p>
           ) : (
             <>
-              <ResponsiveContainer width="100%" height={Math.max(200, chartData.length * 48)}>
+              <ResponsiveContainer width="100%" height={Math.max(260, chartData.length * 52)}>
                 <BarChart
                   data={chartData}
                   layout="vertical"
@@ -143,18 +143,6 @@ export function SaversSection() {
                   />
                 </BarChart>
               </ResponsiveContainer>
-              <div className="mt-2 d-flex flex-wrap gap-2">
-                {savers.map((saver) => (
-                  <Button
-                    key={saver.id}
-                    variant="outline-secondary"
-                    size="sm"
-                    onClick={() => openEdit(saver)}
-                  >
-                    Edit {saver.name}
-                  </Button>
-                ))}
-              </div>
             </>
           )}
         </Card.Body>
