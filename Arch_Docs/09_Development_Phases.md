@@ -10,6 +10,8 @@
 
 **Phase 6 (Deployment)** has been audited and marked complete; see [Phase6_Checklist.md](Phase6_Checklist.md) for requirement-to-implementation mapping and [README.md](../README.md) for a short summary.
 
+**Phase 7 (Settings completion)** has been audited and marked complete; see [Phase7_Checklist.md](Phase7_Checklist.md) for requirement-to-implementation mapping.
+
 Phase 1: Foundation (Week 1-2)
 
 ✅ Setup Vite + React + Bootstrap project
@@ -61,3 +63,12 @@ Phase 6: Deployment (Week 11) — **Complete**
 ✅ Deploy to GitHub Pages — `.github/workflows/deploy.yml`; Settings > Pages > Source: "GitHub Actions"
 ✅ Documentation (README, setup guide) — README Deployment, Setup, Phase 6; [Phase6_Checklist.md](Phase6_Checklist.md), [Phase6_User_Testing_Checklist.md](Phase6_User_Testing_Checklist.md)
 ✅ User testing with real Up Bank accounts — [Phase6_User_Testing_Checklist.md](Phase6_User_Testing_Checklist.md)
+
+Phase 7: Settings Completion — **Complete**
+
+**Phase 7** has been audited and marked complete; see [Phase7_Checklist.md](Phase7_Checklist.md) for requirement-to-implementation mapping.
+
+✅ Clear all data — Settings page "Clear all data" with confirmation modal; `src/db/index.ts` `closeDb()`, `deleteDatabase()`; session lock + reload to Onboarding
+✅ Re-sync — Settings "Re-sync now" button; same incremental sync as Navbar; Last synced and error state
+✅ Settings UI — Data section (Card) with Re-sync and Clear all data; React-Bootstrap Modal for destructive confirm
+✅ Documentation — [Phase7_Checklist.md](Phase7_Checklist.md); 08_Security.md implementation ref for clear-all-data

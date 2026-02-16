@@ -34,7 +34,7 @@ Local-First Principles:
 
 User Control:
 
-✅ Option to clear all data (delete database)
+✅ Option to clear all data (delete database) — **Implementation (Phase 7):** Settings page "Clear all data" button; confirmation modal; `src/db/index.ts` `deleteDatabase()` (closes sql.js, deletes IndexedDB `vantura-db`); session lock + full page reload so user is sent to Onboarding to re-enter passphrase and API token.
 ✅ Option to revoke API token (manual in Up Bank app)
 ✅ Transparent about what data is stored
 

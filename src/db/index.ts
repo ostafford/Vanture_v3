@@ -120,6 +120,35 @@ export function isDbReady(): boolean {
 }
 
 /**
+ * Close the in-memory SQLite database and clear reference.
+ * Used before deleting IndexedDB so sql.js is disposed.
+ */
+export function closeDb(): void {
+  if (persistTimeout) {
+    clearTimeout(persistTimeout)
+    persistTimeout = null
+  }
+  if (db) {
+    db.close()
+    db = null
+  }
+}
+
+/**
+ * Delete the IndexedDB database. Call closeDb() first.
+ * After this, the next app load will run initDb() and create a fresh DB.
+ */
+export function deleteDatabase(): Promise<void> {
+  closeDb()
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(INDEXED_DB_NAME)
+    request.onerror = () => reject(request.error)
+    request.onsuccess = () => resolve()
+    request.onblocked = () => resolve()
+  })
+}
+
+/**
  * Initialize the database: load from IndexedDB or create new.
  * Call once before rendering theme-dependent UI.
  */

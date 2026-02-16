@@ -59,6 +59,14 @@ Phase 6 (Deployment) is complete. Implemented behaviour:
 
 Detailed Phase 6 requirements: [Arch_Docs/09_Development_Phases.md](Arch_Docs/09_Development_Phases.md) (Phase 6 section), [Arch_Docs/Phase6_Checklist.md](Arch_Docs/Phase6_Checklist.md).
 
+## Phase 7: Settings Completion — Implemented
+
+Phase 7 (Settings completion) is complete. Implemented behaviour:
+
+- **Settings page:** Data section with Re-sync (button, Last synced, error state) and Clear all data (confirmation modal; delete database, lock session, reload to Onboarding). See `src/pages/Settings.tsx`, `src/db/index.ts` (`closeDb`, `deleteDatabase`).
+
+Detailed Phase 7 requirements: [Arch_Docs/09_Development_Phases.md](Arch_Docs/09_Development_Phases.md) (Phase 7 section), [Arch_Docs/Phase7_Checklist.md](Arch_Docs/Phase7_Checklist.md).
+
 ## Documentation
 
 - [Arch_Docs/01_Overview.md](Arch_Docs/01_Overview.md) — Product overview
