@@ -13,8 +13,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        navigateFallback: `${base}index.html`,
-        navigateFallbackDenylist: [/^\/api/, /^\/_/, /^\/[^/]+\.[a-z0-9]+$/],
+        // Disable navigateFallback: workbox requires the fallback URL to exist in precache.
+        // With base path, precache has "index.html" (relative to dist) but createHandlerBoundToURL
+        // expects an exact match. Disabling lets navigation hit the network; 404.html handles SPA routing.
+        navigateFallback: null,
       },
       manifest: {
         name: 'Vantura',
