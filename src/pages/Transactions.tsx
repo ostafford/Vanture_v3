@@ -8,7 +8,6 @@ import {
   DEFAULT_PAGE_SIZE,
   type TransactionFilters,
   type TransactionSort,
-  type TransactionRow,
 } from '@/services/transactions'
 import { getCategories } from '@/services/categories'
 import { formatMoney, formatShortDate } from '@/lib/format'
@@ -248,14 +247,48 @@ export function Transactions() {
         <>
           <Card>
             <Card.Body>
-              {dateKeys.map((dateStr) => (
-                <DateGroup
-                  key={dateStr}
-                  dateStr={dateStr}
-                  rows={grouped[dateStr]}
-                  roundUpsByParent={roundUpsByParent}
-                />
-              ))}
+              <table className="table table-striped mb-0">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Merchant</th>
+                    <th>Category</th>
+                    <th className="text-end">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dateKeys.flatMap((dateStr) => {
+                    const displayDate = dateStr === 'Unknown' ? 'Unknown' : formatShortDate(dateStr)
+                    return grouped[dateStr].flatMap((row) => {
+                      const isDebit = row.amount < 0
+                      const absCents = Math.abs(row.amount)
+                      const mainRow = (
+                        <tr key={row.id}>
+                          <td>{displayDate}</td>
+                          <td>{row.description || row.raw_text || 'Unknown'}</td>
+                          <td>{row.category_name ?? ''}</td>
+                          <td className={`text-end ${isDebit ? '' : 'text-success'}`}>
+                            {isDebit ? '-' : '+'}${formatMoney(absCents)}
+                          </td>
+                        </tr>
+                      )
+                      const roundUpRows = (roundUpsByParent.get(row.id) ?? []).map((ru) => (
+                        <tr key={ru.id} className="small text-muted">
+                          <td />
+                          <td>
+                            Round-up to {ru.transfer_account_display_name ?? 'Loose Change'}
+                          </td>
+                          <td />
+                          <td className="text-end text-success">
+                            +${formatMoney(Math.abs(ru.amount))}
+                          </td>
+                        </tr>
+                      ))
+                      return [mainRow, ...roundUpRows]
+                    })
+                  })}
+                </tbody>
+              </table>
             </Card.Body>
           </Card>
           {hasMore && (
@@ -271,57 +304,5 @@ export function Transactions() {
         </>
       )}
     </>
-  )
-}
-
-function DateGroup({
-  dateStr,
-  rows,
-  roundUpsByParent,
-}: {
-  dateStr: string
-  rows: TransactionRow[]
-  roundUpsByParent: Map<string, { id: string; amount: number; transfer_account_id: string | null; transfer_account_display_name: string | null }[]>
-}) {
-  const displayDate = dateStr === 'Unknown' ? 'Unknown' : formatShortDate(dateStr)
-  return (
-    <div className="mb-4">
-      <h6 className="text-muted mb-2">{displayDate}</h6>
-      <ul className="list-unstyled mb-0">
-        {rows.map((row) => (
-          <li key={row.id} className="mb-2">
-            <TransactionLine row={row} />
-            {roundUpsByParent.get(row.id)?.map((ru) => (
-              <div
-                key={ru.id}
-                className="small text-muted ms-3 mt-1"
-                style={{ color: 'var(--vantura-text-secondary)' }}
-              >
-                Round-up +${formatMoney(Math.abs(ru.amount))}{' '}
-                → {ru.transfer_account_display_name ?? 'Loose Change'}
-              </div>
-            ))}
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}
-
-function TransactionLine({ row }: { row: TransactionRow }) {
-  const isDebit = row.amount < 0
-  const absCents = Math.abs(row.amount)
-  return (
-    <div className="d-flex justify-content-between align-items-baseline">
-      <span>
-        {row.description || row.raw_text || 'Unknown'}{' '}
-        {row.category_name && (
-          <span className="text-muted small">({row.category_name})</span>
-        )}
-      </span>
-      <span className={isDebit ? '' : 'text-success'}>
-        {isDebit ? '-' : '+'}${formatMoney(absCents)}
-      </span>
-    </div>
   )
 }

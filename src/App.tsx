@@ -11,6 +11,7 @@ import { ToastProvider } from '@/components/ToastProvider'
 import { Dashboard } from '@/pages/Dashboard'
 import { Transactions } from '@/pages/Transactions'
 import { Settings } from '@/pages/Settings'
+import { Feedback } from '@/pages/Feedback'
 import { Unlock } from '@/pages/Unlock'
 import { Onboarding } from '@/pages/Onboarding'
 
@@ -187,6 +188,7 @@ function AppContent() {
             <Route index element={<Dashboard />} />
             <Route path="transactions" element={<Transactions />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="feedback" element={<Feedback />} />
           </Route>
         </Routes>
       </BrowserRouter>

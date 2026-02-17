@@ -16,6 +16,8 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      VITE_FEEDBACK_API_URL: https://vanture-v3.vercel.app
     steps:
       - uses: actions/checkout@v4
 

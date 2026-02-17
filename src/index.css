@@ -25,6 +25,8 @@
   --vantura-navbar-bg: #ffffff;
   /* Phase 11: Chart translucent fills — Purple React style */
   --vantura-chart-opacity: 0.3;
+  /* Theme-aware striped table */
+  --vantura-table-striped-bg: rgba(0, 0, 0, 0.03);
 }
 
 [data-theme='dark'] {
@@ -47,6 +49,8 @@
   --vantura-sidebar-active-color: rgba(255, 255, 255, 0.7);
   --vantura-sidebar-hover-bg: rgba(255, 255, 255, 0.08);
   --vantura-navbar-bg: #18151e;
+  /* Theme-aware striped table */
+  --vantura-table-striped-bg: rgba(255, 255, 255, 0.05);
 }
 
 /* Phase 12: Accent color overrides — user choice from Settings */
@@ -185,6 +189,19 @@ body {
 .bg-surface {
   background-color: var(--vantura-surface);
   border-color: var(--vantura-border);
+}
+
+/* Phase 10: Theme-aware striped table */
+.table {
+  --bs-table-bg: var(--vantura-surface);
+  --bs-table-striped-bg: var(--vantura-table-striped-bg);
+  --bs-table-color: var(--vantura-text);
+  border-color: var(--vantura-border);
+}
+.table th,
+.table td {
+  border-color: var(--vantura-border);
+  color: var(--vantura-text);
 }
 
 /* Phase 8: Purple React utilities */
