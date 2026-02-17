@@ -8,6 +8,7 @@ import { sessionStore } from '@/stores/sessionStore'
 import { performSync } from '@/services/sync'
 import { deriveKeyFromPassphrase, decryptToken, encryptToken } from '@/lib/crypto'
 import { validateUpBankToken, UpBankUnauthorizedError, SYNC_401_MESSAGE } from '@/api/upBank'
+import { type PaydayFrequency, getPaydayDayOptions } from '@/lib/payday'
 
 function formatLastSync(iso: string | null): string {
   if (!iso) return 'Never'
@@ -34,12 +35,31 @@ export function Settings() {
   const [updateTokenError, setUpdateTokenError] = useState<string | null>(null)
   const [updateTokenLoading, setUpdateTokenLoading] = useState(false)
   const [updateTokenSuccess, setUpdateTokenSuccess] = useState(false)
+  const [paydayFrequency, setPaydayFrequency] = useState<PaydayFrequency>('MONTHLY')
+  const [paydayDay, setPaydayDay] = useState(1)
+  const [nextPayday, setNextPayday] = useState('')
+  const [paydayError, setPaydayError] = useState<string | null>(null)
+  const [paydaySuccess, setPaydaySuccess] = useState(false)
   const accent = useStore(accentStore, (s) => s.accent)
   const setAccent = useStore(accentStore, (s) => s.setAccent)
 
   useEffect(() => {
     setLastSync(getAppSetting('last_sync'))
   }, [syncing])
+
+  useEffect(() => {
+    const freq = getAppSetting('payday_frequency') as PaydayFrequency | null
+    const dayStr = getAppSetting('payday_day')
+    const next = getAppSetting('next_payday')
+    if (freq === 'WEEKLY' || freq === 'FORTNIGHTLY' || freq === 'MONTHLY') {
+      setPaydayFrequency(freq)
+    }
+    if (dayStr) {
+      const d = parseInt(dayStr, 10)
+      if (!Number.isNaN(d)) setPaydayDay(d)
+    }
+    setNextPayday(next ?? new Date().toISOString().slice(0, 10))
+  }, [])
 
   async function handleReSync() {
     const token = sessionStore.getState().getToken()
@@ -130,6 +150,24 @@ export function Settings() {
     }
   }
 
+  const paydayDayOptions = getPaydayDayOptions(paydayFrequency)
+  const paydayDayValid = paydayDayOptions.some((opt) => opt.value === paydayDay)
+  const effectivePaydayDay = paydayDayValid ? paydayDay : paydayDayOptions[0]?.value ?? 1
+
+  function handlePaydaySubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setPaydayError(null)
+    if (!nextPayday.trim()) {
+      setPaydayError('Please select your next payday.')
+      return
+    }
+    setAppSetting('payday_frequency', paydayFrequency)
+    setAppSetting('payday_day', String(effectivePaydayDay))
+    setAppSetting('next_payday', nextPayday.trim())
+    setPaydaySuccess(true)
+    setTimeout(() => setPaydaySuccess(false), 5000)
+  }
+
   return (
     <div>
       <div className="page-header">
@@ -181,6 +219,70 @@ export function Settings() {
               )
             })}
           </div>
+        </Card.Body>
+      </Card>
+
+      <Card className="grid-margin mb-4">
+        <Card.Header as="h5" className="mb-0">
+          Payday
+        </Card.Header>
+        <Card.Body>
+          <p className="small text-muted mb-3">
+            Used for spendable balance and PAYDAY trackers. Update when your pay
+            cycle changes (e.g. new job).
+          </p>
+          <Form onSubmit={handlePaydaySubmit}>
+            <Form.Group className="mb-2">
+              <Form.Label htmlFor="settings-payday-frequency">Frequency</Form.Label>
+              <Form.Select
+                id="settings-payday-frequency"
+                value={paydayFrequency}
+                onChange={(e) =>
+                  setPaydayFrequency(e.target.value as PaydayFrequency)
+                }
+              >
+                <option value="WEEKLY">Weekly</option>
+                <option value="FORTNIGHTLY">Fortnightly</option>
+                <option value="MONTHLY">Monthly</option>
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-2">
+              <Form.Label htmlFor="settings-payday-day">Day</Form.Label>
+              <Form.Select
+                id="settings-payday-day"
+                value={effectivePaydayDay}
+                onChange={(e) => setPaydayDay(Number(e.target.value))}
+              >
+                {paydayDayOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label htmlFor="settings-next-payday">Next payday</Form.Label>
+              <Form.Control
+                id="settings-next-payday"
+                type="date"
+                value={nextPayday}
+                onChange={(e) => setNextPayday(e.target.value)}
+              />
+            </Form.Group>
+            {paydayError && (
+              <div className="text-danger small mb-2" role="alert">
+                {paydayError}
+              </div>
+            )}
+            {paydaySuccess && (
+              <span className="d-block mb-2 text-success small" role="status">
+                Payday settings updated.
+              </span>
+            )}
+            <Button type="submit" className="btn-gradient-primary" size="sm">
+              Save payday settings
+            </Button>
+          </Form>
         </Card.Body>
       </Card>
 

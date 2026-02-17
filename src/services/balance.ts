@@ -4,8 +4,9 @@
  */
 
 import { getDb, getAppSetting } from '@/db'
+import type { PaydayFrequency } from '@/lib/payday'
 
-export type PaydayFrequency = 'WEEKLY' | 'FORTNIGHTLY' | 'MONTHLY'
+export type { PaydayFrequency }
 
 export interface UpcomingChargeRow {
   next_charge_date: string

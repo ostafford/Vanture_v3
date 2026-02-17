@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useStore } from 'zustand'
-import { Card, Modal, Button } from 'react-bootstrap'
+import { Card, Modal, Button, Row, Col } from 'react-bootstrap'
 import {
   BarChart,
   Bar,
@@ -22,6 +22,7 @@ import { accentStore } from '@/stores/accentStore'
 import { ACCENT_PALETTES } from '@/lib/accentPalettes'
 import { getInsightsCategoryColors, setInsightsCategoryColor } from '@/lib/chartColors'
 import { ChartColorPicker } from '@/components/ChartColorPicker'
+import { StatCard } from '@/components/StatCard'
 
 /**
  * Weekly Insights card: Money In (income), Money Out (spending), Savers (saver movement),
@@ -109,18 +110,46 @@ export function InsightsSection() {
       )}
       <Card.Body>
         {/* Metrics: see src/services/insights.ts for term definitions (Money In = income only, Money Out = spending only, etc.) */}
-        <div className="d-flex flex-wrap gap-3 gap-md-4 mb-3 small">
-          <span className="text-muted">Money In</span>
-          <span className="text-success">${formatMoney(insights.moneyIn)}</span>
-          <span className="text-muted">Money Out</span>
-          <span>${formatMoney(insights.moneyOut)}</span>
-          <span className="text-muted">Savers</span>
-          <span>{insights.saverChanges >= 0 ? '+' : ''}${formatMoney(insights.saverChanges)}</span>
-          <span className="text-muted">Charges</span>
-          <span>{insights.charges}</span>
-          <span className="text-muted">Payments made</span>
-          <span>{insights.payments}</span>
-        </div>
+        <Row className="mb-3 g-2 g-md-3">
+          <Col xs={6} md>
+            <StatCard title="Money In" value={insights.moneyIn} gradient="success" imgAlt="" compact />
+          </Col>
+          <Col xs={6} md>
+            <StatCard title="Money Out" value={insights.moneyOut} gradient="danger" imgAlt="" compact />
+          </Col>
+          <Col xs={6} md>
+            <StatCard
+              title="Savers"
+              value={Math.abs(insights.saverChanges)}
+              displayValue={(insights.saverChanges >= 0 ? '+' : '') + '$' + formatMoney(insights.saverChanges)}
+              gradient="info"
+              imgAlt=""
+              compact
+            />
+          </Col>
+          <Col xs={6} md>
+            <StatCard
+              title="Charges"
+              value={0}
+              displayValue={insights.charges}
+              gradient="danger"
+              imgAlt=""
+              tooltip="Count of spending transactions this week (excludes transfers)."
+              compact
+            />
+          </Col>
+          <Col xs={6} md>
+            <StatCard
+              title="Payments made"
+              value={0}
+              displayValue={insights.payments}
+              gradient="danger"
+              imgAlt=""
+              tooltip="External payments (e.g. BPAY, PayID) this week."
+              compact
+            />
+          </Col>
+        </Row>
         {categories.length > 0 ? (
           <ResponsiveContainer width="100%" height={Math.max(200, chartData.length * 32)}>
             <BarChart

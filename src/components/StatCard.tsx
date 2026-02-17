@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Card, OverlayTrigger, Tooltip } from 'react-bootstrap'
 import { formatMoney } from '@/lib/format'
 
@@ -9,12 +10,16 @@ export interface StatCardProps {
   title: string
   value: number
   subtitle?: string
+  /** When set, shown instead of $formatMoney(value). Use for non-currency values (e.g. counts). */
+  displayValue?: ReactNode
+  /** Smaller variant: less padding, smaller typography, no circle decoration. */
+  compact?: boolean
   gradient: GradientVariant
   imgAlt?: string
   tooltip?: string
 }
 
-export function StatCard({ title, value, subtitle, gradient, imgAlt, tooltip }: StatCardProps) {
+export function StatCard({ title, value, subtitle, displayValue, compact, gradient, imgAlt, tooltip }: StatCardProps) {
   const titleContent = (
     <>
       {title}
@@ -22,7 +27,7 @@ export function StatCard({ title, value, subtitle, gradient, imgAlt, tooltip }: 
         <OverlayTrigger placement="top" overlay={<Tooltip id={`stat-${title}-tooltip`}>{tooltip}</Tooltip>}>
           <span
             className="ms-1"
-            style={{ cursor: 'help', fontSize: '0.9rem' }}
+            style={{ cursor: 'help', fontSize: compact ? '0.75rem' : '0.9rem' }}
             role="img"
             aria-label="Info"
           >
@@ -33,12 +38,26 @@ export function StatCard({ title, value, subtitle, gradient, imgAlt, tooltip }: 
     </>
   )
 
+  const valueContent = displayValue != null ? displayValue : `$${formatMoney(value)}`
+
+  if (compact) {
+    return (
+      <Card className={`bg-gradient-${gradient} text-white`}>
+        <Card.Body className="py-1 px-2">
+          <h6 className="font-weight-normal mb-0 small text-white">{titleContent}</h6>
+          <h6 className="mb-0 text-white">{valueContent}</h6>
+          {subtitle && <small className="card-text opacity-75 d-block">{subtitle}</small>}
+        </Card.Body>
+      </Card>
+    )
+  }
+
   return (
     <Card className={`bg-gradient-${gradient} card-img-holder text-white`}>
       <Card.Body>
         <img src={circleImg} className="card-img-absolute" alt={imgAlt ?? ''} />
         <h4 className="font-weight-normal mb-3 text-white">{titleContent}</h4>
-        <h2 className="mb-2 text-white">${formatMoney(value)}</h2>
+        <h2 className="mb-2 text-white">{valueContent}</h2>
         {subtitle && <h6 className="card-text opacity-75 mb-0">{subtitle}</h6>}
       </Card.Body>
     </Card>
