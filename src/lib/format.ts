@@ -22,12 +22,17 @@ export function formatDate(isoDate: string): string {
 export function formatShortDate(isoDate: string): string {
   try {
     const d = new Date(isoDate + (isoDate.length === 10 ? 'T12:00:00Z' : ''))
-    return d.toLocaleDateString(undefined, {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-    })
+    return formatShortDateFromDate(d)
   } catch {
     return isoDate
   }
+}
+
+/** Format a Date as "Mon, 9 Feb" (weekday, day, month) in local time. Use for week boundaries so the displayed date is the calendar day, not a UTC moment. */
+export function formatShortDateFromDate(d: Date): string {
+  return d.toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  })
 }

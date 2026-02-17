@@ -42,7 +42,7 @@ export function getTrackerSpent(trackerId: number): number {
      WHERE tc.tracker_id = ?
        AND t.settled_at >= (SELECT last_reset_date FROM trackers WHERE id = ?)
        AND t.settled_at < (SELECT next_reset_date FROM trackers WHERE id = ?)
-       AND t.amount < 0 AND t.is_round_up = 0`
+       AND t.amount < 0 AND t.transfer_account_id IS NULL`
   )
   stmt.bind([trackerId, trackerId, trackerId])
   stmt.step()
@@ -108,7 +108,7 @@ export function getTrackerTransactionsInPeriod(trackerId: number): Array<{
      WHERE tc.tracker_id = ?
        AND t.settled_at >= (SELECT last_reset_date FROM trackers WHERE id = ?)
        AND t.settled_at < (SELECT next_reset_date FROM trackers WHERE id = ?)
-       AND t.amount < 0 AND t.is_round_up = 0
+       AND t.amount < 0 AND t.transfer_account_id IS NULL
      ORDER BY t.settled_at DESC LIMIT 20`
   )
   stmt.bind([trackerId, trackerId, trackerId])

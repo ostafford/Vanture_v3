@@ -15,13 +15,19 @@ import {
   getWeeklyInsights,
   getWeeklyCategoryBreakdown,
   getWeeklyInsightsRawCount,
+  getWeeklyInsightsDebugCounts,
 } from '@/services/insights'
-import { formatMoney, formatShortDate } from '@/lib/format'
+import { formatMoney, formatShortDateFromDate } from '@/lib/format'
 import { accentStore } from '@/stores/accentStore'
 import { ACCENT_PALETTES } from '@/lib/accentPalettes'
 import { getInsightsCategoryColors, setInsightsCategoryColor } from '@/lib/chartColors'
 import { ChartColorPicker } from '@/components/ChartColorPicker'
 
+/**
+ * Weekly Insights card: Money In (income), Money Out (spending), Savers (saver movement),
+ * Charges (count of spending), Payments made (external BPAY/PayID etc.), and spending-by-category chart.
+ * Definitions and filters are in @/services/insights.ts; see the file-level comment there.
+ */
 type EditingCategory = { category_id: string; category_name: string; totalDollars: number }
 
 export function InsightsSection() {
@@ -36,6 +42,7 @@ export function InsightsSection() {
   const insights = getWeeklyInsights(weekRange)
   const categories = getWeeklyCategoryBreakdown(weekRange)
   const rawCount = import.meta.env.DEV ? getWeeklyInsightsRawCount(weekRange) : 0
+  const debugCounts = import.meta.env.DEV ? getWeeklyInsightsDebugCounts(weekRange) : null
   const chartPalette = ACCENT_PALETTES[accent].chartPalette
   const categoryColors = getInsightsCategoryColors()
 
@@ -69,7 +76,7 @@ export function InsightsSection() {
     <>
     <Card>
       <Card.Header className="d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <span>Weekly Insights ({formatShortDate(startStr)} – {formatShortDate(endStr)})</span>
+        <span>Weekly Insights ({formatShortDateFromDate(weekRange.start)} – {formatShortDateFromDate(weekRange.end)})</span>
         <div className="d-flex gap-1">
           <Button
             variant="outline-secondary"
@@ -92,10 +99,16 @@ export function InsightsSection() {
       </Card.Header>
       {import.meta.env.DEV && (
         <Card.Body className="py-1 small text-muted border-bottom">
-          Range: {startStr} – {endStr} · {rawCount} transactions in range
+          <div>Range: {startStr} – {endStr} · {rawCount} transactions in range</div>
+          {debugCounts != null && (
+            <div className="mt-1">
+              Charges (spending): {debugCounts.charges} · Round-ups: {debugCounts.roundUps} · Transfers: {debugCounts.transfers}
+            </div>
+          )}
         </Card.Body>
       )}
       <Card.Body>
+        {/* Metrics: see src/services/insights.ts for term definitions (Money In = income only, Money Out = spending only, etc.) */}
         <div className="d-flex flex-wrap gap-3 gap-md-4 mb-3 small">
           <span className="text-muted">Money In</span>
           <span className="text-success">${formatMoney(insights.moneyIn)}</span>

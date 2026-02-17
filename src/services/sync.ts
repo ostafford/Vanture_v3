@@ -92,8 +92,11 @@ function upsertTransaction(tx: UpTransaction): void {
   const accountId = rel?.account?.data?.id ?? ''
   const categoryId = rel?.category?.data?.id ?? null
   const parentCategoryId = rel?.parentCategory?.data?.id ?? null
-  const transferAccountId = rel?.transferAccount?.data?.id ?? null
   const amount = a.amount?.valueInBaseUnits ?? 0
+  // Don't store transfer_account_id on purchases that triggered a round-up (API may send round-up
+  // destination on the purchase); only the actual round-up credit and real transfers should be tagged.
+  const transferAccountId =
+    amount < 0 && a.roundUp != null ? null : (rel?.transferAccount?.data?.id ?? null)
   const isRoundUp = a.roundUp != null ? 1 : 0
   // round_up_parent_id: Up API does not expose a parent transaction relationship on round-up
   // resources in the list response; leave null. When present, Transactions page shows round-ups under parent.
