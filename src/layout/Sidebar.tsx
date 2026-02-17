@@ -18,7 +18,6 @@ export function Sidebar({ collapsed }: SidebarProps) {
     { to: '/', label: 'Dashboard', icon: 'mdi-home', short: 'D' },
     { to: '/transactions', label: 'Transactions', icon: 'mdi-credit-card-multiple', short: 'T' },
     { to: '/settings', label: 'Settings', icon: 'mdi-cog', short: 'S' },
-    { to: '/feedback', label: 'Feedback', icon: 'mdi-message-text', short: 'F' },
   ]
 
   return (
