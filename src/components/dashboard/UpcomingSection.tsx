@@ -94,52 +94,27 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
     }
   }
 
-  function renderList(items: UpcomingChargeRow[], title: string, totalCents: number) {
-    if (items.length === 0) return null
-    const isNextPay = title === 'Next pay'
-    return (
-      <div className="mb-3">
-        <div className={`d-flex justify-content-between align-items-center mb-1 ${isNextPay ? 'page-title' : ''}`}>
-          <strong>{title}</strong>
-          {isNextPay ? (
-            <span className="text-danger fw-normal">${formatMoney(totalCents)} <span className="text-muted">total</span></span>
-          ) : (
-            <span>${formatMoney(totalCents)}</span>
-          )}
-        </div>
-        <table className="table table-striped mb-0">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Name</th>
-              <th>Frequency</th>
-              <th className="text-end">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((c) => (
-              <tr
-                key={c.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => openEdit(c)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEdit(c) } }}
-                style={{ cursor: 'pointer' }}
-              >
-                <td>{formatShortDate(c.next_charge_date)}</td>
-                <td>{c.name}</td>
-                <td>{c.frequency}</td>
-                <td className="text-end">${formatMoney(c.amount)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )
-  }
-
   const nextPayTotal = nextPay.reduce((s, c) => s + c.amount, 0)
   const laterTotal = later.reduce((s, c) => s + c.amount, 0)
+  const hasAny = nextPay.length > 0 || later.length > 0
+
+  function renderDataRow(c: UpcomingChargeRow) {
+    return (
+      <tr
+        key={c.id}
+        role="button"
+        tabIndex={0}
+        onClick={() => openEdit(c)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEdit(c) } }}
+        style={{ cursor: 'pointer' }}
+      >
+        <td>{formatShortDate(c.next_charge_date)}</td>
+        <td>{c.name}</td>
+        <td>{c.frequency}</td>
+        <td className="text-end">${formatMoney(c.amount)}</td>
+      </tr>
+    )
+  }
 
   return (
     <>
@@ -161,15 +136,49 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
               Pay day – Due {formatShortDate(nextPayday)}
             </p>
           )}
-          {nextPay.length === 0 && later.length === 0 ? (
+          {!hasAny ? (
             <p className="text-muted small mb-0">
               No upcoming charges. Add a regular charge to track.
             </p>
           ) : (
-            <>
-              {renderList(nextPay, 'Next pay', nextPayTotal)}
-              {renderList(later, 'Later', laterTotal)}
-            </>
+            <table className="table table-striped mb-0">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Name</th>
+                  <th>Frequency</th>
+                  <th className="text-end">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {nextPay.length > 0 && (
+                  <>
+                    <tr className="upcoming-section-header">
+                      <td colSpan={4}>
+                        <div className="d-flex justify-content-between align-items-center page-title">
+                          <strong>Next pay</strong>
+                          <span className="text-danger fw-normal">${formatMoney(nextPayTotal)} <span className="text-muted">total</span></span>
+                        </div>
+                      </td>
+                    </tr>
+                    {nextPay.map(renderDataRow)}
+                  </>
+                )}
+                {later.length > 0 && (
+                  <>
+                    <tr className="upcoming-section-header">
+                      <td colSpan={4}>
+                        <div className="d-flex justify-content-between align-items-center">
+                          <strong>Later</strong>
+                          <span>${formatMoney(laterTotal)}</span>
+                        </div>
+                      </td>
+                    </tr>
+                    {later.map(renderDataRow)}
+                  </>
+                )}
+              </tbody>
+            </table>
           )}
           <div className="mt-2 small text-danger">
             ${formatMoney(reserved)} reserved for upcoming

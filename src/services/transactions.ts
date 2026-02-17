@@ -12,12 +12,19 @@ export interface TransactionRow {
   raw_text: string | null
   amount: number
   settled_at: string | null
+  created_at: string | null
+  status: string
   category_id: string | null
   category_name: string | null
   is_round_up: number
   round_up_parent_id: string | null
   transfer_account_id: string | null
   transfer_account_display_name: string | null
+}
+
+/** Display date: created (first encountered) with fallback to settled for consistency with Up app. */
+export function getTransactionDisplayDate(row: TransactionRow): string | null {
+  return row.created_at ?? row.settled_at
 }
 
 export type TransactionSort = 'date' | 'amount' | 'merchant'
@@ -38,11 +45,11 @@ function buildWhereClause(filters: TransactionFilters): { sql: string; params: (
   const params: (string | number)[] = []
 
   if (filters.dateFrom) {
-    conditions.push('t.settled_at >= ?')
+    conditions.push('COALESCE(t.created_at, t.settled_at) >= ?')
     params.push(filters.dateFrom)
   }
   if (filters.dateTo) {
-    conditions.push('t.settled_at <= ?')
+    conditions.push('COALESCE(t.created_at, t.settled_at) <= ?')
     params.push(filters.dateTo + 'T23:59:59.999Z')
   }
   if (filters.categoryId) {
@@ -70,14 +77,15 @@ function buildWhereClause(filters: TransactionFilters): { sql: string; params: (
 }
 
 function orderByClause(sort: TransactionSort): string {
+  const dateOrder = 'COALESCE(t.created_at, t.settled_at) DESC'
   switch (sort) {
     case 'amount':
-      return 'ORDER BY t.amount ASC, t.settled_at DESC'
+      return `ORDER BY t.amount ASC, ${dateOrder}, t.id`
     case 'merchant':
-      return 'ORDER BY t.description ASC, t.settled_at DESC'
+      return `ORDER BY t.description ASC, ${dateOrder}, t.id`
     case 'date':
     default:
-      return 'ORDER BY t.settled_at DESC, t.id'
+      return `ORDER BY ${dateOrder}, t.id`
   }
 }
 
@@ -96,6 +104,8 @@ function rowFromStmt(stmt: StatementLike): TransactionRow | null {
     number,
     string | null,
     string | null,
+    string,
+    string | null,
     string | null,
     number,
     string | null,
@@ -109,12 +119,14 @@ function rowFromStmt(stmt: StatementLike): TransactionRow | null {
     raw_text: row[3],
     amount: row[4],
     settled_at: row[5],
-    category_id: row[6],
-    category_name: row[7],
-    is_round_up: row[8],
-    round_up_parent_id: row[9],
-    transfer_account_id: row[10],
-    transfer_account_display_name: row[11],
+    created_at: row[6],
+    status: row[7],
+    category_id: row[8],
+    category_name: row[9],
+    is_round_up: row[10],
+    round_up_parent_id: row[11],
+    transfer_account_id: row[12],
+    transfer_account_display_name: row[13],
   }
 }
 
@@ -136,6 +148,7 @@ export function getFilteredTransactions(
   const limitClause =
     limit > 0 ? ` LIMIT ${limit} OFFSET ${offset}` : ''
   const sql = `SELECT t.id, t.account_id, t.description, t.raw_text, t.amount, t.settled_at,
+    t.created_at, t.status,
     t.category_id, c.name AS category_name, t.is_round_up, t.round_up_parent_id,
     t.transfer_account_id, a.display_name AS transfer_account_display_name
     FROM transactions t
@@ -174,7 +187,7 @@ export function getFilteredTransactionsCount(
 
 /**
  * Grouped by date (date string YYYY-MM-DD -> list of top-level transactions for that date).
- * Uses same filters and sort; then groups by settled_at date.
+ * Uses same filters and sort; groups by display date (created_at with fallback to settled_at).
  * Phase 5: optional limit/offset for pagination (applied to filtered list before grouping).
  */
 export function getTransactionsGroupedByDate(
@@ -185,7 +198,8 @@ export function getTransactionsGroupedByDate(
   const list = getFilteredTransactions(filters, sort, options)
   const grouped: Record<string, TransactionRow[]> = {}
   for (const row of list) {
-    const dateStr = row.settled_at ? row.settled_at.slice(0, 10) : 'Unknown'
+    const displayDate = getTransactionDisplayDate(row)
+    const dateStr = displayDate ? displayDate.slice(0, 10) : 'Unknown'
     if (!grouped[dateStr]) grouped[dateStr] = []
     grouped[dateStr].push(row)
   }

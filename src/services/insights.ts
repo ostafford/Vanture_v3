@@ -35,7 +35,8 @@ export interface WeekRange {
 /**
  * Week Monday–Sunday. Optional weekOffset: 0 = current week, -1 = previous week, etc.
  * start/end are local Date objects for display. startStr/endStr match the Transactions page
- * (date-only start, end with T23:59:59.999Z) so insights use the same settled_at range.
+ * (date-only start, end with T23:59:59.999Z). Week range uses created_at (transaction first
+ * encountered) for consistency with the Up app.
  */
 function toDateOnly(d: Date): string {
   const y = d.getFullYear()
@@ -77,7 +78,7 @@ export function getWeeklyInsightsRawCount(weekRange?: WeekRange): number {
   if (!db) return 0
   const { startStr, endStr } = weekRange ?? getWeekRange()
   const stmt = db.prepare(
-    `SELECT COUNT(*) FROM transactions WHERE settled_at >= ? AND settled_at <= ?`
+    `SELECT COUNT(*) FROM transactions WHERE COALESCE(created_at, settled_at) >= ? AND COALESCE(created_at, settled_at) <= ?`
   )
   stmt.bind([startStr, endStr])
   stmt.step()
@@ -100,7 +101,7 @@ export function getWeeklyInsightsDebugCounts(weekRange?: WeekRange): WeeklyInsig
   const db = getDb()
   if (!db) return { charges: 0, roundUps: 0, transfers: 0 }
   const { startStr, endStr } = weekRange ?? getWeekRange()
-  const bounds = `settled_at >= ? AND settled_at <= ?`
+  const bounds = `COALESCE(created_at, settled_at) >= ? AND COALESCE(created_at, settled_at) <= ?`
   const params = [startStr, endStr]
   const run = (where: string, p: (string | number)[] = params) => {
     const stmt = db.prepare(`SELECT COUNT(*) FROM transactions WHERE ${where}`)
@@ -154,33 +155,33 @@ export function getWeeklyInsights(weekRange?: WeekRange): WeeklyInsightsData {
   // Money In: real income; exclude internal transfers
   const moneyIn = runOne(
     `SELECT COALESCE(SUM(amount), 0) FROM transactions
-     WHERE amount > 0 AND transfer_account_id IS NULL AND settled_at >= ? AND settled_at <= ?`,
+     WHERE amount > 0 AND transfer_account_id IS NULL AND COALESCE(created_at, settled_at) >= ? AND COALESCE(created_at, settled_at) <= ?`,
     [startStr, endStr]
   )
   // Money Out: spending only; exclude internal transfers (e.g. to savers)
   const moneyOut = runOne(
     `SELECT COALESCE(SUM(ABS(amount)), 0) FROM transactions
      WHERE amount < 0 AND transfer_account_id IS NULL
-     AND settled_at >= ? AND settled_at <= ?`,
+     AND COALESCE(created_at, settled_at) >= ? AND COALESCE(created_at, settled_at) <= ?`,
     [startStr, endStr]
   )
   // Savers: net movement to/from any saver account
   const saverChanges = runOne(
     `SELECT COALESCE(SUM(amount), 0) FROM transactions
      WHERE transfer_account_id IN (SELECT id FROM accounts WHERE account_type = 'SAVER')
-     AND settled_at >= ? AND settled_at <= ?`,
+     AND COALESCE(created_at, settled_at) >= ? AND COALESCE(created_at, settled_at) <= ?`,
     [startStr, endStr]
   )
   // Charges: count of spending transactions (same filter as Money Out)
   const charges = runOne(
     `SELECT COUNT(*) FROM transactions
-     WHERE amount < 0 AND transfer_account_id IS NULL AND settled_at >= ? AND settled_at <= ?`,
+     WHERE amount < 0 AND transfer_account_id IS NULL AND COALESCE(created_at, settled_at) >= ? AND COALESCE(created_at, settled_at) <= ?`,
     [startStr, endStr]
   )
   // Payments made: external payments (BPAY, PayID, etc.); transfer_type set when API supports it
   const payments = runOne(
     `SELECT COUNT(*) FROM transactions
-     WHERE transfer_type IS NOT NULL AND settled_at >= ? AND settled_at <= ?`,
+     WHERE transfer_type IS NOT NULL AND COALESCE(created_at, settled_at) >= ? AND COALESCE(created_at, settled_at) <= ?`,
     [startStr, endStr]
   )
 
@@ -207,7 +208,7 @@ export function getWeeklyCategoryBreakdown(weekRange?: WeekRange): CategoryBreak
      FROM transactions t
      LEFT JOIN categories c ON t.category_id = c.id
      WHERE t.amount < 0 AND t.transfer_account_id IS NULL
-     AND t.settled_at >= ? AND t.settled_at <= ?
+     AND COALESCE(t.created_at, t.settled_at) >= ? AND COALESCE(t.created_at, t.settled_at) <= ?
      GROUP BY t.category_id ORDER BY total DESC LIMIT 15`
   )
   stmt.bind([startStr, endStr])

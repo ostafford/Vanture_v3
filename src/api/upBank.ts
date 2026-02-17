@@ -119,11 +119,17 @@ export async function fetchAccounts(token: string): Promise<UpAccount[]> {
 
 /**
  * Build initial transactions URL. sinceDate null = all time.
+ * statusFilter: Up API filter; when set, only that status (HELD or SETTLED) is returned.
  */
-function buildTransactionsUrl(sinceDate: string | null, pageSize: number): string {
+function buildTransactionsUrl(
+  sinceDate: string | null,
+  pageSize: number,
+  statusFilter?: 'HELD' | 'SETTLED'
+): string {
   const params = new URLSearchParams()
   params.set('page[size]', String(pageSize))
   if (sinceDate) params.set('filter[since]', sinceDate)
+  if (statusFilter) params.set('filter[status]', statusFilter)
   return `${BASE_URL}/api/v1/transactions?${params.toString()}`
 }
 
@@ -142,15 +148,16 @@ export async function fetchTransactionsPage(
 }
 
 /**
- * Fetch all transactions in batches (cursor-based). 1s delay between requests.
+ * Fetch all transactions for one status (cursor-based). 1s delay between requests.
  */
-export async function fetchAllTransactions(
+async function fetchTransactionsByStatus(
   token: string,
   sinceDate: string | null,
+  statusFilter: 'HELD' | 'SETTLED',
   progressCallback: (progress: { fetched: number; hasMore: boolean }) => void
 ): Promise<UpTransaction[]> {
   const all: UpTransaction[] = []
-  let nextUrl: string | null = buildTransactionsUrl(sinceDate, 100)
+  let nextUrl: string | null = buildTransactionsUrl(sinceDate, 100, statusFilter)
   while (nextUrl) {
     const { data, nextUrl: next } = await fetchTransactionsPage(token, nextUrl)
     all.push(...data)
@@ -159,6 +166,32 @@ export async function fetchAllTransactions(
     if (nextUrl) await sleep(1000)
   }
   return all
+}
+
+/**
+ * Fetch all transactions in batches (HELD + SETTLED). Fetches both statuses and merges by id;
+ * when the same id appears in both, the SETTLED version is kept. 1s delay between pages.
+ */
+export async function fetchAllTransactions(
+  token: string,
+  sinceDate: string | null,
+  progressCallback: (progress: { fetched: number; hasMore: boolean }) => void
+): Promise<UpTransaction[]> {
+  const byId = new Map<string, UpTransaction>()
+  const report = (fetched: number, hasMore: boolean) => progressCallback({ fetched, hasMore })
+
+  const held = await fetchTransactionsByStatus(token, sinceDate, 'HELD', (p) =>
+    report(p.fetched, p.hasMore)
+  )
+  for (const tx of held) byId.set(tx.id, tx)
+  const heldCount = byId.size
+
+  const settled = await fetchTransactionsByStatus(token, sinceDate, 'SETTLED', (p) =>
+    report(heldCount + p.fetched, p.hasMore)
+  )
+  for (const tx of settled) byId.set(tx.id, tx)
+
+  return Array.from(byId.values())
 }
 
 /**

@@ -247,10 +247,11 @@ export function Transactions() {
         <>
           <Card>
             <Card.Body>
-              <table className="table table-striped mb-0">
+              <table className="table table-striped table-hover mb-0">
                 <thead>
                   <tr>
                     <th>Date</th>
+                    <th>Status</th>
                     <th>Merchant</th>
                     <th>Category</th>
                     <th className="text-end">Amount</th>
@@ -265,6 +266,7 @@ export function Transactions() {
                       const mainRow = (
                         <tr key={row.id}>
                           <td>{displayDate}</td>
+                          <td>{row.status === 'HELD' ? 'Held' : 'Settled'}</td>
                           <td>{row.description || row.raw_text || 'Unknown'}</td>
                           <td>{row.category_name ?? ''}</td>
                           <td className={`text-end ${isDebit ? '' : 'text-success'}`}>
@@ -275,9 +277,11 @@ export function Transactions() {
                       const roundUpRows = (roundUpsByParent.get(row.id) ?? []).map((ru) => (
                         <tr key={ru.id} className="small text-muted">
                           <td />
+                          <td />
                           <td>
                             Round-up to {ru.transfer_account_display_name ?? 'Loose Change'}
                           </td>
+                          <td />
                           <td />
                           <td className="text-end text-success">
                             +${formatMoney(Math.abs(ru.amount))}

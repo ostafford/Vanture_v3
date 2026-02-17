@@ -52,6 +52,7 @@ const DDL_STATEMENTS = [
     FOREIGN KEY (parent_category_id) REFERENCES categories(id)
   )`,
   `CREATE INDEX IF NOT EXISTS idx_transactions_settled_at ON transactions(settled_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at)`,
   `CREATE INDEX IF NOT EXISTS idx_transactions_category_id ON transactions(category_id)`,
   `CREATE INDEX IF NOT EXISTS idx_transactions_account_id ON transactions(account_id)`,
   `CREATE INDEX IF NOT EXISTS idx_transactions_round_up_parent_id ON transactions(round_up_parent_id)`,

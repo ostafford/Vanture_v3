@@ -30,7 +30,8 @@ function daysBetween(dateStrA: string, dateStrB: string): number {
 }
 
 /**
- * Spent in current period (cents). 5.1: tracker_categories + transactions, settled_at in [last_reset, next_reset), amount < 0, not round-up.
+ * Spent in current period (cents). 5.1: tracker_categories + transactions, display date
+ * (COALESCE(created_at, settled_at)) in [last_reset, next_reset), amount < 0, not round-up.
  */
 export function getTrackerSpent(trackerId: number): number {
   const db = getDb()
@@ -40,8 +41,8 @@ export function getTrackerSpent(trackerId: number): number {
      FROM transactions t
      INNER JOIN tracker_categories tc ON t.category_id = tc.category_id
      WHERE tc.tracker_id = ?
-       AND t.settled_at >= (SELECT last_reset_date FROM trackers WHERE id = ?)
-       AND t.settled_at < (SELECT next_reset_date FROM trackers WHERE id = ?)
+       AND COALESCE(t.created_at, t.settled_at) >= (SELECT last_reset_date FROM trackers WHERE id = ?)
+       AND COALESCE(t.created_at, t.settled_at) < (SELECT next_reset_date FROM trackers WHERE id = ?)
        AND t.amount < 0 AND t.transfer_account_id IS NULL`
   )
   stmt.bind([trackerId, trackerId, trackerId])
@@ -91,31 +92,48 @@ export function getTrackersWithProgress(): TrackerWithProgress[] {
 }
 
 /**
- * Transactions in current period for a tracker (for list in UI).
+ * Transactions in current period for a tracker (for list in UI). Uses display date
+ * (created_at with fallback to settled_at) for period and ordering. Returns status for Held/Settled.
  */
 export function getTrackerTransactionsInPeriod(trackerId: number): Array<{
   id: string
   description: string
-  settled_at: string
+  created_at: string | null
+  settled_at: string | null
   amount: number
+  status: string
 }> {
   const db = getDb()
   if (!db) return []
   const stmt = db.prepare(
-    `SELECT t.id, t.description, t.settled_at, t.amount
+    `SELECT t.id, t.description, t.created_at, t.settled_at, t.amount, t.status
      FROM transactions t
      INNER JOIN tracker_categories tc ON t.category_id = tc.category_id
      WHERE tc.tracker_id = ?
-       AND t.settled_at >= (SELECT last_reset_date FROM trackers WHERE id = ?)
-       AND t.settled_at < (SELECT next_reset_date FROM trackers WHERE id = ?)
+       AND COALESCE(t.created_at, t.settled_at) >= (SELECT last_reset_date FROM trackers WHERE id = ?)
+       AND COALESCE(t.created_at, t.settled_at) < (SELECT next_reset_date FROM trackers WHERE id = ?)
        AND t.amount < 0 AND t.transfer_account_id IS NULL
-     ORDER BY t.settled_at DESC LIMIT 20`
+     ORDER BY COALESCE(t.created_at, t.settled_at) DESC LIMIT 20`
   )
   stmt.bind([trackerId, trackerId, trackerId])
-  const list: Array<{ id: string; description: string; settled_at: string; amount: number }> = []
+  const list: Array<{
+    id: string
+    description: string
+    created_at: string | null
+    settled_at: string | null
+    amount: number
+    status: string
+  }> = []
   while (stmt.step()) {
-    const row = stmt.get() as [string, string, string, number]
-    list.push({ id: row[0], description: row[1], settled_at: row[2], amount: row[3] })
+    const row = stmt.get() as [string, string, string | null, string | null, number, string]
+    list.push({
+      id: row[0],
+      description: row[1],
+      created_at: row[2],
+      settled_at: row[3],
+      amount: row[4],
+      status: row[5],
+    })
   }
   stmt.free()
   return list

@@ -155,8 +155,11 @@ export function TrackersSection() {
                         <ul className="list-unstyled mb-0">
                           {getTrackerTransactionsInPeriod(t.id).map((tx) => (
                             <li key={tx.id}>
-                              {formatShortDate(tx.settled_at)} {tx.description}{' '}
+                              {formatShortDate(tx.created_at ?? tx.settled_at ?? '')} {tx.description}{' '}
                               ${formatMoney(Math.abs(tx.amount))}
+                              {tx.status === 'HELD' && (
+                                <span className="text-muted small ms-1">(Held)</span>
+                              )}
                             </li>
                           ))}
                         </ul>

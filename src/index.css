@@ -27,6 +27,8 @@
   --vantura-chart-opacity: 0.3;
   /* Theme-aware striped table */
   --vantura-table-striped-bg: rgba(0, 0, 0, 0.03);
+  /* Theme-aware table hover */
+  --vantura-table-hover-bg: rgba(0, 0, 0, 0.06);
 }
 
 [data-theme='dark'] {
@@ -51,6 +53,8 @@
   --vantura-navbar-bg: #18151e;
   /* Theme-aware striped table */
   --vantura-table-striped-bg: rgba(255, 255, 255, 0.05);
+  /* Theme-aware table hover — stronger so hover is clear in dark mode */
+  --vantura-table-hover-bg: rgba(255, 255, 255, 0.12);
 }
 
 /* Phase 12: Accent color overrides — user choice from Settings */
@@ -191,10 +195,12 @@ body {
   border-color: var(--vantura-border);
 }
 
-/* Phase 10: Theme-aware striped table */
+/* Phase 10: Theme-aware striped table and hover */
 .table {
   --bs-table-bg: var(--vantura-surface);
   --bs-table-striped-bg: var(--vantura-table-striped-bg);
+  --bs-table-hover-bg: var(--vantura-table-hover-bg);
+  --bs-table-hover-color: var(--vantura-text);
   --bs-table-color: var(--vantura-text);
   border-color: var(--vantura-border);
 }
@@ -202,6 +208,17 @@ body {
 .table td {
   border-color: var(--vantura-border);
   color: var(--vantura-text);
+}
+.table .upcoming-section-header td {
+  background: var(--vantura-table-striped-bg);
+  font-weight: 600;
+  padding-top: 0.75rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--vantura-border);
+  vertical-align: middle;
+}
+.table .upcoming-section-header:not(:first-child) td {
+  padding-top: 1rem;
 }
 
 /* Phase 8: Purple React utilities */
