@@ -10,6 +10,7 @@ import {
 import { getReservedAmount } from '@/services/balance'
 import { getCategories } from '@/services/categories'
 import { formatMoney, formatShortDate } from '@/lib/format'
+import { toast } from '@/stores/toastStore'
 
 const FREQUENCIES = ['WEEKLY', 'FORTNIGHTLY', 'MONTHLY', 'QUARTERLY', 'YEARLY', 'ONCE']
 
@@ -67,6 +68,7 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
         categoryId || null,
         isReserved
       )
+      toast.success('Upcoming charge updated.')
     } else {
       createUpcomingCharge(
         name.trim(),
@@ -76,6 +78,7 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
         categoryId || null,
         isReserved
       )
+      toast.success('Upcoming charge added.')
     }
     setShowModal(false)
     setRefresh((r) => r + 1)
@@ -93,40 +96,44 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
 
   function renderList(items: UpcomingChargeRow[], title: string, totalCents: number) {
     if (items.length === 0) return null
+    const isNextPay = title === 'Next pay'
     return (
       <div className="mb-3">
-        <div className="d-flex justify-content-between align-items-center mb-1">
+        <div className={`d-flex justify-content-between align-items-center mb-1 ${isNextPay ? 'page-title' : ''}`}>
           <strong>{title}</strong>
-          <span>${formatMoney(totalCents)}</span>
+          {isNextPay ? (
+            <span className="text-danger fw-normal">${formatMoney(totalCents)} <span className="text-muted">total</span></span>
+          ) : (
+            <span>${formatMoney(totalCents)}</span>
+          )}
         </div>
-        <ul className="list-unstyled mb-0 border rounded p-2">
-          {items.map((c) => (
-            <li
-              key={c.id}
-              className="d-flex justify-content-between align-items-center py-1"
-            >
-              <span>
-                {formatShortDate(c.next_charge_date)} {c.name} {c.frequency} ${formatMoney(c.amount)}
-              </span>
-              <div>
-                <Button variant="outline-secondary" size="sm" className="me-1" onClick={() => openEdit(c)}>
-                  Edit
-                </Button>
-                <Button
-                  variant="outline-danger"
-                  size="sm"
-                  onClick={() => {
-                    deleteUpcomingCharge(c.id)
-                    setRefresh((r) => r + 1)
-                    onUpcomingChange?.()
-                  }}
-                >
-                  Delete
-                </Button>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <table className="table table-striped mb-0">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Name</th>
+              <th>Frequency</th>
+              <th className="text-end">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((c) => (
+              <tr
+                key={c.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => openEdit(c)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEdit(c) } }}
+                style={{ cursor: 'pointer' }}
+              >
+                <td>{formatShortDate(c.next_charge_date)}</td>
+                <td>{c.name}</td>
+                <td>{c.frequency}</td>
+                <td className="text-end">${formatMoney(c.amount)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     )
   }
@@ -137,8 +144,13 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
   return (
     <>
       <Card>
-        <Card.Header className="d-flex justify-content-between align-items-center">
-          <span>Upcoming transactions</span>
+        <Card.Header className="d-flex justify-content-between align-items-center section-header">
+          <div className="d-flex align-items-center">
+            <span className="page-title-icon bg-gradient-primary text-white mr-2">
+              <i className="mdi mdi-calendar-clock" aria-hidden />
+            </span>
+            <span>Upcoming transactions</span>
+          </div>
           <Button variant="primary" size="sm" onClick={openCreate}>
             + Add
           </Button>
@@ -159,7 +171,7 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
               {renderList(later, 'Later', laterTotal)}
             </>
           )}
-          <div className="mt-2 small text-muted">
+          <div className="mt-2 small text-danger">
             ${formatMoney(reserved)} reserved for upcoming
           </div>
         </Card.Body>

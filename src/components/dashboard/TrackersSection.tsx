@@ -19,6 +19,7 @@ import {
 } from '@/services/trackers'
 import { getCategories } from '@/services/categories'
 import { formatMoney, formatShortDate } from '@/lib/format'
+import { toast } from '@/stores/toastStore'
 
 const RESET_FREQUENCIES: { value: TrackerResetFrequency; label: string }[] = [
   { value: 'WEEKLY', label: 'Weekly' },
@@ -66,8 +67,10 @@ export function TrackersSection() {
     if (!name.trim() || budgetCents <= 0 || selectedCategoryIds.length === 0) return
     if (editingId != null) {
       updateTracker(editingId, name.trim(), budgetCents, frequency, resetDay, selectedCategoryIds)
+      toast.success('Tracker saved.')
     } else {
       createTracker(name.trim(), budgetCents, frequency, resetDay, selectedCategoryIds)
+      toast.success('Tracker created.')
     }
     setShowModal(false)
     setRefresh((r) => r + 1)
@@ -93,8 +96,13 @@ export function TrackersSection() {
   return (
     <>
       <Card>
-        <Card.Header className="d-flex justify-content-between align-items-center">
-          <span>Trackers</span>
+        <Card.Header className="d-flex justify-content-between align-items-center section-header">
+          <div className="d-flex align-items-center">
+            <span className="page-title-icon bg-gradient-primary text-white mr-2">
+              <i className="mdi mdi-chart-line" aria-hidden />
+            </span>
+            <span>Trackers</span>
+          </div>
           <Button variant="primary" size="sm" onClick={openCreate}>
             + Add Tracker
           </Button>

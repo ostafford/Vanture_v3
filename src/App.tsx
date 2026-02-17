@@ -7,6 +7,7 @@ import { themeStore } from '@/stores/themeStore'
 import { accentStore } from '@/stores/accentStore'
 import { sessionStore } from '@/stores/sessionStore'
 import { Layout } from '@/layout/Layout'
+import { ToastProvider } from '@/components/ToastProvider'
 import { Dashboard } from '@/pages/Dashboard'
 import { Transactions } from '@/pages/Transactions'
 import { Settings } from '@/pages/Settings'
@@ -178,15 +179,18 @@ function AppContent() {
   }
 
   return (
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="transactions" element={<Transactions />} />
-          <Route path="settings" element={<Settings />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <>
+      <ToastProvider />
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="transactions" element={<Transactions />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </>
   )
 }
 

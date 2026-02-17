@@ -23,6 +23,7 @@ import { ACCENT_PALETTES } from '@/lib/accentPalettes'
 import { getInsightsCategoryColors, setInsightsCategoryColor } from '@/lib/chartColors'
 import { ChartColorPicker } from '@/components/ChartColorPicker'
 import { StatCard } from '@/components/StatCard'
+import { toast } from '@/stores/toastStore'
 
 /**
  * Weekly Insights card: Money In (income), Money Out (spending), Savers (saver movement),
@@ -71,13 +72,19 @@ export function InsightsSection() {
     setInsightsCategoryColor(editingCategory.category_id, categoryBarColor)
     setEditingCategory(null)
     setRefresh((r) => r + 1)
+    toast.success('Category colour updated.')
   }
 
   return (
     <>
     <Card>
-      <Card.Header className="d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <span>Weekly Insights ({formatShortDateFromDate(weekRange.start)} – {formatShortDateFromDate(weekRange.end)})</span>
+      <Card.Header className="d-flex align-items-center justify-content-between flex-wrap gap-2 section-header">
+        <div className="d-flex align-items-center">
+          <span className="page-title-icon bg-gradient-primary text-white mr-2">
+            <i className="mdi mdi-chart-bar" aria-hidden />
+          </span>
+          <span>Weekly Insights ({formatShortDateFromDate(weekRange.start)} – {formatShortDateFromDate(weekRange.end)})</span>
+        </div>
         <div className="d-flex gap-1">
           <Button
             variant="outline-secondary"
@@ -122,7 +129,7 @@ export function InsightsSection() {
               title="Savers"
               value={Math.abs(insights.saverChanges)}
               displayValue={(insights.saverChanges >= 0 ? '+' : '') + '$' + formatMoney(insights.saverChanges)}
-              gradient="info"
+              gradient="success"
               imgAlt=""
               compact
             />

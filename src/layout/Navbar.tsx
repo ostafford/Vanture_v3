@@ -6,6 +6,7 @@ import { sessionStore } from '@/stores/sessionStore'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { getAppSetting } from '@/db'
 import { performSync } from '@/services/sync'
+import { toast } from '@/stores/toastStore'
 import { UpBankUnauthorizedError, SYNC_401_MESSAGE } from '@/api/upBank'
 
 interface NavbarProps {
@@ -43,14 +44,16 @@ export function Navbar({ sidebarCollapsed }: NavbarProps) {
     try {
       await performSync(token, () => {})
       setLastSync(getAppSetting('last_sync'))
+      toast.success('Sync complete. Data updated.')
     } catch (err) {
-      setSyncError(
+      const message =
         err instanceof UpBankUnauthorizedError
           ? SYNC_401_MESSAGE
           : err instanceof Error
             ? err.message
             : 'Sync failed. Please try again.'
-      )
+      setSyncError(message)
+      toast.error(message)
     } finally {
       setSyncing(false)
     }

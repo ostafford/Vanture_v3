@@ -139,6 +139,10 @@ body {
   border-color: var(--vantura-border);
   color: var(--vantura-text);
 }
+.card .card-header.section-header {
+  font-size: 1.125rem;
+  font-weight: 500;
+}
 .card .card-body {
   padding: 2.5rem;
 }
@@ -193,6 +197,14 @@ body {
   justify-content: stretch;
 }
 .stretch-card > .card {
+  width: 100%;
+  min-width: 100%;
+}
+.stretch-card > div {
+  width: 100%;
+  min-width: 0;
+}
+.stretch-card > div > .card {
   width: 100%;
   min-width: 100%;
 }

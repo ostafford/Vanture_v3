@@ -15,6 +15,7 @@ import { getSaversWithProgress, updateSaverGoals } from '@/services/savers'
 import { getSaverChartColors, setSaverChartColor } from '@/lib/chartColors'
 import { formatMoney } from '@/lib/format'
 import { ChartColorPicker } from '@/components/ChartColorPicker'
+import { toast } from '@/stores/toastStore'
 
 const SAVER_AXIS_WIDTH = 70
 
@@ -44,6 +45,7 @@ export function SaversSection() {
     updateSaverGoals(editingId, goalCents, targetDate || null, monthlyCents)
     setEditingId(null)
     setRefresh((r) => r + 1)
+    toast.success('Saver goals saved.')
   }
 
   const totalBalance = savers.reduce((sum, s) => sum + s.current_balance, 0)
@@ -83,9 +85,14 @@ export function SaversSection() {
   return (
     <>
       <Card>
-        <Card.Header className="d-flex justify-content-between align-items-center">
-          <span>Savers</span>
-          <small className="text-muted">${formatMoney(totalBalance)} total</small>
+        <Card.Header className="d-flex justify-content-between align-items-center section-header">
+          <div className="d-flex align-items-center">
+            <span className="page-title-icon bg-gradient-primary text-white mr-2">
+              <i className="mdi mdi-piggy-bank" aria-hidden />
+            </span>
+            <span>Savers</span>
+          </div>
+          <span className="text-success fw-normal">${formatMoney(totalBalance)} <span className="text-muted">total</span></span>
         </Card.Header>
         <Card.Body>
           {savers.length === 0 ? (

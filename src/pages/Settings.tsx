@@ -3,6 +3,7 @@ import { useStore } from 'zustand'
 import { Card, Button, Modal, Spinner, Form } from 'react-bootstrap'
 import { getAppSetting, setAppSetting, deleteDatabase } from '@/db'
 import { accentStore } from '@/stores/accentStore'
+import { toast } from '@/stores/toastStore'
 import { ACCENT_PALETTES, type AccentId } from '@/lib/accentPalettes'
 import { sessionStore } from '@/stores/sessionStore'
 import { performSync } from '@/services/sync'
@@ -86,10 +87,14 @@ export function Settings() {
     setClearing(true)
     try {
       await deleteDatabase()
+      toast.success('All data cleared.')
       sessionStore.getState().lock()
       window.location.reload()
     } catch (err) {
       setSyncError(
+        err instanceof Error ? err.message : 'Failed to clear data. Please try again.'
+      )
+      toast.error(
         err instanceof Error ? err.message : 'Failed to clear data. Please try again.'
       )
       setClearing(false)
@@ -130,6 +135,7 @@ export function Settings() {
       setUpdateTokenError(null)
       setShowUpdateTokenModal(false)
       setUpdateTokenSuccess(true)
+      toast.success('API token updated.')
       setLastSync(getAppSetting('last_sync'))
       setTimeout(() => setUpdateTokenSuccess(false), 5000)
     } catch (err) {
@@ -165,6 +171,7 @@ export function Settings() {
     setAppSetting('payday_day', String(effectivePaydayDay))
     setAppSetting('next_payday', nextPayday.trim())
     setPaydaySuccess(true)
+    toast.success('Payday schedule updated.')
     setTimeout(() => setPaydaySuccess(false), 5000)
   }
 
