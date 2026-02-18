@@ -221,6 +221,23 @@ body {
   padding-top: 1rem;
 }
 
+/* Transactions: day separator and Held status */
+.table.table-striped .transactions-day-separator {
+  background: var(--vantura-surface);
+}
+.transactions-day-separator td {
+  height: 25px;
+  padding: 0;
+  border: none;
+  vertical-align: middle;
+  background: var(--vantura-surface);
+  pointer-events: none;
+}
+.table td.status-held {
+  background: color-mix(in srgb, var(--vantura-warning) 18%, transparent);
+  color: var(--vantura-text);
+}
+
 /* Phase 8: Purple React utilities */
 .grid-margin {
   margin-bottom: 2.5rem;

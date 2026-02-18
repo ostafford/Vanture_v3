@@ -258,15 +258,17 @@ export function Transactions() {
                   </tr>
                 </thead>
                 <tbody>
-                  {dateKeys.flatMap((dateStr) => {
+                  {dateKeys.flatMap((dateStr, dateIndex) => {
                     const displayDate = dateStr === 'Unknown' ? 'Unknown' : formatShortDate(dateStr)
-                    return grouped[dateStr].flatMap((row) => {
+                    const dayRows = grouped[dateStr].flatMap((row) => {
                       const isDebit = row.amount < 0
                       const absCents = Math.abs(row.amount)
                       const mainRow = (
                         <tr key={row.id}>
                           <td>{displayDate}</td>
-                          <td>{row.status === 'HELD' ? 'Held' : 'Settled'}</td>
+                          <td className={row.status === 'HELD' ? 'status-held' : ''}>
+                            {row.status === 'HELD' ? 'Held' : 'Settled'}
+                          </td>
                           <td>{row.description || row.raw_text || 'Unknown'}</td>
                           <td>{row.category_name ?? ''}</td>
                           <td className={`text-end ${isDebit ? '' : 'text-success'}`}>
@@ -290,6 +292,17 @@ export function Transactions() {
                       ))
                       return [mainRow, ...roundUpRows]
                     })
+                    const separator =
+                      dateIndex < dateKeys.length - 1 ? (
+                        <tr
+                          key={`sep-${dateStr}`}
+                          className="transactions-day-separator"
+                          aria-hidden="true"
+                        >
+                          <td colSpan={5} />
+                        </tr>
+                      ) : null
+                    return [...dayRows, separator].filter(Boolean)
                   })}
                 </tbody>
               </table>
