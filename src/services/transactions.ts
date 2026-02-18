@@ -32,7 +32,8 @@ export type TransactionSort = 'date' | 'amount' | 'merchant'
 export interface TransactionFilters {
   dateFrom?: string
   dateTo?: string
-  categoryId?: string
+  /** When length > 0, filter to these category IDs (IN clause). Empty or absent = All categories. */
+  categoryIds?: string[]
   amountMin?: number
   amountMax?: number
   search?: string
@@ -52,9 +53,10 @@ function buildWhereClause(filters: TransactionFilters): { sql: string; params: (
     conditions.push('COALESCE(t.created_at, t.settled_at) <= ?')
     params.push(filters.dateTo + 'T23:59:59.999Z')
   }
-  if (filters.categoryId) {
-    conditions.push('t.category_id = ?')
-    params.push(filters.categoryId)
+  if (filters.categoryIds?.length) {
+    const placeholders = filters.categoryIds.map(() => '?').join(',')
+    conditions.push(`t.category_id IN (${placeholders})`)
+    params.push(...filters.categoryIds)
   }
   if (filters.amountMin != null) {
     conditions.push('ABS(t.amount) >= ?')

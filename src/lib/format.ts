@@ -36,3 +36,15 @@ export function formatShortDateFromDate(d: Date): string {
     month: 'short',
   })
 }
+
+/** Format as "Mon, 9 Feb '25" (weekday, day, month, 2-digit year). Use when list can span years and year disambiguates. */
+export function formatShortDateWithYear(isoDate: string): string {
+  try {
+    const d = new Date(isoDate + (isoDate.length === 10 ? 'T12:00:00Z' : ''))
+    const short = formatShortDateFromDate(d)
+    const year = d.getFullYear() % 100
+    return `${short} '${year.toString().padStart(2, '0')}`
+  } catch {
+    return isoDate
+  }
+}

@@ -6,7 +6,7 @@ import { accentStore } from '@/stores/accentStore'
 import { toast } from '@/stores/toastStore'
 import { ACCENT_PALETTES, type AccentId } from '@/lib/accentPalettes'
 import { sessionStore } from '@/stores/sessionStore'
-import { performSync } from '@/services/sync'
+import { performFullSync, type SyncProgress } from '@/services/sync'
 import { deriveKeyFromPassphrase, decryptToken, encryptToken } from '@/lib/crypto'
 import { validateUpBankToken, UpBankUnauthorizedError, SYNC_401_MESSAGE } from '@/api/upBank'
 import { type PaydayFrequency, getPaydayDayOptions } from '@/lib/payday'
@@ -28,6 +28,7 @@ export function Settings() {
   const [lastSync, setLastSync] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [syncError, setSyncError] = useState<string | null>(null)
+  const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null)
   const [showClearModal, setShowClearModal] = useState(false)
   const [clearing, setClearing] = useState(false)
   const [showUpdateTokenModal, setShowUpdateTokenModal] = useState(false)
@@ -68,8 +69,10 @@ export function Settings() {
     setSyncing(true)
     setSyncError(null)
     try {
-      await performSync(token, () => {})
+      setSyncProgress({ phase: 'accounts' })
+      await performFullSync(token, (p) => setSyncProgress(p))
       setLastSync(getAppSetting('last_sync'))
+      toast.success('Full sync complete. All transactions updated.')
     } catch (err) {
       setSyncError(
         err instanceof UpBankUnauthorizedError
@@ -79,6 +82,7 @@ export function Settings() {
             : 'Sync failed. Please try again.'
       )
     } finally {
+      setSyncProgress(null)
       setSyncing(false)
     }
   }
@@ -306,6 +310,10 @@ export function Settings() {
               data.
             </p>
             <p className="small text-muted mb-2">
+              Re-syncs all transactions, including category changes made in the
+              Up Bank app.
+            </p>
+            <p className="small text-muted mb-2">
               Last synced: {formatLastSync(lastSync)}
             </p>
             <Button
@@ -331,6 +339,15 @@ export function Settings() {
                 'Re-sync now'
               )}
             </Button>
+            {syncing && syncProgress && (
+              <p className="small text-muted mt-2 mb-0" role="status" aria-live="polite">
+                {syncProgress.phase === 'done'
+                  ? 'Complete.'
+                  : syncProgress.phase === 'transactions' && syncProgress.fetched != null
+                    ? `Fetched ${syncProgress.fetched} transactions…`
+                    : `Syncing ${syncProgress.phase}…`}
+              </p>
+            )}
             {syncError && (
               <span className="d-block mt-2 text-danger small" role="alert">
                 {syncError}

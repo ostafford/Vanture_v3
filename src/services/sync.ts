@@ -270,3 +270,32 @@ export async function performSync(
   recalculateTrackers()
   progressCallback({ phase: 'done' })
 }
+
+/**
+ * Full re-sync: same as performSync but fetches ALL transactions (no filter[since]).
+ * Use when category changes or other edits made in Up Bank app need to be reflected.
+ * Slower than incremental sync; intended for occasional use via Settings Re-sync.
+ */
+export async function performFullSync(
+  apiToken: string,
+  progressCallback: (p: SyncProgress) => void
+): Promise<void> {
+  advanceNextPaydayIfNeeded()
+  progressCallback({ phase: 'accounts' })
+  const accounts = await fetchAccounts(apiToken)
+  for (const a of accounts) upsertAccount(a)
+  progressCallback({ phase: 'transactions', fetched: 0, hasMore: true })
+  await fetchAllTransactions(apiToken, null, (p) => {
+    progressCallback({ phase: 'transactions', fetched: p.fetched, hasMore: p.hasMore })
+  }).then((txs) => {
+    for (const tx of txs) upsertTransaction(tx)
+  })
+  progressCallback({ phase: 'categories' })
+  const categories = await fetchCategories(apiToken)
+  for (const c of categories) upsertCategory(c)
+  progressCallback({ phase: 'savers' })
+  updateSavers(accounts)
+  setAppSetting('last_sync', new Date().toISOString())
+  recalculateTrackers()
+  progressCallback({ phase: 'done' })
+}

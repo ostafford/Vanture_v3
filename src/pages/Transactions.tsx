@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Card, Form, Row, Col, Button } from 'react-bootstrap'
+import { Card, Form, Row, Col, Button, Dropdown } from 'react-bootstrap'
 import {
   getTransactionsGroupedByDate,
   getFilteredTransactionsCount,
@@ -10,7 +10,7 @@ import {
   type TransactionSort,
 } from '@/services/transactions'
 import { getCategories } from '@/services/categories'
-import { formatMoney, formatShortDate } from '@/lib/format'
+import { formatMoney, formatShortDate, formatShortDateWithYear } from '@/lib/format'
 
 const SORT_OPTIONS: { value: TransactionSort; label: string }[] = [
   { value: 'date', label: 'Date' },
@@ -28,7 +28,7 @@ function useFiltersFromSearchParams(): {
   const filters: TransactionFilters = useMemo(() => {
     let dateFrom = searchParams.get('dateFrom') ?? ''
     let dateTo = searchParams.get('dateTo') ?? ''
-    const categoryId = searchParams.get('categoryId') ?? undefined
+    const categoryIds = searchParams.getAll('categoryId').filter(Boolean)
     let amountMin: number | undefined
     let amountMax: number | undefined
     const rawMin = searchParams.get('amountMin')
@@ -51,7 +51,7 @@ function useFiltersFromSearchParams(): {
     return {
       ...(dateFrom && { dateFrom }),
       ...(dateTo && { dateTo }),
-      ...(categoryId && { categoryId }),
+      ...(categoryIds.length > 0 && { categoryIds }),
       ...(amountMin != null && { amountMin }),
       ...(amountMax != null && { amountMax }),
       ...(search && { search }),
@@ -64,7 +64,9 @@ function useFiltersFromSearchParams(): {
     const next = new URLSearchParams()
     if (f.dateFrom) next.set('dateFrom', f.dateFrom)
     if (f.dateTo) next.set('dateTo', f.dateTo)
-    if (f.categoryId) next.set('categoryId', f.categoryId)
+    if (f.categoryIds?.length) {
+      f.categoryIds.forEach((id) => next.append('categoryId', id))
+    }
     if (f.amountMin != null) next.set('amountMin', String(f.amountMin))
     if (f.amountMax != null) next.set('amountMax', String(f.amountMax))
     if (f.search) next.set('search', f.search)
@@ -114,7 +116,7 @@ export function Transactions() {
 
   useEffect(() => {
     setPage(0)
-  }, [filters.dateFrom, filters.dateTo, filters.categoryId, filters.amountMin, filters.amountMax, filters.search])
+  }, [filters.dateFrom, filters.dateTo, filters.categoryIds, filters.amountMin, filters.amountMax, filters.search])
 
   const updateFilter = <K extends keyof TransactionFilters>(
     key: K,
@@ -161,21 +163,68 @@ export function Transactions() {
               />
             </Col>
             <Col md={2}>
-              <Form.Select
-                id="transactions-filter-category"
-                name="categoryId"
-                value={filters.categoryId ?? ''}
-                onChange={(e) =>
-                  updateFilter('categoryId', e.target.value || undefined)
-                }
+              <Dropdown
+                autoClose="outside"
+                onSelect={(e) => {
+                  if (e === '__all__') {
+                    updateFilter('categoryIds', [])
+                    return
+                  }
+                  if (e == null) return
+                  const current = filters.categoryIds ?? []
+                  const set = new Set(current)
+                  if (set.has(e)) set.delete(e)
+                  else set.add(e)
+                  updateFilter('categoryIds', Array.from(set))
+                }}
               >
-                <option value="">All categories</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </Form.Select>
+                <Dropdown.Toggle
+                  id="transactions-filter-category"
+                  variant="outline-secondary"
+                  className="w-100 text-start d-flex align-items-center justify-content-between"
+                >
+                  <span className="text-truncate">
+                    {(filters.categoryIds?.length ?? 0) === 0
+                      ? 'All categories'
+                      : filters.categoryIds!.length === 1
+                        ? categories.find((c) => c.id === filters.categoryIds![0])?.name ?? '1 category'
+                        : `${filters.categoryIds!.length} categories`}
+                  </span>
+                </Dropdown.Toggle>
+                <Dropdown.Menu className="p-0">
+                  <Dropdown.Item
+                    eventKey="__all__"
+                    active={(filters.categoryIds?.length ?? 0) === 0}
+                  >
+                    All categories
+                  </Dropdown.Item>
+                  <Dropdown.Divider />
+                  {categories.map((c) => (
+                    <Dropdown.Item
+                      key={c.id}
+                      eventKey={c.id}
+                      as="div"
+                      className="d-flex align-items-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Form.Check
+                        type="checkbox"
+                        id={`transactions-cat-${c.id}`}
+                        label={c.name}
+                        checked={(filters.categoryIds ?? []).includes(c.id)}
+                        onChange={() => {
+                          const current = filters.categoryIds ?? []
+                          const set = new Set(current)
+                          if (set.has(c.id)) set.delete(c.id)
+                          else set.add(c.id)
+                          updateFilter('categoryIds', Array.from(set))
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </Dropdown.Item>
+                  ))}
+                </Dropdown.Menu>
+              </Dropdown>
             </Col>
             <Col md={1}>
               <Form.Control
@@ -251,7 +300,7 @@ export function Transactions() {
                 <thead>
                   <tr>
                     <th>Date</th>
-                    <th>Status</th>
+                    <th className="text-center align-middle">Status</th>
                     <th>Merchant</th>
                     <th>Category</th>
                     <th className="text-end">Amount</th>
@@ -259,14 +308,25 @@ export function Transactions() {
                 </thead>
                 <tbody>
                   {dateKeys.flatMap((dateStr, dateIndex) => {
-                    const displayDate = dateStr === 'Unknown' ? 'Unknown' : formatShortDate(dateStr)
+                    const showYear =
+                      !filters.dateFrom &&
+                      !filters.dateTo &&
+                      (filters.categoryIds?.length ?? 0) > 0
+                    const displayDate =
+                      dateStr === 'Unknown'
+                        ? 'Unknown'
+                        : showYear
+                          ? formatShortDateWithYear(dateStr)
+                          : formatShortDate(dateStr)
                     const dayRows = grouped[dateStr].flatMap((row) => {
                       const isDebit = row.amount < 0
                       const absCents = Math.abs(row.amount)
                       const mainRow = (
                         <tr key={row.id}>
                           <td>{displayDate}</td>
-                          <td className={row.status === 'HELD' ? 'status-held' : ''}>
+                          <td
+                            className={`text-center align-middle ${row.status === 'HELD' ? 'status-held' : ''}`}
+                          >
                             {row.status === 'HELD' ? 'Held' : 'Settled'}
                           </td>
                           <td>{row.description || row.raw_text || 'Unknown'}</td>
