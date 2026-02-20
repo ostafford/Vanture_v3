@@ -494,6 +494,38 @@ body {
 .progress .bg-success {
   background: linear-gradient(to right, #84d9d2, #07cdae) !important;
 }
+/* Tracker progress bar threshold colors: warning (51-80%), danger (81%+), striped overspent (100%+) */
+.progress .bg-warning {
+  background-color: var(--vantura-warning) !important;
+}
+.progress .bg-danger {
+  background-color: var(--vantura-danger) !important;
+}
+.progress .progress-bar-striped.bg-danger {
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.25) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.25) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 1rem 1rem;
+  background-color: var(--vantura-danger) !important;
+}
+.progress .progress-bar-striped.progress-bar-animated.bg-danger {
+  animation: progress-bar-stripes 1s linear infinite;
+}
+@keyframes progress-bar-stripes {
+  0% {
+    background-position: 1rem 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
 
 /* Phase 8: Purple React form inputs */
 .form-control {
@@ -514,6 +546,12 @@ body {
 }
 .text-primary {
   color: var(--vantura-primary) !important;
+}
+.text-warning {
+  color: var(--vantura-warning) !important;
+}
+.text-danger {
+  color: var(--vantura-danger) !important;
 }
 .bg-primary {
   background-color: var(--vantura-primary) !important;

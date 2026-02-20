@@ -25,6 +25,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const [paydayFrequency, setPaydayFrequency] = useState<PaydayFrequency>('MONTHLY')
   const [paydayDay, setPaydayDay] = useState(1)
   const [nextPayday, setNextPayday] = useState('')
+  const [paydayPayAmount, setPaydayPayAmount] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null)
@@ -80,6 +81,15 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     setAppSetting('payday_frequency', paydayFrequency)
     setAppSetting('payday_day', String(effectivePaydayDay))
     setAppSetting('next_payday', nextPayday)
+    const payAmtTrimmed = paydayPayAmount.trim()
+    if (payAmtTrimmed === '') {
+      setAppSetting('pay_amount_cents', '')
+    } else {
+      const cents = Math.round(parseFloat(payAmtTrimmed) * 100)
+      if (!Number.isNaN(cents) && cents >= 0) {
+        setAppSetting('pay_amount_cents', String(cents))
+      }
+    }
     setStep(5)
     startInitialSync(apiToken)
   }
@@ -233,7 +243,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             <Form onSubmit={handleStep4Submit}>
               <h6 className="mb-2">When do you get paid?</h6>
               <p className="text-muted small mb-3">
-                This helps calculate your Spendable balance.
+                This helps calculate your Spendable balance. When Monthly, Day is
+                the date in the month (1st–28th). If you&apos;re paid on the
+                29th–31st, choose 28th and set Next payday to your actual date.
               </p>
               <Form.Group className="mb-2">
                 <Form.Label htmlFor="onboarding-payday-frequency">Frequency</Form.Label>
@@ -264,6 +276,20 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     </option>
                   ))}
                 </Form.Select>
+              </Form.Group>
+              <Form.Group className="mb-2">
+                <Form.Label htmlFor="onboarding-payday-pay-amount">Pay amount ($)</Form.Label>
+                <Form.Control
+                  id="onboarding-payday-pay-amount"
+                  name="paydayPayAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Optional"
+                  value={paydayPayAmount}
+                  onChange={(e) => setPaydayPayAmount(e.target.value)}
+                  aria-label="Pay amount per pay period (optional)"
+                />
               </Form.Group>
               <Form.Group className="mb-3">
                 <Form.Label htmlFor="onboarding-next-payday">Next payday</Form.Label>

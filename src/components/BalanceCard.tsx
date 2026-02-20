@@ -3,20 +3,24 @@ import {
   getAvailableBalance,
   getReservedAmount,
   getSpendableBalance,
+  getPayAmountCents,
 } from '@/services/balance'
 import { formatMoney } from '@/lib/format'
-
-const spendableTooltip = (
-  <Tooltip id="spendable-tooltip">
-    Spendable = Available minus reserved for upcoming charges. Only charges due before your next
-    payday are reserved; prorated for monthly/quarterly/yearly.
-  </Tooltip>
-)
 
 export function BalanceCard() {
   const available = getAvailableBalance()
   const reserved = getReservedAmount()
   const spendable = getSpendableBalance()
+  const payAmountCents = getPayAmountCents()
+
+  const spendableTooltip = (
+    <Tooltip id="spendable-tooltip">
+      Spendable = Available minus reserved for upcoming charges. Only charges due before your next
+      payday are reserved; prorated for monthly/quarterly/yearly.
+      {payAmountCents != null &&
+        ` After payday (before new spending): about $${formatMoney(spendable)} + $${formatMoney(payAmountCents)} = $${formatMoney(spendable + payAmountCents)}.`}
+    </Tooltip>
+  )
 
   return (
     <Card className="bg-gradient-primary">

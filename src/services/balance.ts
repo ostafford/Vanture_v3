@@ -75,6 +75,16 @@ export function calculateReservedAmount(
 }
 
 /**
+ * Pay amount per pay period (cents) from app_settings. Returns null when not set or invalid.
+ */
+export function getPayAmountCents(): number | null {
+  const raw = getAppSetting('pay_amount_cents')
+  if (raw == null || raw === '') return null
+  const cents = parseInt(raw, 10)
+  return Number.isNaN(cents) || cents < 0 ? null : cents
+}
+
+/**
  * Sum of balances (cents) of all transactional accounts.
  */
 export function getAvailableBalance(): number {

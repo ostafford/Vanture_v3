@@ -139,6 +139,60 @@ export function getTrackerTransactionsInPeriod(trackerId: number): Array<{
   return list
 }
 
+/**
+ * UTC weekday for reset_day: 1=Mon..7=Sun maps to getUTCDay() 1..6,0.
+ */
+function resetDayToUTCDay(resetDay: number): number {
+  return resetDay === 7 ? 0 : resetDay
+}
+
+/**
+ * Start of the current period (inclusive). Used so tracker shows full period from reset day, not from creation day.
+ */
+function getLastResetDate(
+  frequency: TrackerResetFrequency,
+  resetDay: number,
+  fromDate: string
+): string {
+  const from = new Date(fromDate + 'T12:00:00Z')
+  if (frequency === 'PAYDAY') {
+    return fromDate
+  }
+  if (frequency === 'WEEKLY') {
+    const targetUTCDay = resetDayToUTCDay(resetDay)
+    const currentUTCDay = from.getUTCDay()
+    const daysBack = (currentUTCDay - targetUTCDay + 7) % 7
+    const last = new Date(from)
+    last.setUTCDate(last.getUTCDate() - daysBack)
+    return last.toISOString().slice(0, 10)
+  }
+  if (frequency === 'FORTNIGHTLY') {
+    const targetUTCDay = resetDayToUTCDay(resetDay)
+    const currentUTCDay = from.getUTCDay()
+    const daysBack = (currentUTCDay - targetUTCDay + 7) % 7
+    const lastWeekday = new Date(from)
+    lastWeekday.setUTCDate(lastWeekday.getUTCDate() - daysBack)
+    const candidate = lastWeekday.toISOString().slice(0, 10)
+    const daysSince = daysBetween(candidate, fromDate)
+    const periodsSince = Math.floor(daysSince / 14)
+    const last = new Date(candidate + 'T12:00:00Z')
+    last.setUTCDate(last.getUTCDate() + 14 * periodsSince)
+    return last.toISOString().slice(0, 10)
+  }
+  if (frequency === 'MONTHLY') {
+    const d = new Date(from)
+    const dayOfMonth = d.getUTCDate()
+    if (dayOfMonth >= resetDay) {
+      d.setUTCDate(resetDay)
+    } else {
+      d.setUTCMonth(d.getUTCMonth() - 1)
+      d.setUTCDate(Math.min(resetDay, 28))
+    }
+    return d.toISOString().slice(0, 10)
+  }
+  return fromDate
+}
+
 function getNextResetDate(
   frequency: TrackerResetFrequency,
   resetDay: number,
@@ -151,8 +205,11 @@ function getNextResetDate(
   }
   let next: Date
   if (frequency === 'WEEKLY') {
+    const targetUTCDay = resetDayToUTCDay(resetDay)
+    const currentUTCDay = from.getUTCDay()
+    const daysUntilNext = ((targetUTCDay - currentUTCDay + 7) % 7) || 7
     next = new Date(from)
-    next.setUTCDate(next.getUTCDate() + 7)
+    next.setUTCDate(next.getUTCDate() + daysUntilNext)
   } else if (frequency === 'FORTNIGHTLY') {
     next = new Date(from)
     next.setUTCDate(next.getUTCDate() + 14)
@@ -168,7 +225,7 @@ function getNextResetDate(
 
 /**
  * Create tracker and set start_date, last_reset_date, next_reset_date.
- * For PAYDAY use app_settings next_payday; for others use today as last_reset and compute next.
+ * For PAYDAY use app_settings next_payday; for others use period start (e.g. last Monday) so the tracker shows the full frequency window.
  */
 export function createTracker(
   name: string,
@@ -188,8 +245,8 @@ export function createTracker(
     nextReset = nextPayday ?? today
     lastReset = today
   } else {
-    lastReset = today
-    nextReset = getNextResetDate(resetFrequency, resetDay, today)
+    lastReset = getLastResetDate(resetFrequency, resetDay, today)
+    nextReset = getNextResetDate(resetFrequency, resetDay, lastReset)
   }
   db.run(
     `INSERT INTO trackers (name, budget_amount, reset_frequency, reset_day, start_date, last_reset_date, next_reset_date, is_active, created_at)

@@ -40,6 +40,7 @@ export function Settings() {
   const [paydayFrequency, setPaydayFrequency] = useState<PaydayFrequency>('MONTHLY')
   const [paydayDay, setPaydayDay] = useState(1)
   const [nextPayday, setNextPayday] = useState('')
+  const [paydayPayAmount, setPaydayPayAmount] = useState('')
   const [paydayError, setPaydayError] = useState<string | null>(null)
   const [paydaySuccess, setPaydaySuccess] = useState(false)
   const accent = useStore(accentStore, (s) => s.accent)
@@ -53,6 +54,7 @@ export function Settings() {
     const freq = getAppSetting('payday_frequency') as PaydayFrequency | null
     const dayStr = getAppSetting('payday_day')
     const next = getAppSetting('next_payday')
+    const payAmt = getAppSetting('pay_amount_cents')
     if (freq === 'WEEKLY' || freq === 'FORTNIGHTLY' || freq === 'MONTHLY') {
       setPaydayFrequency(freq)
     }
@@ -61,6 +63,14 @@ export function Settings() {
       if (!Number.isNaN(d)) setPaydayDay(d)
     }
     setNextPayday(next ?? new Date().toISOString().slice(0, 10))
+    if (payAmt != null && payAmt !== '') {
+      const cents = parseInt(payAmt, 10)
+      if (!Number.isNaN(cents) && cents >= 0) {
+        setPaydayPayAmount((cents / 100).toFixed(2))
+      }
+    } else {
+      setPaydayPayAmount('')
+    }
   }, [])
 
   async function handleReSync() {
@@ -174,6 +184,13 @@ export function Settings() {
     setAppSetting('payday_frequency', paydayFrequency)
     setAppSetting('payday_day', String(effectivePaydayDay))
     setAppSetting('next_payday', nextPayday.trim())
+    const payAmtTrimmed = paydayPayAmount.trim()
+    if (payAmtTrimmed === '') {
+      setAppSetting('pay_amount_cents', '')
+    } else {
+      const cents = Math.round(parseFloat(payAmtTrimmed) * 100)
+      setAppSetting('pay_amount_cents', Number.isNaN(cents) || cents < 0 ? '' : String(cents))
+    }
     setPaydaySuccess(true)
     toast.success('Payday schedule updated.')
     setTimeout(() => setPaydaySuccess(false), 5000)
@@ -240,7 +257,9 @@ export function Settings() {
         <Card.Body>
           <p className="small text-muted mb-3">
             Used for spendable balance and PAYDAY trackers. Update when your pay
-            cycle changes (e.g. new job).
+            cycle changes (e.g. new job). When Monthly, Day is the date in the
+            month (1st–28th). If you&apos;re paid on the 29th–31st, choose 28th
+            and set Next payday to your actual date.
           </p>
           <Form onSubmit={handlePaydaySubmit}>
             <Form.Group className="mb-2">
@@ -270,6 +289,20 @@ export function Settings() {
                   </option>
                 ))}
               </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-2">
+              <Form.Label htmlFor="settings-payday-pay-amount">Pay amount ($)</Form.Label>
+              <Form.Control
+                id="settings-payday-pay-amount"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Optional"
+                value={paydayPayAmount}
+                onChange={(e) => setPaydayPayAmount(e.target.value)}
+                aria-label="Pay amount per pay period (optional)"
+              />
+              <Form.Text className="text-muted">Optional. Used for Spendable context, alerts, and PAYDAY tracker warnings.</Form.Text>
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label htmlFor="settings-next-payday">Next payday</Form.Label>

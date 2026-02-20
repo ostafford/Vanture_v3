@@ -7,6 +7,7 @@ import {
   Form,
   Badge,
   Collapse,
+  Alert,
 } from 'react-bootstrap'
 import {
   getTrackersWithProgress,
@@ -18,6 +19,7 @@ import {
   type TrackerResetFrequency,
 } from '@/services/trackers'
 import { getCategories } from '@/services/categories'
+import { getPayAmountCents } from '@/services/balance'
 import { formatMoney, formatShortDate } from '@/lib/format'
 import { toast } from '@/stores/toastStore'
 
@@ -27,6 +29,23 @@ const RESET_FREQUENCIES: { value: TrackerResetFrequency; label: string }[] = [
   { value: 'MONTHLY', label: 'Monthly' },
   { value: 'PAYDAY', label: 'Payday' },
 ]
+
+function getTrackerProgressStyle(progress: number): {
+  variant: 'primary' | 'warning' | 'danger'
+  striped: boolean
+  animated: boolean
+} {
+  if (progress >= 100) {
+    return { variant: 'danger', striped: true, animated: true }
+  }
+  if (progress >= 81) {
+    return { variant: 'danger', striped: false, animated: false }
+  }
+  if (progress > 50) {
+    return { variant: 'warning', striped: false, animated: false }
+  }
+  return { variant: 'primary', striped: false, animated: false }
+}
 
 export function TrackersSection() {
   const [, setRefresh] = useState(0)
@@ -41,6 +60,12 @@ export function TrackersSection() {
 
   const trackers = getTrackersWithProgress()
   const categories = getCategories()
+  const payAmountCents = getPayAmountCents()
+  const totalPaydayBudgetCents = trackers
+    .filter((t) => t.reset_frequency === 'PAYDAY')
+    .reduce((sum, t) => sum + t.budget_amount, 0)
+  const paydayBudgetExceedsPay =
+    payAmountCents != null && payAmountCents > 0 && totalPaydayBudgetCents > payAmountCents
 
   function openCreate() {
     setEditingId(null)
@@ -93,6 +118,21 @@ export function TrackersSection() {
       ? Array.from({ length: 28 }, (_, i) => i + 1)
       : [1, 2, 3, 4, 5, 6, 7]
 
+  const budgetCentsForModal = Math.round(parseFloat(budget || '0') * 100)
+  const otherPaydayBudgetCents =
+    editingId != null
+      ? trackers
+          .filter((t) => t.reset_frequency === 'PAYDAY' && t.id !== editingId)
+          .reduce((sum, t) => sum + t.budget_amount, 0)
+      : totalPaydayBudgetCents
+  const newTotalPaydayCents = otherPaydayBudgetCents + budgetCentsForModal
+  const modalPaydayExceedsPay =
+    frequency === 'PAYDAY' &&
+    payAmountCents != null &&
+    payAmountCents > 0 &&
+    budgetCentsForModal > 0 &&
+    newTotalPaydayCents > payAmountCents
+
   return (
     <>
       <Card>
@@ -108,14 +148,21 @@ export function TrackersSection() {
           </Button>
         </Card.Header>
         <Card.Body>
+          {paydayBudgetExceedsPay && (
+            <Alert variant="warning" className="mb-3">
+              Total PAYDAY tracker budgets (${formatMoney(totalPaydayBudgetCents)}) exceed your pay amount (${formatMoney(payAmountCents!)}). Consider adjusting budgets or pay amount in Settings.
+            </Alert>
+          )}
           {trackers.length === 0 ? (
             <p className="text-muted small mb-0">
               No trackers yet. Add one to get started.
             </p>
           ) : (
             <div className="d-flex flex-column gap-3">
-              {trackers.map((t) => (
-                <div key={t.id}>
+              {trackers.map((t) => {
+                const progressStyle = getTrackerProgressStyle(t.progress)
+                return (
+                  <div key={t.id}>
                   <div
                     className="d-flex justify-content-between align-items-start"
                     style={{ cursor: 'pointer' }}
@@ -138,10 +185,12 @@ export function TrackersSection() {
                       Edit
                     </Button>
                   </div>
-                  <h6 className="text-primary mt-1">${formatMoney(t.remaining)} left</h6>
+                  <h6 className={`text-${progressStyle.variant} mt-1 text-end`}>${formatMoney(t.remaining)} left</h6>
                   <ProgressBar
                     now={Math.min(100, t.progress)}
-                    variant={t.progress >= 100 ? 'danger' : 'primary'}
+                    variant={progressStyle.variant}
+                    striped={progressStyle.striped}
+                    animated={progressStyle.animated}
                     label={`${Math.round(t.progress)}%`}
                   />
                   <small className="text-muted">
@@ -167,7 +216,8 @@ export function TrackersSection() {
                     </div>
                   </Collapse>
                 </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </Card.Body>
@@ -232,6 +282,11 @@ export function TrackersSection() {
                   ))}
                 </Form.Select>
               </Form.Group>
+            )}
+            {modalPaydayExceedsPay && (
+              <Alert variant="warning" className="mb-2">
+                Total PAYDAY budgets will be ${formatMoney(newTotalPaydayCents)} (pay amount ${formatMoney(payAmountCents!)}).
+              </Alert>
             )}
             <Form.Group className="mb-2">
               <Form.Label>Categories</Form.Label>

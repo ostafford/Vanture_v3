@@ -44,8 +44,8 @@ export function StatCard({ title, value, subtitle, displayValue, compact, gradie
     return (
       <Card className={`bg-gradient-${gradient} text-white`}>
         <Card.Body className="py-1 px-2">
-          <h6 className="font-weight-normal mb-0 small text-white">{titleContent}</h6>
-          <h6 className="mb-0 text-white">{valueContent}</h6>
+          <h6 className="font-weight-normal mb-0 small text-white text-center align-middle">{titleContent}</h6>
+          <h6 className="mb-0 text-white text-center align-middle">{valueContent}</h6>
           {subtitle && <small className="card-text opacity-75 d-block">{subtitle}</small>}
         </Card.Body>
       </Card>
@@ -56,9 +56,9 @@ export function StatCard({ title, value, subtitle, displayValue, compact, gradie
     <Card className={`bg-gradient-${gradient} card-img-holder text-white`}>
       <Card.Body>
         <img src={circleImg} className="card-img-absolute" alt={imgAlt ?? ''} />
-        <h4 className="font-weight-normal mb-3 text-white">{titleContent}</h4>
-        <h2 className="mb-2 text-white">{valueContent}</h2>
-        {subtitle && <h6 className="card-text opacity-75 mb-0">{subtitle}</h6>}
+        <h4 className="font-weight-normal mb-3 text-white text-center align-middle">{titleContent}</h4>
+        <h2 className="mb-2 text-white text-center align-middle">{valueContent}</h2>
+        {subtitle && <h6 className="card-text opacity-75 mb-0 text-center align-middle">{subtitle}</h6>}
       </Card.Body>
     </Card>
   )
