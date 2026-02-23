@@ -62,7 +62,9 @@ export function calculateReservedAmount(
         const payPeriodDays = paydayDays[paydayFrequency] ?? 30
         const payPeriodsUntilCharge = Math.ceil(daysUntilCharge / payPeriodDays)
         const amountPerPeriod =
-          payPeriodsUntilCharge > 0 ? charge.amount / payPeriodsUntilCharge : charge.amount
+          payPeriodsUntilCharge > 0
+            ? charge.amount / payPeriodsUntilCharge
+            : charge.amount
         const portionToReserve = Math.min(amountPerPeriod, charge.amount)
         totalReserved += portionToReserve
         break

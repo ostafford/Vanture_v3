@@ -41,7 +41,10 @@ export interface TransactionFilters {
 
 const DEFAULT_SORT: TransactionSort = 'date'
 
-function buildWhereClause(filters: TransactionFilters): { sql: string; params: (string | number)[] } {
+function buildWhereClause(filters: TransactionFilters): {
+  sql: string
+  params: (string | number)[]
+} {
   const conditions: string[] = ['(t.round_up_parent_id IS NULL)']
   const params: (string | number)[] = []
 
@@ -147,8 +150,7 @@ export function getFilteredTransactions(
   const { sql: whereSql, params } = buildWhereClause(filters)
   const limit = options?.limit ?? 0
   const offset = options?.offset ?? 0
-  const limitClause =
-    limit > 0 ? ` LIMIT ${limit} OFFSET ${offset}` : ''
+  const limitClause = limit > 0 ? ` LIMIT ${limit} OFFSET ${offset}` : ''
   const sql = `SELECT t.id, t.account_id, t.description, t.raw_text, t.amount, t.settled_at,
     t.created_at, t.status,
     t.category_id, c.name AS category_name, t.is_round_up, t.round_up_parent_id,
@@ -221,7 +223,9 @@ export interface RoundUpRow {
  * Round-up rows that belong to the given parent transaction ids.
  * Used to render "Round-up +$X → Account" under each parent.
  */
-export function getRoundUpsByParentIds(parentIds: string[]): Map<string, RoundUpRow[]> {
+export function getRoundUpsByParentIds(
+  parentIds: string[]
+): Map<string, RoundUpRow[]> {
   const db = getDb()
   const map = new Map<string, RoundUpRow[]>()
   if (!db || parentIds.length === 0) return map
@@ -234,7 +238,13 @@ export function getRoundUpsByParentIds(parentIds: string[]): Map<string, RoundUp
   const stmt = db.prepare(sql)
   stmt.bind(parentIds as unknown as (string | number)[])
   while (stmt.step()) {
-    const row = stmt.get() as [string, number, string, string | null, string | null]
+    const row = stmt.get() as [
+      string,
+      number,
+      string,
+      string | null,
+      string | null,
+    ]
     const parentId = row[2]
     if (!map.has(parentId)) map.set(parentId, [])
     map.get(parentId)!.push({

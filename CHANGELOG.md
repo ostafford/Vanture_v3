@@ -1,0 +1,36 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [Unreleased]
+
+### Added
+
+- **Quality gates:** `typecheck`, `format:check`, and `validate` scripts; CI runs format-check, lint, typecheck, tests, and `npm audit --audit-level=critical` before build.
+- **Tests:** Vitest; tests for `lib/crypto` (encrypt/decrypt round-trip), `lib/format`, `lib/payday`, and `services/balance` (reserved amount).
+- **Pre-commit:** Husky + lint-staged to run Prettier and ESLint on staged `src/**/*.{ts,tsx,css}`.
+- **SECURITY.md:** Data handling and vulnerability reporting.
+- **CHANGELOG.md:** Keep a Changelog format; README links to it and documents updating Unreleased when adding features.
+- **Help:** User guide at `/help` (What is Vantura, getting started, Spendable, Trackers, Savers, Upcoming, security). Help popover/link from onboarding and Settings.
+- **Dashboard tour:** First-time product tour (driver.js) over balance cards, Savers, Trackers, Weekly insights, Upcoming, sidebar, Lock. Can be run again from Settings ("Show dashboard tour again").
+
+### Changed
+
+- **Sync state:** Centralised sync state in `syncStore` (`lastSyncCompletedAt`, syncing flag) used by Navbar, Dashboard, Settings, and Transactions for consistent "last synced" and sync-in-progress behaviour.
+- **UI / styling:** Theme and layout/styling refinements (e.g. index.css, BalanceCard, StatCard, dashboard sections, Navbar, Sidebar).
+
+## [0.0.1] - 2025-02-23
+
+### Added
+
+- **Onboarding & Sync (Phase 2):** 6-step onboarding wizard (welcome, passphrase creation, API token validation and encryption, payday schedule, initial sync, completion). API token encrypted with passphrase-derived key (PBKDF2 100k, AES-GCM 256-bit). Unlock screen on each app open. Incremental sync from navbar with Up Bank API (cursor pagination, rate limiting).
+- **Core features (Phase 3):** Dashboard with 3-column layout (Savers, Weekly insights, Trackers; Upcoming below). Balance card (Available, Spendable with prorated reserved amount). Trackers (name, budget, reset frequency, multi-category). Savers (balance vs goal, target date, monthly transfer). Weekly insights (Money In/Out, saver changes, category breakdown). Upcoming charges (manual entry, frequency, Include in Spendable).
+- **Transactions & filtering (Phase 4):** Full transaction list at `/transactions` with date/category/amount/search filters, sort (date/amount/merchant), date grouping. Round-ups linked to parent when `round_up_parent_id` set.
+- **Polish (Phase 5):** Responsive layout (13"-27"), error boundary and DB/persist error handling, loading states, paginated transactions (50 per page), PWA (service worker, manifest, installable).
+- **Deployment (Phase 6):** Production build with GitHub Pages base path; GitHub Actions deploy on push to `main`; SPA routing via `404.html`.
+- **Settings (Phase 7):** Re-sync, Clear all data (confirmation modal, delete DB, reload to Onboarding).
+
+[Unreleased]: https://github.com/ostafford/Vanture_v3/compare/v0.0.1...HEAD
+[0.0.1]: https://github.com/ostafford/Vanture_v3/releases/tag/v0.0.1

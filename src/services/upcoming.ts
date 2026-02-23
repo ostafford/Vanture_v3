@@ -36,7 +36,15 @@ export function getUpcomingChargesGrouped(): UpcomingGrouped {
   const later: UpcomingChargeRow[] = []
   const today = todayDateString()
   while (stmt.step()) {
-    const row = stmt.get() as [number, string, number, string, string, string | null, number]
+    const row = stmt.get() as [
+      number,
+      string,
+      number,
+      string,
+      string,
+      string | null,
+      number,
+    ]
     const charge: UpcomingChargeRow = {
       id: row[0],
       name: row[1],
@@ -73,7 +81,15 @@ export function createUpcomingCharge(
   db.run(
     `INSERT INTO upcoming_charges (name, amount, frequency, next_charge_date, category_id, is_reserved, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [name, amountCents, frequency, nextChargeDate, categoryId, isReserved ? 1 : 0, now]
+    [
+      name,
+      amountCents,
+      frequency,
+      nextChargeDate,
+      categoryId,
+      isReserved ? 1 : 0,
+      now,
+    ]
   )
   const result = db.exec('SELECT last_insert_rowid()')
   const id = (result[0]?.values?.[0]?.[0] as number) ?? 0
@@ -94,7 +110,15 @@ export function updateUpcomingCharge(
   if (!db) throw new Error('Database not ready')
   db.run(
     `UPDATE upcoming_charges SET name = ?, amount = ?, frequency = ?, next_charge_date = ?, category_id = ?, is_reserved = ? WHERE id = ?`,
-    [name, amountCents, frequency, nextChargeDate, categoryId, isReserved ? 1 : 0, id]
+    [
+      name,
+      amountCents,
+      frequency,
+      nextChargeDate,
+      categoryId,
+      isReserved ? 1 : 0,
+      id,
+    ]
   )
   schedulePersist()
 }

@@ -4,7 +4,11 @@
 
 import { getDb, getAppSetting, schedulePersist } from '@/db'
 
-export type TrackerResetFrequency = 'WEEKLY' | 'FORTNIGHTLY' | 'MONTHLY' | 'PAYDAY'
+export type TrackerResetFrequency =
+  | 'WEEKLY'
+  | 'FORTNIGHTLY'
+  | 'MONTHLY'
+  | 'PAYDAY'
 
 export interface TrackerRow {
   id: number
@@ -24,8 +28,10 @@ export interface TrackerWithProgress extends TrackerRow {
 }
 
 function daysBetween(dateStrA: string, dateStrB: string): number {
-  const a = new Date(dateStrA + 'T12:00:00Z').getTime()
-  const b = new Date(dateStrB + 'T12:00:00Z').getTime()
+  const norm = (s: string) => (s.length >= 10 ? s.slice(0, 10) : s)
+  const a = new Date(norm(dateStrA) + 'T12:00:00Z').getTime()
+  const b = new Date(norm(dateStrB) + 'T12:00:00Z').getTime()
+  if (Number.isNaN(a) || Number.isNaN(b)) return 0
   return Math.round((b - a) / (24 * 60 * 60 * 1000))
 }
 
@@ -65,7 +71,15 @@ export function getTrackersWithProgress(): TrackerWithProgress[] {
   const list: TrackerWithProgress[] = []
   const today = new Date().toISOString().slice(0, 10)
   while (stmt.step()) {
-    const row = stmt.get() as [number, string, number, string, number | null, string, string]
+    const row = stmt.get() as [
+      number,
+      string,
+      number,
+      string,
+      number | null,
+      string,
+      string,
+    ]
     const id = row[0]
     const budget_amount = row[2]
     const next_reset_date = row[6]
@@ -125,7 +139,14 @@ export function getTrackerTransactionsInPeriod(trackerId: number): Array<{
     status: string
   }> = []
   while (stmt.step()) {
-    const row = stmt.get() as [string, string, string | null, string | null, number, string]
+    const row = stmt.get() as [
+      string,
+      string,
+      string | null,
+      string | null,
+      number,
+      string,
+    ]
     list.push({
       id: row[0],
       description: row[1],
@@ -207,7 +228,7 @@ function getNextResetDate(
   if (frequency === 'WEEKLY') {
     const targetUTCDay = resetDayToUTCDay(resetDay)
     const currentUTCDay = from.getUTCDay()
-    const daysUntilNext = ((targetUTCDay - currentUTCDay + 7) % 7) || 7
+    const daysUntilNext = (targetUTCDay - currentUTCDay + 7) % 7 || 7
     next = new Date(from)
     next.setUTCDate(next.getUTCDate() + daysUntilNext)
   } else if (frequency === 'FORTNIGHTLY') {
@@ -251,12 +272,24 @@ export function createTracker(
   db.run(
     `INSERT INTO trackers (name, budget_amount, reset_frequency, reset_day, start_date, last_reset_date, next_reset_date, is_active, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`,
-    [name, budgetAmountCents, resetFrequency, resetDay, today, lastReset, nextReset, now]
+    [
+      name,
+      budgetAmountCents,
+      resetFrequency,
+      resetDay,
+      today,
+      lastReset,
+      nextReset,
+      now,
+    ]
   )
   const result = db.exec('SELECT last_insert_rowid()')
   const id = (result[0]?.values?.[0]?.[0] as number) ?? 0
   for (const catId of categoryIds) {
-    db.run(`INSERT INTO tracker_categories (tracker_id, category_id) VALUES (?, ?)`, [id, catId])
+    db.run(
+      `INSERT INTO tracker_categories (tracker_id, category_id) VALUES (?, ?)`,
+      [id, catId]
+    )
   }
   schedulePersist()
   return id
@@ -281,7 +314,10 @@ export function updateTracker(
   )
   db.run(`DELETE FROM tracker_categories WHERE tracker_id = ?`, [id])
   for (const catId of categoryIds) {
-    db.run(`INSERT INTO tracker_categories (tracker_id, category_id) VALUES (?, ?)`, [id, catId])
+    db.run(
+      `INSERT INTO tracker_categories (tracker_id, category_id) VALUES (?, ?)`,
+      [id, catId]
+    )
   }
   schedulePersist()
 }
@@ -302,7 +338,9 @@ export function deleteTracker(id: number): void {
 export function getTrackerCategoryIds(trackerId: number): string[] {
   const db = getDb()
   if (!db) return []
-  const stmt = db.prepare(`SELECT category_id FROM tracker_categories WHERE tracker_id = ?`)
+  const stmt = db.prepare(
+    `SELECT category_id FROM tracker_categories WHERE tracker_id = ?`
+  )
   stmt.bind([trackerId])
   const ids: string[] = []
   while (stmt.step()) {

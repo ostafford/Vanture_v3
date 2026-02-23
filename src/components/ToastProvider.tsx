@@ -23,11 +23,7 @@ export function ToastProvider() {
   }, [show, hide])
 
   return (
-    <ToastContainer
-      position="top-end"
-      className="p-3"
-      style={{ zIndex: 9999 }}
-    >
+    <ToastContainer position="top-end" className="p-3" style={{ zIndex: 9999 }}>
       <Toast
         show={show}
         onClose={hide}

@@ -1,15 +1,26 @@
 import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from 'zustand'
 import { Card, Button, Modal, Spinner, Form } from 'react-bootstrap'
 import { getAppSetting, setAppSetting, deleteDatabase } from '@/db'
 import { accentStore } from '@/stores/accentStore'
+import { syncStore } from '@/stores/syncStore'
 import { toast } from '@/stores/toastStore'
 import { ACCENT_PALETTES, type AccentId } from '@/lib/accentPalettes'
 import { sessionStore } from '@/stores/sessionStore'
 import { performFullSync, type SyncProgress } from '@/services/sync'
-import { deriveKeyFromPassphrase, decryptToken, encryptToken } from '@/lib/crypto'
-import { validateUpBankToken, UpBankUnauthorizedError, SYNC_401_MESSAGE } from '@/api/upBank'
+import {
+  deriveKeyFromPassphrase,
+  decryptToken,
+  encryptToken,
+} from '@/lib/crypto'
+import {
+  validateUpBankToken,
+  UpBankUnauthorizedError,
+  SYNC_401_MESSAGE,
+} from '@/api/upBank'
 import { type PaydayFrequency, getPaydayDayOptions } from '@/lib/payday'
+import { setDashboardTourCompleted } from '@/lib/dashboardTour'
 
 function formatLastSync(iso: string | null): string {
   if (!iso) return 'Never'
@@ -37,7 +48,8 @@ export function Settings() {
   const [updateTokenError, setUpdateTokenError] = useState<string | null>(null)
   const [updateTokenLoading, setUpdateTokenLoading] = useState(false)
   const [updateTokenSuccess, setUpdateTokenSuccess] = useState(false)
-  const [paydayFrequency, setPaydayFrequency] = useState<PaydayFrequency>('MONTHLY')
+  const [paydayFrequency, setPaydayFrequency] =
+    useState<PaydayFrequency>('MONTHLY')
   const [paydayDay, setPaydayDay] = useState(1)
   const [nextPayday, setNextPayday] = useState('')
   const [paydayPayAmount, setPaydayPayAmount] = useState('')
@@ -45,6 +57,7 @@ export function Settings() {
   const [paydaySuccess, setPaydaySuccess] = useState(false)
   const accent = useStore(accentStore, (s) => s.accent)
   const setAccent = useStore(accentStore, (s) => s.setAccent)
+  const navigate = useNavigate()
 
   useEffect(() => {
     setLastSync(getAppSetting('last_sync'))
@@ -78,10 +91,12 @@ export function Settings() {
     if (!token || syncing) return
     setSyncing(true)
     setSyncError(null)
+    syncStore.getState().setSyncing(true)
     try {
       setSyncProgress({ phase: 'accounts' })
       await performFullSync(token, (p) => setSyncProgress(p))
       setLastSync(getAppSetting('last_sync'))
+      syncStore.getState().syncCompleted()
       toast.success('Full sync complete. All transactions updated.')
     } catch (err) {
       setSyncError(
@@ -94,6 +109,7 @@ export function Settings() {
     } finally {
       setSyncProgress(null)
       setSyncing(false)
+      syncStore.getState().setSyncing(false)
     }
   }
 
@@ -106,10 +122,14 @@ export function Settings() {
       window.location.reload()
     } catch (err) {
       setSyncError(
-        err instanceof Error ? err.message : 'Failed to clear data. Please try again.'
+        err instanceof Error
+          ? err.message
+          : 'Failed to clear data. Please try again.'
       )
       toast.error(
-        err instanceof Error ? err.message : 'Failed to clear data. Please try again.'
+        err instanceof Error
+          ? err.message
+          : 'Failed to clear data. Please try again.'
       )
       setClearing(false)
     }
@@ -129,7 +149,9 @@ export function Settings() {
       const salt = getAppSetting('encryption_salt')
       const encrypted = getAppSetting('api_token_encrypted')
       if (!salt || !encrypted) {
-        setUpdateTokenError('No stored credentials. Please complete onboarding first.')
+        setUpdateTokenError(
+          'No stored credentials. Please complete onboarding first.'
+        )
         setUpdateTokenLoading(false)
         return
       }
@@ -154,7 +176,9 @@ export function Settings() {
       setTimeout(() => setUpdateTokenSuccess(false), 5000)
     } catch (err) {
       setUpdateTokenError(
-        err instanceof Error ? err.message : 'Invalid passphrase or failed to update token.'
+        err instanceof Error
+          ? err.message
+          : 'Invalid passphrase or failed to update token.'
       )
     } finally {
       setUpdateTokenLoading(false)
@@ -172,7 +196,9 @@ export function Settings() {
 
   const paydayDayOptions = getPaydayDayOptions(paydayFrequency)
   const paydayDayValid = paydayDayOptions.some((opt) => opt.value === paydayDay)
-  const effectivePaydayDay = paydayDayValid ? paydayDay : paydayDayOptions[0]?.value ?? 1
+  const effectivePaydayDay = paydayDayValid
+    ? paydayDay
+    : (paydayDayOptions[0]?.value ?? 1)
 
   function handlePaydaySubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -189,7 +215,10 @@ export function Settings() {
       setAppSetting('pay_amount_cents', '')
     } else {
       const cents = Math.round(parseFloat(payAmtTrimmed) * 100)
-      setAppSetting('pay_amount_cents', Number.isNaN(cents) || cents < 0 ? '' : String(cents))
+      setAppSetting(
+        'pay_amount_cents',
+        Number.isNaN(cents) || cents < 0 ? '' : String(cents)
+      )
     }
     setPaydaySuccess(true)
     toast.success('Payday schedule updated.')
@@ -206,6 +235,38 @@ export function Settings() {
           Settings
         </h3>
       </div>
+
+      <Card className="grid-margin mb-4">
+        <Card.Header as="h5" className="mb-0">
+          Help
+        </Card.Header>
+        <Card.Body>
+          <p className="small text-muted mb-2">
+            New to Vantura? Read the user guide or run the dashboard tour to see
+            how everything works.
+          </p>
+          <div className="d-flex flex-wrap gap-2">
+            <Link
+              to="/help"
+              className="btn btn-gradient-primary btn-sm"
+              aria-label="Open user guide"
+            >
+              User guide
+            </Link>
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={() => {
+                setDashboardTourCompleted(false)
+                navigate('/')
+              }}
+              aria-label="Show dashboard tour again"
+            >
+              Show dashboard tour again
+            </Button>
+          </div>
+        </Card.Body>
+      </Card>
 
       <Card className="grid-margin mb-4">
         <Card.Header as="h5" className="mb-0">
@@ -230,7 +291,9 @@ export function Settings() {
                     height: 40,
                     background: palette.primary,
                     borderWidth: isSelected ? 3 : 1,
-                    borderColor: isSelected ? 'var(--vantura-text)' : 'var(--vantura-border)',
+                    borderColor: isSelected
+                      ? 'var(--vantura-text)'
+                      : 'var(--vantura-border)',
                   }}
                   onClick={() => setAccent(id)}
                   aria-label={`Select ${palette.label} accent`}
@@ -239,7 +302,11 @@ export function Settings() {
                   {isSelected && (
                     <i
                       className="mdi mdi-check"
-                      style={{ fontSize: '1.25rem', color: 'white', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+                      style={{
+                        fontSize: '1.25rem',
+                        color: 'white',
+                        textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                      }}
                       aria-hidden
                     />
                   )}
@@ -263,7 +330,9 @@ export function Settings() {
           </p>
           <Form onSubmit={handlePaydaySubmit}>
             <Form.Group className="mb-2">
-              <Form.Label htmlFor="settings-payday-frequency">Frequency</Form.Label>
+              <Form.Label htmlFor="settings-payday-frequency">
+                Frequency
+              </Form.Label>
               <Form.Select
                 id="settings-payday-frequency"
                 value={paydayFrequency}
@@ -291,7 +360,9 @@ export function Settings() {
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-2">
-              <Form.Label htmlFor="settings-payday-pay-amount">Pay amount ($)</Form.Label>
+              <Form.Label htmlFor="settings-payday-pay-amount">
+                Pay amount ($)
+              </Form.Label>
               <Form.Control
                 id="settings-payday-pay-amount"
                 type="number"
@@ -302,10 +373,15 @@ export function Settings() {
                 onChange={(e) => setPaydayPayAmount(e.target.value)}
                 aria-label="Pay amount per pay period (optional)"
               />
-              <Form.Text className="text-muted">Optional. Used for Spendable context, alerts, and PAYDAY tracker warnings.</Form.Text>
+              <Form.Text className="text-muted">
+                Optional. Used for Spendable context, alerts, and PAYDAY tracker
+                warnings.
+              </Form.Text>
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label htmlFor="settings-next-payday">Next payday</Form.Label>
+              <Form.Label htmlFor="settings-next-payday">
+                Next payday
+              </Form.Label>
               <Form.Control
                 id="settings-next-payday"
                 type="date"
@@ -373,10 +449,15 @@ export function Settings() {
               )}
             </Button>
             {syncing && syncProgress && (
-              <p className="small text-muted mt-2 mb-0" role="status" aria-live="polite">
+              <p
+                className="small text-muted mt-2 mb-0"
+                role="status"
+                aria-live="polite"
+              >
                 {syncProgress.phase === 'done'
                   ? 'Complete.'
-                  : syncProgress.phase === 'transactions' && syncProgress.fetched != null
+                  : syncProgress.phase === 'transactions' &&
+                      syncProgress.fetched != null
                     ? `Fetched ${syncProgress.fetched} transactions…`
                     : `Syncing ${syncProgress.phase}…`}
               </p>
@@ -393,8 +474,9 @@ export function Settings() {
           <div className="mb-4">
             <h6 className="text-muted mb-2">API token</h6>
             <p className="small text-muted mb-2">
-              If your token has expired (e.g. 48-hour token from Up Bank), update
-              it here. Your passphrase is required; other data is not deleted.
+              If your token has expired (e.g. 48-hour token from Up Bank),
+              update it here. Your passphrase is required; other data is not
+              deleted.
             </p>
             <Button
               variant="outline-primary"
@@ -441,14 +523,12 @@ export function Settings() {
         aria-describedby="clear-data-modal-description"
       >
         <Modal.Header closeButton={!clearing}>
-          <Modal.Title id="clear-data-modal-title">
-            Clear all data
-          </Modal.Title>
+          <Modal.Title id="clear-data-modal-title">Clear all data</Modal.Title>
         </Modal.Header>
         <Modal.Body id="clear-data-modal-description">
-          All local data will be permanently deleted, including your encrypted API
-          token. You will need to re-enter your passphrase and API token to use
-          the app again. This cannot be undone.
+          All local data will be permanently deleted, including your encrypted
+          API token. You will need to re-enter your passphrase and API token to
+          use the app again. This cannot be undone.
         </Modal.Body>
         <Modal.Footer>
           <Button
@@ -500,7 +580,9 @@ export function Settings() {
               Your existing data (savers, trackers, etc.) will be kept.
             </p>
             <Form.Group className="mb-3">
-              <Form.Label htmlFor="update-token-passphrase">Passphrase</Form.Label>
+              <Form.Label htmlFor="update-token-passphrase">
+                Passphrase
+              </Form.Label>
               <Form.Control
                 id="update-token-passphrase"
                 type="password"

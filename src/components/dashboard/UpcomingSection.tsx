@@ -11,8 +11,16 @@ import { getReservedAmount } from '@/services/balance'
 import { getCategories } from '@/services/categories'
 import { formatMoney, formatShortDate } from '@/lib/format'
 import { toast } from '@/stores/toastStore'
+import { HelpPopover } from '@/components/HelpPopover'
 
-const FREQUENCIES = ['WEEKLY', 'FORTNIGHTLY', 'MONTHLY', 'QUARTERLY', 'YEARLY', 'ONCE']
+const FREQUENCIES = [
+  'WEEKLY',
+  'FORTNIGHTLY',
+  'MONTHLY',
+  'QUARTERLY',
+  'YEARLY',
+  'ONCE',
+]
 
 export interface UpcomingSectionProps {
   onUpcomingChange?: () => void
@@ -21,7 +29,9 @@ export interface UpcomingSectionProps {
 export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
   const [, setRefresh] = useState(0)
   const [showModal, setShowModal] = useState(false)
-  const [editingCharge, setEditingCharge] = useState<UpcomingChargeRow | null>(null)
+  const [editingCharge, setEditingCharge] = useState<UpcomingChargeRow | null>(
+    null
+  )
   const [name, setName] = useState('')
   const [amount, setAmount] = useState('')
   const [frequency, setFrequency] = useState('MONTHLY')
@@ -105,7 +115,12 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
         role="button"
         tabIndex={0}
         onClick={() => openEdit(c)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEdit(c) } }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            openEdit(c)
+          }
+        }}
         style={{ cursor: 'pointer' }}
       >
         <td>{formatShortDate(c.next_charge_date)}</td>
@@ -125,6 +140,12 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
               <i className="mdi mdi-calendar-clock" aria-hidden />
             </span>
             <span>Upcoming transactions</span>
+            <HelpPopover
+              id="upcoming-help"
+              title="Upcoming charges"
+              content="Add bills and subscriptions you know are coming. Each charge has a name, amount, frequency, and next due date. Charges marked Include in Spendable reduce your Spendable balance until that date. Grouped by next pay vs later."
+              ariaLabel="What are upcoming charges?"
+            />
           </div>
           <Button variant="primary" size="sm" onClick={openCreate}>
             + Add
@@ -157,7 +178,10 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
                       <td colSpan={4}>
                         <div className="d-flex justify-content-between align-items-center page-title">
                           <strong>Next pay</strong>
-                          <span className="text-danger fw-normal">${formatMoney(nextPayTotal)} <span className="text-muted">total</span></span>
+                          <span className="text-danger fw-normal">
+                            ${formatMoney(nextPayTotal)}{' '}
+                            <span className="text-muted">total</span>
+                          </span>
                         </div>
                       </td>
                     </tr>
@@ -188,7 +212,9 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
 
       <Modal show={showModal} onHide={() => setShowModal(false)}>
         <Modal.Header closeButton>
-          <Modal.Title>{editingCharge ? 'Edit upcoming charge' : 'Add upcoming charge'}</Modal.Title>
+          <Modal.Title>
+            {editingCharge ? 'Edit upcoming charge' : 'Add upcoming charge'}
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
@@ -202,7 +228,9 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
               />
             </Form.Group>
             <Form.Group className="mb-2">
-              <Form.Label htmlFor="upcoming-charge-amount">Amount ($)</Form.Label>
+              <Form.Label htmlFor="upcoming-charge-amount">
+                Amount ($)
+              </Form.Label>
               <Form.Control
                 id="upcoming-charge-amount"
                 name="amount"
@@ -214,7 +242,9 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
               />
             </Form.Group>
             <Form.Group className="mb-2">
-              <Form.Label htmlFor="upcoming-charge-frequency">Frequency</Form.Label>
+              <Form.Label htmlFor="upcoming-charge-frequency">
+                Frequency
+              </Form.Label>
               <Form.Select
                 id="upcoming-charge-frequency"
                 name="frequency"
@@ -229,7 +259,9 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-2">
-              <Form.Label htmlFor="upcoming-charge-next-date">Next charge date</Form.Label>
+              <Form.Label htmlFor="upcoming-charge-next-date">
+                Next charge date
+              </Form.Label>
               <Form.Control
                 id="upcoming-charge-next-date"
                 name="nextChargeDate"
@@ -239,7 +271,9 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
               />
             </Form.Group>
             <Form.Group className="mb-2">
-              <Form.Label htmlFor="upcoming-charge-category">Category</Form.Label>
+              <Form.Label htmlFor="upcoming-charge-category">
+                Category
+              </Form.Label>
               <Form.Select
                 id="upcoming-charge-category"
                 name="categoryId"
@@ -268,7 +302,11 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
         </Modal.Body>
         <Modal.Footer>
           {editingCharge && (
-            <Button variant="outline-danger" className="me-auto" onClick={handleDelete}>
+            <Button
+              variant="outline-danger"
+              className="me-auto"
+              onClick={handleDelete}
+            >
               Delete
             </Button>
           )}

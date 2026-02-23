@@ -11,7 +11,9 @@ const BASE_URL = 'https://api.up.com.au'
  */
 export class UpBankUnauthorizedError extends Error {
   override name = 'UpBankUnauthorizedError'
-  constructor(message = 'Up Bank API returned 401. Your API token may have expired or been revoked.') {
+  constructor(
+    message = 'Up Bank API returned 401. Your API token may have expired or been revoked.'
+  ) {
     super(message)
     Object.setPrototypeOf(this, UpBankUnauthorizedError.prototype)
   }
@@ -157,7 +159,11 @@ async function fetchTransactionsByStatus(
   progressCallback: (progress: { fetched: number; hasMore: boolean }) => void
 ): Promise<UpTransaction[]> {
   const all: UpTransaction[] = []
-  let nextUrl: string | null = buildTransactionsUrl(sinceDate, 100, statusFilter)
+  let nextUrl: string | null = buildTransactionsUrl(
+    sinceDate,
+    100,
+    statusFilter
+  )
   while (nextUrl) {
     const { data, nextUrl: next } = await fetchTransactionsPage(token, nextUrl)
     all.push(...data)
@@ -178,7 +184,8 @@ export async function fetchAllTransactions(
   progressCallback: (progress: { fetched: number; hasMore: boolean }) => void
 ): Promise<UpTransaction[]> {
   const byId = new Map<string, UpTransaction>()
-  const report = (fetched: number, hasMore: boolean) => progressCallback({ fetched, hasMore })
+  const report = (fetched: number, hasMore: boolean) =>
+    progressCallback({ fetched, hasMore })
 
   const held = await fetchTransactionsByStatus(token, sinceDate, 'HELD', (p) =>
     report(p.fetched, p.hasMore)
@@ -186,8 +193,11 @@ export async function fetchAllTransactions(
   for (const tx of held) byId.set(tx.id, tx)
   const heldCount = byId.size
 
-  const settled = await fetchTransactionsByStatus(token, sinceDate, 'SETTLED', (p) =>
-    report(heldCount + p.fetched, p.hasMore)
+  const settled = await fetchTransactionsByStatus(
+    token,
+    sinceDate,
+    'SETTLED',
+    (p) => report(heldCount + p.fetched, p.hasMore)
   )
   for (const tx of settled) byId.set(tx.id, tx)
 

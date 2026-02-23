@@ -97,7 +97,9 @@ export interface WeeklyInsightsDebugCounts {
   transfers: number
 }
 
-export function getWeeklyInsightsDebugCounts(weekRange?: WeekRange): WeeklyInsightsDebugCounts {
+export function getWeeklyInsightsDebugCounts(
+  weekRange?: WeekRange
+): WeeklyInsightsDebugCounts {
   const db = getDb()
   if (!db) return { charges: 0, roundUps: 0, transfers: 0 }
   const { startStr, endStr } = weekRange ?? getWeekRange()
@@ -140,7 +142,8 @@ export interface WeeklyInsightsData {
  */
 export function getWeeklyInsights(weekRange?: WeekRange): WeeklyInsightsData {
   const db = getDb()
-  if (!db) return { moneyIn: 0, moneyOut: 0, saverChanges: 0, charges: 0, payments: 0 }
+  if (!db)
+    return { moneyIn: 0, moneyOut: 0, saverChanges: 0, charges: 0, payments: 0 }
   const { startStr, endStr } = weekRange ?? getWeekRange()
 
   const runOne = (sql: string, params: (string | number)[]): number => {
@@ -198,7 +201,9 @@ export interface CategoryBreakdownRow {
  * Spending by category for the week. Same definition as Money Out (spending only, no transfers),
  * grouped by category. Used for the Weekly Insights bar chart.
  */
-export function getWeeklyCategoryBreakdown(weekRange?: WeekRange): CategoryBreakdownRow[] {
+export function getWeeklyCategoryBreakdown(
+  weekRange?: WeekRange
+): CategoryBreakdownRow[] {
   const db = getDb()
   if (!db) return []
   const { startStr, endStr } = weekRange ?? getWeekRange()

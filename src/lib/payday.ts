@@ -20,12 +20,17 @@ export const PAYDAY_DAYS_MONTHLY = Array.from({ length: 28 }, (_, i) => ({
   label: `${i + 1}${i === 0 ? 'st' : i === 1 ? 'nd' : i === 2 ? 'rd' : 'th'}`,
 }))
 
-const PAYDAY_DAY_OPTIONS: Record<PaydayFrequency, { value: number; label: string }[]> = {
+const PAYDAY_DAY_OPTIONS: Record<
+  PaydayFrequency,
+  { value: number; label: string }[]
+> = {
   WEEKLY: PAYDAY_DAYS_WEEKLY,
   FORTNIGHTLY: PAYDAY_DAYS_WEEKLY,
   MONTHLY: PAYDAY_DAYS_MONTHLY,
 }
 
-export function getPaydayDayOptions(frequency: PaydayFrequency): { value: number; label: string }[] {
+export function getPaydayDayOptions(
+  frequency: PaydayFrequency
+): { value: number; label: string }[] {
   return PAYDAY_DAY_OPTIONS[frequency]
 }

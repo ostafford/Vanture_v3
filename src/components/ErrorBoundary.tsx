@@ -53,7 +53,8 @@ export class ErrorBoundary extends Component<Props, State> {
         >
           <h2 className="mb-3">Something went wrong</h2>
           <p className="text-muted mb-4 text-center">
-            An unexpected error occurred. You can try reloading the app or going back to the dashboard.
+            An unexpected error occurred. You can try reloading the app or going
+            back to the dashboard.
           </p>
           <div className="d-flex gap-2">
             <button

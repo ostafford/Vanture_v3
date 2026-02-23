@@ -29,18 +29,31 @@ export function SaversSection() {
 
   const savers = getSaversWithProgress()
 
-  function openEdit(saver: { id: string; goal_amount: number | null; target_date: string | null; monthly_transfer: number | null }) {
+  function openEdit(saver: {
+    id: string
+    goal_amount: number | null
+    target_date: string | null
+    monthly_transfer: number | null
+  }) {
     setEditingId(saver.id)
-    setGoalAmount(saver.goal_amount != null ? String(saver.goal_amount / 100) : '')
+    setGoalAmount(
+      saver.goal_amount != null ? String(saver.goal_amount / 100) : ''
+    )
     setTargetDate(saver.target_date ?? '')
-    setMonthlyTransfer(saver.monthly_transfer != null ? String(saver.monthly_transfer / 100) : '')
+    setMonthlyTransfer(
+      saver.monthly_transfer != null ? String(saver.monthly_transfer / 100) : ''
+    )
     setBarColor(getSaverChartColors()[saver.id] ?? null)
   }
 
   function handleSaveGoals() {
     if (!editingId) return
-    const goalCents = goalAmount ? Math.round(parseFloat(goalAmount) * 100) : null
-    const monthlyCents = monthlyTransfer ? Math.round(parseFloat(monthlyTransfer) * 100) : null
+    const goalCents = goalAmount
+      ? Math.round(parseFloat(goalAmount) * 100)
+      : null
+    const monthlyCents = monthlyTransfer
+      ? Math.round(parseFloat(monthlyTransfer) * 100)
+      : null
     setSaverChartColor(editingId, barColor)
     updateSaverGoals(editingId, goalCents, targetDate || null, monthlyCents)
     setEditingId(null)
@@ -64,7 +77,10 @@ export function SaversSection() {
 
   const chartData: ChartRow[] = savers.map((s) => {
     const currentDollars = s.current_balance / 100
-    const goalDollars = s.goal_amount != null && s.goal_amount > 0 ? s.goal_amount / 100 : currentDollars
+    const goalDollars =
+      s.goal_amount != null && s.goal_amount > 0
+        ? s.goal_amount / 100
+        : currentDollars
     const remaining = Math.max(0, goalDollars - currentDollars)
     return {
       id: s.id,
@@ -92,23 +108,42 @@ export function SaversSection() {
             </span>
             <span>Savers</span>
           </div>
-          <span className="text-success fw-normal">${formatMoney(totalBalance)} <span className="text-muted">total</span></span>
+          <span className="text-success fw-normal">
+            ${formatMoney(totalBalance)}{' '}
+            <span className="text-muted">total</span>
+          </span>
         </Card.Header>
         <Card.Body>
           {savers.length === 0 ? (
             <p className="text-muted small mb-0">
-              No saver accounts yet. They&apos;ll appear after you sync with Up Bank.
+              No saver accounts yet. They&apos;ll appear after you sync with Up
+              Bank.
             </p>
           ) : (
             <>
-              <ResponsiveContainer width="100%" height={Math.max(260, chartData.length * 52)}>
+              <ResponsiveContainer
+                width="100%"
+                height={Math.max(260, chartData.length * 52)}
+              >
                 <BarChart
                   data={chartData}
                   layout="vertical"
-                  margin={{ top: 8, right: 24, left: SAVER_AXIS_WIDTH, bottom: 8 }}
+                  margin={{
+                    top: 8,
+                    right: 24,
+                    left: SAVER_AXIS_WIDTH,
+                    bottom: 8,
+                  }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--vantura-border, #ebedf2)" />
-                  <XAxis type="number" domain={[0, maxDomain]} tickFormatter={(v) => `$${v}`} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="var(--vantura-border, #ebedf2)"
+                  />
+                  <XAxis
+                    type="number"
+                    domain={[0, maxDomain]}
+                    tickFormatter={(v) => `$${v}`}
+                  />
                   <YAxis
                     type="category"
                     dataKey="name"
@@ -116,7 +151,10 @@ export function SaversSection() {
                     tick={(props) => {
                       const displayValue =
                         props.tickFormatter && props.payload
-                          ? props.tickFormatter(props.payload.value, props.index)
+                          ? props.tickFormatter(
+                              props.payload.value,
+                              props.index
+                            )
                           : props.payload?.value
                       return (
                         <Text {...props} width={undefined}>
@@ -129,13 +167,26 @@ export function SaversSection() {
                     formatter={(value: number) => [`$${value.toFixed(2)}`, '']}
                     labelFormatter={(label) => label}
                     content={({ active, payload }) => {
-                      if (!active || !payload?.length || !payload[0].payload.saver) return null
+                      if (
+                        !active ||
+                        !payload?.length ||
+                        !payload[0].payload.saver
+                      )
+                        return null
                       const { saver } = payload[0].payload
                       return (
                         <div className="bg-surface border rounded shadow-sm p-2 small">
                           <strong>{saver.name}</strong>
-                          <div>${formatMoney(saver.current_balance)} of ${formatMoney(saver.goal_amount ?? 0)}</div>
-                          <Button variant="link" size="sm" className="p-0 mt-1" onClick={() => openEdit(saver)}>
+                          <div>
+                            ${formatMoney(saver.current_balance)} of $
+                            {formatMoney(saver.goal_amount ?? 0)}
+                          </div>
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="p-0 mt-1"
+                            onClick={() => openEdit(saver)}
+                          >
                             Edit goals
                           </Button>
                         </div>
@@ -152,7 +203,11 @@ export function SaversSection() {
                     name="Saved"
                   >
                     {chartData.map((row) => (
-                      <Cell key={row.id} fill={row.currentFill} stroke={row.currentFill} />
+                      <Cell
+                        key={row.id}
+                        fill={row.currentFill}
+                        stroke={row.currentFill}
+                      />
                     ))}
                   </Bar>
                   <Bar
@@ -180,7 +235,9 @@ export function SaversSection() {
         <Modal.Body>
           <Form>
             <Form.Group className="mb-2">
-              <Form.Label htmlFor="saver-edit-goal-amount">Goal amount ($)</Form.Label>
+              <Form.Label htmlFor="saver-edit-goal-amount">
+                Goal amount ($)
+              </Form.Label>
               <Form.Control
                 id="saver-edit-goal-amount"
                 name="goalAmount"
@@ -193,7 +250,9 @@ export function SaversSection() {
               />
             </Form.Group>
             <Form.Group className="mb-2">
-              <Form.Label htmlFor="saver-edit-target-date">Target date</Form.Label>
+              <Form.Label htmlFor="saver-edit-target-date">
+                Target date
+              </Form.Label>
               <Form.Control
                 id="saver-edit-target-date"
                 name="targetDate"
@@ -203,7 +262,9 @@ export function SaversSection() {
               />
             </Form.Group>
             <Form.Group className="mb-2">
-              <Form.Label htmlFor="saver-edit-monthly-transfer">Monthly transfer ($)</Form.Label>
+              <Form.Label htmlFor="saver-edit-monthly-transfer">
+                Monthly transfer ($)
+              </Form.Label>
               <Form.Control
                 id="saver-edit-monthly-transfer"
                 name="monthlyTransfer"

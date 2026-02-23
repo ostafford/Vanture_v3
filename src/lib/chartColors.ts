@@ -12,7 +12,11 @@ function parseJsonMap(key: string): Record<string, string> {
   try {
     const raw = getAppSetting(key) ?? '{}'
     const parsed = JSON.parse(raw) as unknown
-    if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    if (
+      parsed !== null &&
+      typeof parsed === 'object' &&
+      !Array.isArray(parsed)
+    ) {
       const out: Record<string, string> = {}
       for (const [k, v] of Object.entries(parsed)) {
         if (typeof k === 'string' && typeof v === 'string') out[k] = v
@@ -47,7 +51,10 @@ export function getInsightsCategoryColors(): Record<string, string> {
   return parseJsonMap(INSIGHTS_CATEGORY_COLORS_KEY)
 }
 
-export function setInsightsCategoryColor(categoryId: string, hex: string | null): void {
+export function setInsightsCategoryColor(
+  categoryId: string,
+  hex: string | null
+): void {
   const map = parseJsonMap(INSIGHTS_CATEGORY_COLORS_KEY)
   if (hex == null || hex === '') {
     delete map[categoryId]

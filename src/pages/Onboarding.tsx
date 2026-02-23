@@ -22,7 +22,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const [passphrase, setPassphrase] = useState('')
   const [passphraseConfirm, setPassphraseConfirm] = useState('')
   const [apiToken, setApiToken] = useState('')
-  const [paydayFrequency, setPaydayFrequency] = useState<PaydayFrequency>('MONTHLY')
+  const [paydayFrequency, setPaydayFrequency] =
+    useState<PaydayFrequency>('MONTHLY')
   const [paydayDay, setPaydayDay] = useState(1)
   const [nextPayday, setNextPayday] = useState('')
   const [paydayPayAmount, setPaydayPayAmount] = useState('')
@@ -64,7 +65,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       setStep(4)
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Failed to validate or store token.'
+        err instanceof Error
+          ? err.message
+          : 'Failed to validate or store token.'
       )
     } finally {
       setLoading(false)
@@ -104,7 +107,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       setApiToken('')
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Sync failed. You can try again from Settings.'
+        err instanceof Error
+          ? err.message
+          : 'Sync failed. You can try again from Settings.'
       )
     }
   }
@@ -119,7 +124,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   )
   const effectivePaydayDay = currentPaydayDayValid
     ? paydayDay
-    : paydayDayOptions[0]?.value ?? 1
+    : (paydayDayOptions[0]?.value ?? 1)
 
   return (
     <div className="auth-full-bg">
@@ -134,6 +139,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           <ProgressBar
             now={(step / STEPS) * 100}
             variant="primary"
+            striped
+            animated
             className="mb-3"
           />
 
@@ -147,7 +154,12 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 downloaded to this device only—no cloud storage; we don&apos;t
                 have servers that store your data.
               </p>
-              <Button className="btn-gradient-primary" onClick={() => setStep(2)}>Get Started</Button>
+              <Button
+                className="btn-gradient-primary"
+                onClick={() => setStep(2)}
+              >
+                Get Started
+              </Button>
             </>
           )}
 
@@ -161,7 +173,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 token in Up Bank.
               </p>
               <Form.Group className="mb-2">
-                <Form.Label htmlFor="onboarding-passphrase">Passphrase</Form.Label>
+                <Form.Label htmlFor="onboarding-passphrase">
+                  Passphrase
+                </Form.Label>
                 <Form.Control
                   id="onboarding-passphrase"
                   name="passphrase"
@@ -174,7 +188,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 />
               </Form.Group>
               <Form.Group className="mb-3">
-                <Form.Label htmlFor="onboarding-passphrase-confirm">Confirm passphrase</Form.Label>
+                <Form.Label htmlFor="onboarding-passphrase-confirm">
+                  Confirm passphrase
+                </Form.Label>
                 <Form.Control
                   id="onboarding-passphrase-confirm"
                   name="passphraseConfirm"
@@ -190,7 +206,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   {error}
                 </div>
               )}
-              <Button type="submit" className="btn-gradient-primary">Continue</Button>
+              <Button type="submit" className="btn-gradient-primary">
+                Continue
+              </Button>
             </Form>
           )}
 
@@ -207,7 +225,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 stored in plain form.
               </p>
               <Form.Group className="mb-3">
-                <Form.Label htmlFor="onboarding-api-token">API Token</Form.Label>
+                <Form.Label htmlFor="onboarding-api-token">
+                  API Token
+                </Form.Label>
                 <Form.Control
                   id="onboarding-api-token"
                   name="apiToken"
@@ -233,7 +253,11 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   {error}
                 </div>
               )}
-              <Button type="submit" className="btn-gradient-primary" disabled={loading}>
+              <Button
+                type="submit"
+                className="btn-gradient-primary"
+                disabled={loading}
+              >
                 {loading ? 'Validating…' : 'Continue'}
               </Button>
             </Form>
@@ -243,12 +267,14 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             <Form onSubmit={handleStep4Submit}>
               <h6 className="mb-2">When do you get paid?</h6>
               <p className="text-muted small mb-3">
-                This helps calculate your Spendable balance. When Monthly, Day is
-                the date in the month (1st–28th). If you&apos;re paid on the
+                This helps calculate your Spendable balance. When Monthly, Day
+                is the date in the month (1st–28th). If you&apos;re paid on the
                 29th–31st, choose 28th and set Next payday to your actual date.
               </p>
               <Form.Group className="mb-2">
-                <Form.Label htmlFor="onboarding-payday-frequency">Frequency</Form.Label>
+                <Form.Label htmlFor="onboarding-payday-frequency">
+                  Frequency
+                </Form.Label>
                 <Form.Select
                   id="onboarding-payday-frequency"
                   name="paydayFrequency"
@@ -278,7 +304,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 </Form.Select>
               </Form.Group>
               <Form.Group className="mb-2">
-                <Form.Label htmlFor="onboarding-payday-pay-amount">Pay amount ($)</Form.Label>
+                <Form.Label htmlFor="onboarding-payday-pay-amount">
+                  Pay amount ($)
+                </Form.Label>
                 <Form.Control
                   id="onboarding-payday-pay-amount"
                   name="paydayPayAmount"
@@ -292,7 +320,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 />
               </Form.Group>
               <Form.Group className="mb-3">
-                <Form.Label htmlFor="onboarding-next-payday">Next payday</Form.Label>
+                <Form.Label htmlFor="onboarding-next-payday">
+                  Next payday
+                </Form.Label>
                 <Form.Control
                   id="onboarding-next-payday"
                   name="nextPayday"
@@ -306,7 +336,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   {error}
                 </div>
               )}
-              <Button type="submit" className="btn-gradient-primary">Continue</Button>
+              <Button type="submit" className="btn-gradient-primary">
+                Continue
+              </Button>
             </Form>
           )}
 
@@ -323,7 +355,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     now={
                       syncProgress.phase === 'done'
                         ? 100
-                        : syncProgress.phase === 'transactions' && syncProgress.fetched != null
+                        : syncProgress.phase === 'transactions' &&
+                            syncProgress.fetched != null
                           ? Math.min(95, (syncProgress.fetched / 500) * 90)
                           : 50
                     }
@@ -332,7 +365,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   <p className="small mb-0">
                     {syncProgress.phase === 'done'
                       ? 'Done.'
-                      : syncProgress.phase === 'transactions' && syncProgress.fetched != null
+                      : syncProgress.phase === 'transactions' &&
+                          syncProgress.fetched != null
                         ? `Fetched ${syncProgress.fetched} transactions…`
                         : `Syncing ${syncProgress.phase}…`}
                   </p>
@@ -354,7 +388,20 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 monitor spending, view Spendable to see safe-to-spend amount,
                 and set saver goals to reach financial targets.
               </p>
-              <Button className="btn-gradient-primary" onClick={handleStep6Go}>Go to Dashboard</Button>
+              <p className="text-muted small mb-3">
+                New to Vantura? You can take a short dashboard tour or read the
+                <a
+                  href={`${import.meta.env.BASE_URL}help`}
+                  className="ms-1"
+                  rel="noopener noreferrer"
+                >
+                  user guide
+                </a>{' '}
+                from Help when you&apos;re ready.
+              </p>
+              <Button className="btn-gradient-primary" onClick={handleStep6Go}>
+                Go to Dashboard
+              </Button>
             </>
           )}
         </Card.Body>

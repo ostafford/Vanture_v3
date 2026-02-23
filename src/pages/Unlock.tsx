@@ -27,7 +27,9 @@ export function Unlock() {
       setUnlocked(token)
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Invalid passphrase or corrupted data.'
+        err instanceof Error
+          ? err.message
+          : 'Invalid passphrase or corrupted data.'
       )
     } finally {
       setLoading(false)
@@ -39,7 +41,7 @@ export function Unlock() {
       <Card style={{ width: '100%', maxWidth: 400 }} className="auth-card">
         <Card.Body>
           <Card.Title className="mb-3">Unlock Vantura</Card.Title>
-          <Card.Text className="text-muted small mb-3">
+          <Card.Text className="text-muted small mb-3 text-center">
             Enter your passphrase to access your data. Your passphrase is never
             stored.
           </Card.Text>
@@ -53,7 +55,12 @@ export function Unlock() {
               aria-label="Username"
               tabIndex={-1}
               aria-hidden="true"
-              style={{ position: 'absolute', left: '-9999px', width: 1, height: 1 }}
+              style={{
+                position: 'absolute',
+                left: '-9999px',
+                width: 1,
+                height: 1,
+              }}
             />
             <Form.Group className="mb-3">
               <Form.Label htmlFor="unlock-passphrase">Passphrase</Form.Label>
@@ -74,9 +81,15 @@ export function Unlock() {
                 {error}
               </div>
             )}
-            <Button type="submit" className="btn-gradient-primary" disabled={loading}>
-              {loading ? 'Unlocking…' : 'Unlock'}
-            </Button>
+            <div className="text-center">
+              <Button
+                type="submit"
+                className="btn-gradient-primary"
+                disabled={loading}
+              >
+                {loading ? 'Unlocking…' : 'Unlock'}
+              </Button>
+            </div>
           </Form>
         </Card.Body>
       </Card>

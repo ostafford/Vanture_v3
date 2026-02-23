@@ -3,7 +3,7 @@ import { Button, Spinner } from 'react-bootstrap'
 import { useStore } from 'zustand'
 import { uiStore } from '@/stores/uiStore'
 import { sessionStore } from '@/stores/sessionStore'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { syncStore } from '@/stores/syncStore'
 import { getAppSetting } from '@/db'
 import { performSync } from '@/services/sync'
 import { toast } from '@/stores/toastStore'
@@ -41,9 +41,11 @@ export function Navbar({ sidebarCollapsed }: NavbarProps) {
     if (!token || syncing) return
     setSyncing(true)
     setSyncError(null)
+    syncStore.getState().setSyncing(true)
     try {
       await performSync(token, () => {})
       setLastSync(getAppSetting('last_sync'))
+      syncStore.getState().syncCompleted()
       toast.success('Sync complete. Data updated.')
     } catch (err) {
       const message =
@@ -56,17 +58,12 @@ export function Navbar({ sidebarCollapsed }: NavbarProps) {
       toast.error(message)
     } finally {
       setSyncing(false)
+      syncStore.getState().setSyncing(false)
     }
   }
 
-  function handleLock() {
-    sessionStore.getState().lock()
-  }
-
   return (
-    <nav
-      className={`vantura-navbar ${sidebarCollapsed ? 'collapsed' : ''}`}
-    >
+    <nav className={`vantura-navbar ${sidebarCollapsed ? 'collapsed' : ''}`}>
       <div className="navbar-brand-wrapper">
         <button
           type="button"
@@ -74,51 +71,56 @@ export function Navbar({ sidebarCollapsed }: NavbarProps) {
           onClick={toggleSidebar}
           aria-label="Toggle sidebar"
         >
-          <i className="mdi mdi-menu" aria-hidden />
+          {sidebarCollapsed ? (
+            <i className="mdi mdi-menu" aria-hidden />
+          ) : (
+            <span className="navbar-brand-text">VANTURA</span>
+          )}
         </button>
       </div>
+      {sidebarCollapsed && (
+        <span className="navbar-collapsed-brand" aria-hidden>
+          VANTURA
+        </span>
+      )}
       <div className="navbar-menu-wrapper">
-        <div className="me-3 d-flex align-items-center gap-2">
-          <Button
-            className="btn-gradient-primary"
-            size="sm"
-            onClick={handleSync}
-            disabled={syncing}
-            aria-label="Sync with Up Bank"
-            aria-busy={syncing}
-          >
-            {syncing ? (
-              <>
-                <Spinner animation="border" size="sm" className="me-1" role="status" aria-hidden />
-                Syncing…
-              </>
-            ) : (
-              <>
-                <i className="mdi mdi-sync me-1" aria-hidden />
-                Sync
-              </>
+        <div className="ms-auto d-flex flex-column align-items-end gap-1">
+          <div className="d-flex align-items-center gap-2">
+            <Button
+              className="btn-gradient-primary"
+              size="sm"
+              onClick={handleSync}
+              disabled={syncing}
+              aria-label="Sync with Up Bank"
+              aria-busy={syncing}
+            >
+              {syncing ? (
+                <>
+                  <Spinner
+                    animation="border"
+                    size="sm"
+                    className="me-1"
+                    role="status"
+                    aria-hidden
+                  />
+                  Syncing…
+                </>
+              ) : (
+                <>
+                  <i className="mdi mdi-sync me-1" aria-hidden />
+                  Sync
+                </>
+              )}
+            </Button>
+            {syncError && (
+              <span className="text-danger small" role="alert">
+                {syncError}
+              </span>
             )}
-          </Button>
-          {syncError && (
-            <span className="text-danger small" role="alert">
-              {syncError}
-            </span>
-          )}
-        </div>
-        <div className="me-3 d-none d-md-block small" style={{ color: 'var(--vantura-text-secondary)' }}>
-          Last synced: {formatLastSync(lastSync)}
-        </div>
-        <div className="ms-auto d-flex align-items-center gap-2">
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            onClick={handleLock}
-            aria-label="Lock"
-          >
-            <i className="mdi mdi-lock me-1" aria-hidden />
-            Lock
-          </Button>
-          <ThemeToggle />
+          </div>
+          <div className="d-none d-md-block navbar-sync-label">
+            Last synced: {formatLastSync(lastSync)}
+          </div>
         </div>
       </div>
     </nav>

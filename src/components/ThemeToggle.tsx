@@ -3,13 +3,18 @@ import { themeStore } from '@/stores/themeStore'
 import type { Theme } from '@/stores/themeStore'
 import { Button } from 'react-bootstrap'
 
-export function ThemeToggle() {
+interface ThemeToggleProps {
+  showLabel?: boolean
+}
+
+export function ThemeToggle({ showLabel = false }: ThemeToggleProps) {
   const theme = useStore(themeStore, (s) => s.theme)
   const setTheme = useStore(themeStore, (s) => s.setTheme)
 
   const next: Theme = theme === 'light' ? 'dark' : 'light'
   const label = theme === 'light' ? 'Dark' : 'Light'
-  const iconClass = theme === 'light' ? 'mdi-weather-sunny' : 'mdi-weather-night'
+  const iconClass =
+    theme === 'light' ? 'mdi-weather-sunny' : 'mdi-weather-night'
 
   return (
     <Button
@@ -19,6 +24,7 @@ export function ThemeToggle() {
       aria-label={`Switch to ${label} theme`}
     >
       <i className={`mdi ${iconClass}`} aria-hidden />
+      {showLabel && <span className="menu-title">{label}</span>}
     </Button>
   )
 }

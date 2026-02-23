@@ -58,8 +58,8 @@ function doPersist(): void {
       let message =
         'Changes may not be saved. Try freeing space or clear site data.'
       if (typeof navigator !== 'undefined' && navigator.storage?.estimate) {
-        navigator
-          .storage.estimate()
+        navigator.storage
+          .estimate()
           .then((est) => {
             const usage = est.usage ?? 0
             const quota = est.quota ?? 0

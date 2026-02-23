@@ -15,8 +15,9 @@ export function BalanceCard() {
 
   const spendableTooltip = (
     <Tooltip id="spendable-tooltip">
-      Spendable = Available minus reserved for upcoming charges. Only charges due before your next
-      payday are reserved; prorated for monthly/quarterly/yearly.
+      Spendable = Available minus reserved for upcoming charges. Only charges
+      due before your next payday are reserved; prorated for
+      monthly/quarterly/yearly.
       {payAmountCents != null &&
         ` After payday (before new spending): about $${formatMoney(spendable)} + $${formatMoney(payAmountCents)} = $${formatMoney(spendable + payAmountCents)}.`}
     </Tooltip>
@@ -36,12 +37,17 @@ export function BalanceCard() {
               role="img"
               aria-label="Info"
             >
-              <i className="mdi mdi-information-outline text-white" aria-hidden />
+              <i
+                className="mdi mdi-information-outline text-white"
+                aria-hidden
+              />
             </span>
           </OverlayTrigger>
         </h6>
         <h2 className="text-white mb-1">${formatMoney(spendable)}</h2>
-        <small className="opacity-75">${formatMoney(reserved)} reserved for upcoming</small>
+        <small className="opacity-75">
+          ${formatMoney(reserved)} reserved for upcoming
+        </small>
       </Card.Body>
     </Card>
   )

@@ -7,6 +7,7 @@ import { Sidebar, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from './Sidebar'
 import { Navbar } from './Navbar'
 
 const VIEWPORT_AUTO_COLLAPSE_PX = 1280
+const SIDEBAR_COLLAPSED_KEY = 'vantura_sidebar_collapsed'
 
 export function Layout() {
   const sidebarCollapsed = useStore(uiStore, (s) => s.sidebarCollapsed)
@@ -15,14 +16,29 @@ export function Layout() {
     : SIDEBAR_WIDTH
 
   useEffect(() => {
+    const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
+    const preferCollapsed = stored === '1'
+    if (window.innerWidth < VIEWPORT_AUTO_COLLAPSE_PX) {
+      uiStore.getState().setSidebarCollapsed(true)
+    } else if (stored !== null) {
+      uiStore.getState().setSidebarCollapsed(preferCollapsed)
+    }
+  }, [])
+
+  useEffect(() => {
     const onResize = () => {
-      if (window.innerWidth < VIEWPORT_AUTO_COLLAPSE_PX && !sidebarCollapsed) {
+      if (window.innerWidth < VIEWPORT_AUTO_COLLAPSE_PX) {
         uiStore.getState().setSidebarCollapsed(true)
+      } else {
+        uiStore.getState().setSidebarCollapsed(false)
       }
     }
     window.addEventListener('resize', onResize)
-    onResize()
     return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, sidebarCollapsed ? '1' : '0')
   }, [sidebarCollapsed])
 
   const persistError = useStore(persistErrorStore, (s) => s.message)
@@ -32,11 +48,11 @@ export function Layout() {
     <div className="container-scroller">
       <Sidebar collapsed={sidebarCollapsed} />
       <Navbar sidebarCollapsed={sidebarCollapsed} />
-      <div
-        className="page-body-wrapper"
-        style={{ marginLeft: sidebarWidth }}
-      >
-        <main className="content-wrapper" style={{ minHeight: 'calc(100vh - 70px)' }}>
+      <div className="page-body-wrapper" style={{ marginLeft: sidebarWidth }}>
+        <main
+          className="content-wrapper"
+          style={{ minHeight: 'calc(100vh - 70px)' }}
+        >
           {persistError && (
             <div
               className="d-flex align-items-center justify-content-between px-3 py-2 small mb-3 rounded"

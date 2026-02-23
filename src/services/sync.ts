@@ -57,10 +57,7 @@ export type SyncProgress = {
   hasMore?: boolean
 }
 
-function run(
-  sql: string,
-  params: (string | number | null)[] = []
-): void {
+function run(sql: string, params: (string | number | null)[] = []): void {
   const db = getDb()
   if (!db) throw new Error('Database not ready')
   db.run(sql, params)
@@ -96,7 +93,9 @@ function upsertTransaction(tx: UpTransaction): void {
   // Don't store transfer_account_id on purchases that triggered a round-up (API may send round-up
   // destination on the purchase); only the actual round-up credit and real transfers should be tagged.
   const transferAccountId =
-    amount < 0 && a.roundUp != null ? null : (rel?.transferAccount?.data?.id ?? null)
+    amount < 0 && a.roundUp != null
+      ? null
+      : (rel?.transferAccount?.data?.id ?? null)
   const isRoundUp = a.roundUp != null ? 1 : 0
   // round_up_parent_id: Up API does not expose a parent transaction relationship on round-up
   // resources in the list response; leave null. When present, Transactions page shows round-ups under parent.
@@ -156,14 +155,7 @@ function setupSavers(accounts: UpAccount[]): void {
          icon = excluded.icon,
          current_balance = excluded.current_balance,
          updated_at = excluded.updated_at`,
-      [
-        acc.id,
-        a.displayName ?? 'Saver',
-        null,
-        balance,
-        now,
-        now,
-      ]
+      [acc.id, a.displayName ?? 'Saver', null, balance, now, now]
     )
   }
 }
@@ -191,24 +183,31 @@ export function recalculateTrackers(): void {
     const nextReset = row[2] as string
     if (!nextReset || now < nextReset) continue
     if (freq === 'PAYDAY' && nextPayday) {
+      const nextPaydayNorm =
+        nextPayday.length > 10 ? nextPayday.slice(0, 10) : nextPayday
       db.run(
         `UPDATE trackers SET last_reset_date = next_reset_date, next_reset_date = ? WHERE id = ?`,
-        [nextPayday, id]
+        [nextPaydayNorm, id]
       )
     } else {
       const prev = new Date(nextReset)
       let next: Date
-      if (freq === 'WEEKLY') next = new Date(prev.getTime() + 7 * 24 * 60 * 60 * 1000)
-      else if (freq === 'FORTNIGHTLY') next = new Date(prev.getTime() + 14 * 24 * 60 * 60 * 1000)
+      if (freq === 'WEEKLY')
+        next = new Date(prev.getTime() + 7 * 24 * 60 * 60 * 1000)
+      else if (freq === 'FORTNIGHTLY')
+        next = new Date(prev.getTime() + 14 * 24 * 60 * 60 * 1000)
       else if (freq === 'MONTHLY') {
         next = new Date(prev)
         next.setMonth(next.getMonth() + 1)
       } else {
         next = prev
       }
+      const lastNorm =
+        nextReset.length >= 10 ? nextReset.slice(0, 10) : nextReset
+      const nextNorm = next.toISOString().slice(0, 10)
       db.run(
         `UPDATE trackers SET last_reset_date = ?, next_reset_date = ? WHERE id = ?`,
-        [nextReset, next.toISOString(), id]
+        [lastNorm, nextNorm, id]
       )
     }
     schedulePersist()
@@ -229,7 +228,11 @@ export async function performInitialSync(
   for (const a of accounts) upsertAccount(a)
   progressCallback({ phase: 'transactions', fetched: 0, hasMore: true })
   await fetchAllTransactions(apiToken, null, (p) => {
-    progressCallback({ phase: 'transactions', fetched: p.fetched, hasMore: p.hasMore })
+    progressCallback({
+      phase: 'transactions',
+      fetched: p.fetched,
+      hasMore: p.hasMore,
+    })
   }).then((txs) => {
     for (const tx of txs) upsertTransaction(tx)
   })
@@ -257,7 +260,11 @@ export async function performSync(
   const sinceDate = getAppSetting('last_sync')
   progressCallback({ phase: 'transactions', fetched: 0, hasMore: true })
   await fetchAllTransactions(apiToken, sinceDate, (p) => {
-    progressCallback({ phase: 'transactions', fetched: p.fetched, hasMore: p.hasMore })
+    progressCallback({
+      phase: 'transactions',
+      fetched: p.fetched,
+      hasMore: p.hasMore,
+    })
   }).then((txs) => {
     for (const tx of txs) upsertTransaction(tx)
   })
@@ -286,7 +293,11 @@ export async function performFullSync(
   for (const a of accounts) upsertAccount(a)
   progressCallback({ phase: 'transactions', fetched: 0, hasMore: true })
   await fetchAllTransactions(apiToken, null, (p) => {
-    progressCallback({ phase: 'transactions', fetched: p.fetched, hasMore: p.hasMore })
+    progressCallback({
+      phase: 'transactions',
+      fetched: p.fetched,
+      hasMore: p.hasMore,
+    })
   }).then((txs) => {
     for (const tx of txs) upsertTransaction(tx)
   })

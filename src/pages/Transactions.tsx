@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Card, Form, Row, Col, Button, Dropdown } from 'react-bootstrap'
+import { useStore } from 'zustand'
 import {
   getTransactionsGroupedByDate,
   getFilteredTransactionsCount,
@@ -10,7 +11,12 @@ import {
   type TransactionSort,
 } from '@/services/transactions'
 import { getCategories } from '@/services/categories'
-import { formatMoney, formatShortDate, formatShortDateWithYear } from '@/lib/format'
+import { syncStore } from '@/stores/syncStore'
+import {
+  formatMoney,
+  formatShortDate,
+  formatShortDateWithYear,
+} from '@/lib/format'
 
 const SORT_OPTIONS: { value: TransactionSort; label: string }[] = [
   { value: 'date', label: 'Date' },
@@ -78,12 +84,13 @@ function useFiltersFromSearchParams(): {
 }
 
 export function Transactions() {
+  const lastSyncCompletedAt = useStore(syncStore, (s) => s.lastSyncCompletedAt)
   const { filters, sort, setFilters } = useFiltersFromSearchParams()
   const [page, setPage] = useState(0)
   const categories = getCategories()
   const totalCount = useMemo(
     () => getFilteredTransactionsCount(filters),
-    [filters]
+    [filters, lastSyncCompletedAt]
   )
   const limit = (page + 1) * DEFAULT_PAGE_SIZE
   const grouped = useMemo(
@@ -92,9 +99,12 @@ export function Transactions() {
         limit,
         offset: 0,
       }),
-    [filters, sort, limit]
+    [filters, sort, limit, lastSyncCompletedAt]
   )
-  const dateKeys = useMemo(() => Object.keys(grouped).sort().reverse(), [grouped])
+  const dateKeys = useMemo(
+    () => Object.keys(grouped).sort().reverse(),
+    [grouped]
+  )
   const loadedCount = useMemo(
     () => dateKeys.reduce((n, k) => n + grouped[k].length, 0),
     [dateKeys, grouped]
@@ -116,7 +126,14 @@ export function Transactions() {
 
   useEffect(() => {
     setPage(0)
-  }, [filters.dateFrom, filters.dateTo, filters.categoryIds, filters.amountMin, filters.amountMax, filters.search])
+  }, [
+    filters.dateFrom,
+    filters.dateTo,
+    filters.categoryIds,
+    filters.amountMin,
+    filters.amountMax,
+    filters.search,
+  ])
 
   const updateFilter = <K extends keyof TransactionFilters>(
     key: K,
@@ -148,7 +165,9 @@ export function Transactions() {
                 name="dateFrom"
                 type="date"
                 value={filters.dateFrom ?? ''}
-                onChange={(e) => updateFilter('dateFrom', e.target.value || undefined)}
+                onChange={(e) =>
+                  updateFilter('dateFrom', e.target.value || undefined)
+                }
                 placeholder="From"
               />
             </Col>
@@ -158,7 +177,9 @@ export function Transactions() {
                 name="dateTo"
                 type="date"
                 value={filters.dateTo ?? ''}
-                onChange={(e) => updateFilter('dateTo', e.target.value || undefined)}
+                onChange={(e) =>
+                  updateFilter('dateTo', e.target.value || undefined)
+                }
                 placeholder="To"
               />
             </Col>
@@ -187,7 +208,9 @@ export function Transactions() {
                     {(filters.categoryIds?.length ?? 0) === 0
                       ? 'All categories'
                       : filters.categoryIds!.length === 1
-                        ? categories.find((c) => c.id === filters.categoryIds![0])?.name ?? '1 category'
+                        ? (categories.find(
+                            (c) => c.id === filters.categoryIds![0]
+                          )?.name ?? '1 category')
                         : `${filters.categoryIds!.length} categories`}
                   </span>
                 </Dropdown.Toggle>
@@ -232,12 +255,13 @@ export function Transactions() {
                 name="amountMin"
                 type="number"
                 placeholder="Min $"
-                value={
-                  filters.amountMin != null ? filters.amountMin / 100 : ''
-                }
+                value={filters.amountMin != null ? filters.amountMin / 100 : ''}
                 onChange={(e) => {
                   const v = e.target.value
-                  updateFilter('amountMin', v === '' ? undefined : Number(v) * 100)
+                  updateFilter(
+                    'amountMin',
+                    v === '' ? undefined : Number(v) * 100
+                  )
                 }}
               />
             </Col>
@@ -247,12 +271,13 @@ export function Transactions() {
                 name="amountMax"
                 type="number"
                 placeholder="Max $"
-                value={
-                  filters.amountMax != null ? filters.amountMax / 100 : ''
-                }
+                value={filters.amountMax != null ? filters.amountMax / 100 : ''}
                 onChange={(e) => {
                   const v = e.target.value
-                  updateFilter('amountMax', v === '' ? undefined : Number(v) * 100)
+                  updateFilter(
+                    'amountMax',
+                    v === '' ? undefined : Number(v) * 100
+                  )
                 }}
               />
             </Col>
@@ -263,7 +288,9 @@ export function Transactions() {
                 type="search"
                 placeholder="Search"
                 value={filters.search ?? ''}
-                onChange={(e) => updateFilter('search', e.target.value || undefined)}
+                onChange={(e) =>
+                  updateFilter('search', e.target.value || undefined)
+                }
               />
             </Col>
             <Col md={2}>
@@ -282,7 +309,9 @@ export function Transactions() {
             </Col>
           </Row>
           {totalCount === 0 ? (
-            <p className="text-muted mb-0">No transactions match your filters.</p>
+            <p className="text-muted mb-0">
+              No transactions match your filters.
+            </p>
           ) : (
             <p className="text-muted small mb-0">
               Showing {loadedCount} of {totalCount} transaction(s)
@@ -329,19 +358,26 @@ export function Transactions() {
                           >
                             {row.status === 'HELD' ? 'Held' : 'Settled'}
                           </td>
-                          <td>{row.description || row.raw_text || 'Unknown'}</td>
+                          <td>
+                            {row.description || row.raw_text || 'Unknown'}
+                          </td>
                           <td>{row.category_name ?? ''}</td>
-                          <td className={`text-end ${isDebit ? '' : 'text-success'}`}>
+                          <td
+                            className={`text-end ${isDebit ? '' : 'text-success'}`}
+                          >
                             {isDebit ? '-' : '+'}${formatMoney(absCents)}
                           </td>
                         </tr>
                       )
-                      const roundUpRows = (roundUpsByParent.get(row.id) ?? []).map((ru) => (
+                      const roundUpRows = (
+                        roundUpsByParent.get(row.id) ?? []
+                      ).map((ru) => (
                         <tr key={ru.id} className="small text-muted">
                           <td />
                           <td />
                           <td>
-                            Round-up to {ru.transfer_account_display_name ?? 'Loose Change'}
+                            Round-up to{' '}
+                            {ru.transfer_account_display_name ?? 'Loose Change'}
                           </td>
                           <td />
                           <td />

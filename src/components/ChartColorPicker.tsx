@@ -35,7 +35,9 @@ export function ChartColorPicker({
                 height: 40,
                 background: hex,
                 borderWidth: isSelected ? 3 : 1,
-                borderColor: isSelected ? 'var(--vantura-text)' : 'var(--vantura-border)',
+                borderColor: isSelected
+                  ? 'var(--vantura-text)'
+                  : 'var(--vantura-border)',
               }}
               onClick={() => onChange(hex)}
               aria-label={`Select bar color ${hex}`}
@@ -44,7 +46,11 @@ export function ChartColorPicker({
               {isSelected && (
                 <i
                   className="mdi mdi-check"
-                  style={{ fontSize: '1.25rem', color: 'white', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+                  style={{
+                    fontSize: '1.25rem',
+                    color: 'white',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                  }}
                   aria-hidden
                 />
               )}

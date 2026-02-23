@@ -22,6 +22,7 @@ import { getCategories } from '@/services/categories'
 import { getPayAmountCents } from '@/services/balance'
 import { formatMoney, formatShortDate } from '@/lib/format'
 import { toast } from '@/stores/toastStore'
+import { HelpPopover } from '@/components/HelpPopover'
 
 const RESET_FREQUENCIES: { value: TrackerResetFrequency; label: string }[] = [
   { value: 'WEEKLY', label: 'Weekly' },
@@ -65,7 +66,9 @@ export function TrackersSection() {
     .filter((t) => t.reset_frequency === 'PAYDAY')
     .reduce((sum, t) => sum + t.budget_amount, 0)
   const paydayBudgetExceedsPay =
-    payAmountCents != null && payAmountCents > 0 && totalPaydayBudgetCents > payAmountCents
+    payAmountCents != null &&
+    payAmountCents > 0 &&
+    totalPaydayBudgetCents > payAmountCents
 
   function openCreate() {
     setEditingId(null)
@@ -77,7 +80,13 @@ export function TrackersSection() {
     setShowModal(true)
   }
 
-  function openEdit(t: { id: number; name: string; budget_amount: number; reset_frequency: string; reset_day: number | null }) {
+  function openEdit(t: {
+    id: number
+    name: string
+    budget_amount: number
+    reset_frequency: string
+    reset_day: number | null
+  }) {
     setEditingId(t.id)
     setName(t.name)
     setBudget(String(t.budget_amount / 100))
@@ -89,12 +98,26 @@ export function TrackersSection() {
 
   function handleSave() {
     const budgetCents = Math.round(parseFloat(budget || '0') * 100)
-    if (!name.trim() || budgetCents <= 0 || selectedCategoryIds.length === 0) return
+    if (!name.trim() || budgetCents <= 0 || selectedCategoryIds.length === 0)
+      return
     if (editingId != null) {
-      updateTracker(editingId, name.trim(), budgetCents, frequency, resetDay, selectedCategoryIds)
+      updateTracker(
+        editingId,
+        name.trim(),
+        budgetCents,
+        frequency,
+        resetDay,
+        selectedCategoryIds
+      )
       toast.success('Tracker saved.')
     } else {
-      createTracker(name.trim(), budgetCents, frequency, resetDay, selectedCategoryIds)
+      createTracker(
+        name.trim(),
+        budgetCents,
+        frequency,
+        resetDay,
+        selectedCategoryIds
+      )
       toast.success('Tracker created.')
     }
     setShowModal(false)
@@ -142,6 +165,12 @@ export function TrackersSection() {
               <i className="mdi mdi-chart-line" aria-hidden />
             </span>
             <span>Trackers</span>
+            <HelpPopover
+              id="trackers-help"
+              title="Trackers"
+              content="Set a budget and reset frequency (Weekly, Fortnightly, Monthly, or Payday). Assign one or more categories to each tracker. The dashboard shows progress, days left, and transactions in the current period."
+              ariaLabel="What are trackers?"
+            />
           </div>
           <Button variant="primary" size="sm" onClick={openCreate}>
             + Add Tracker
@@ -150,7 +179,10 @@ export function TrackersSection() {
         <Card.Body>
           {paydayBudgetExceedsPay && (
             <Alert variant="warning" className="mb-3">
-              Total PAYDAY tracker budgets (${formatMoney(totalPaydayBudgetCents)}) exceed your pay amount (${formatMoney(payAmountCents!)}). Consider adjusting budgets or pay amount in Settings.
+              Total PAYDAY tracker budgets ($
+              {formatMoney(totalPaydayBudgetCents)}) exceed your pay amount ($
+              {formatMoney(payAmountCents!)}). Consider adjusting budgets or pay
+              amount in Settings.
             </Alert>
           )}
           {trackers.length === 0 ? (
@@ -163,59 +195,73 @@ export function TrackersSection() {
                 const progressStyle = getTrackerProgressStyle(t.progress)
                 return (
                   <div key={t.id}>
-                  <div
-                    className="d-flex justify-content-between align-items-start"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
-                  >
-                    <div>
-                      <strong>{t.name}</strong>
-                      <Badge bg="info" className="ms-2">
-                        {t.daysLeft} days
-                      </Badge>
-                    </div>
-                    <Button
-                      variant="outline-secondary"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        openEdit(t)
-                      }}
+                    <div
+                      className="d-flex justify-content-between align-items-start"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() =>
+                        setExpandedId(expandedId === t.id ? null : t.id)
+                      }
                     >
-                      Edit
-                    </Button>
-                  </div>
-                  <h6 className={`text-${progressStyle.variant} mt-1 text-end`}>${formatMoney(t.remaining)} left</h6>
-                  <ProgressBar
-                    now={Math.min(100, t.progress)}
-                    variant={progressStyle.variant}
-                    striped={progressStyle.striped}
-                    animated={progressStyle.animated}
-                    label={`${Math.round(t.progress)}%`}
-                  />
-                  <small className="text-muted">
-                    ${formatMoney(t.spent)} of ${formatMoney(t.budget_amount)} spent
-                  </small>
-                  <Collapse in={expandedId === t.id}>
-                    <div className="mt-2 small">
-                      {getTrackerTransactionsInPeriod(t.id).length === 0 ? (
-                        <span className="text-muted">No transactions this period</span>
-                      ) : (
-                        <ul className="list-unstyled mb-0">
-                          {getTrackerTransactionsInPeriod(t.id).map((tx) => (
-                            <li key={tx.id}>
-                              {formatShortDate(tx.created_at ?? tx.settled_at ?? '')} {tx.description}{' '}
-                              ${formatMoney(Math.abs(tx.amount))}
-                              {tx.status === 'HELD' && (
-                                <span className="text-muted small ms-1">(Held)</span>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                      <div>
+                        <strong>{t.name}</strong>
+                        <Badge bg="info" className="ms-2">
+                          {t.daysLeft} days
+                        </Badge>
+                      </div>
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openEdit(t)
+                        }}
+                      >
+                        Edit
+                      </Button>
                     </div>
-                  </Collapse>
-                </div>
+                    <h6
+                      className={`text-${progressStyle.variant} mt-1 text-end`}
+                    >
+                      ${formatMoney(t.remaining)} left
+                    </h6>
+                    <ProgressBar
+                      now={Math.min(100, t.progress)}
+                      variant={progressStyle.variant}
+                      striped={progressStyle.striped}
+                      animated={progressStyle.animated}
+                      label={`${Math.round(t.progress)}%`}
+                    />
+                    <small className="text-muted">
+                      ${formatMoney(t.spent)} of ${formatMoney(t.budget_amount)}{' '}
+                      spent
+                    </small>
+                    <Collapse in={expandedId === t.id}>
+                      <div className="mt-2 small">
+                        {getTrackerTransactionsInPeriod(t.id).length === 0 ? (
+                          <span className="text-muted">
+                            No transactions this period
+                          </span>
+                        ) : (
+                          <ul className="list-unstyled mb-0">
+                            {getTrackerTransactionsInPeriod(t.id).map((tx) => (
+                              <li key={tx.id}>
+                                {formatShortDate(
+                                  tx.created_at ?? tx.settled_at ?? ''
+                                )}{' '}
+                                {tx.description} $
+                                {formatMoney(Math.abs(tx.amount))}
+                                {tx.status === 'HELD' && (
+                                  <span className="text-muted small ms-1">
+                                    (Held)
+                                  </span>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </Collapse>
+                  </div>
                 )
               })}
             </div>
@@ -225,7 +271,9 @@ export function TrackersSection() {
 
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
         <Modal.Header closeButton>
-          <Modal.Title>{editingId != null ? 'Edit tracker' : 'Add tracker'}</Modal.Title>
+          <Modal.Title>
+            {editingId != null ? 'Edit tracker' : 'Add tracker'}
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
@@ -252,12 +300,16 @@ export function TrackersSection() {
               />
             </Form.Group>
             <Form.Group className="mb-2">
-              <Form.Label htmlFor="tracker-edit-frequency">Reset frequency</Form.Label>
+              <Form.Label htmlFor="tracker-edit-frequency">
+                Reset frequency
+              </Form.Label>
               <Form.Select
                 id="tracker-edit-frequency"
                 name="frequency"
                 value={frequency}
-                onChange={(e) => setFrequency(e.target.value as TrackerResetFrequency)}
+                onChange={(e) =>
+                  setFrequency(e.target.value as TrackerResetFrequency)
+                }
               >
                 {RESET_FREQUENCIES.map((f) => (
                   <option key={f.value} value={f.value}>
@@ -268,7 +320,9 @@ export function TrackersSection() {
             </Form.Group>
             {frequency !== 'PAYDAY' && (
               <Form.Group className="mb-2">
-                <Form.Label htmlFor="tracker-edit-reset-day">Reset day</Form.Label>
+                <Form.Label htmlFor="tracker-edit-reset-day">
+                  Reset day
+                </Form.Label>
                 <Form.Select
                   id="tracker-edit-reset-day"
                   name="resetDay"
@@ -277,7 +331,11 @@ export function TrackersSection() {
                 >
                   {resetDayOptions.map((d) => (
                     <option key={d} value={d}>
-                      {frequency === 'MONTHLY' ? `${d}` : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d - 1]}
+                      {frequency === 'MONTHLY'
+                        ? `${d}`
+                        : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][
+                            d - 1
+                          ]}
                     </option>
                   ))}
                 </Form.Select>
@@ -285,12 +343,16 @@ export function TrackersSection() {
             )}
             {modalPaydayExceedsPay && (
               <Alert variant="warning" className="mb-2">
-                Total PAYDAY budgets will be ${formatMoney(newTotalPaydayCents)} (pay amount ${formatMoney(payAmountCents!)}).
+                Total PAYDAY budgets will be ${formatMoney(newTotalPaydayCents)}{' '}
+                (pay amount ${formatMoney(payAmountCents!)}).
               </Alert>
             )}
             <Form.Group className="mb-2">
               <Form.Label>Categories</Form.Label>
-              <div className="border rounded p-2" style={{ maxHeight: 160, overflowY: 'auto' }}>
+              <div
+                className="border rounded p-2"
+                style={{ maxHeight: 160, overflowY: 'auto' }}
+              >
                 {categories.map((c) => (
                   <Form.Check
                     key={c.id}
@@ -307,7 +369,11 @@ export function TrackersSection() {
         </Modal.Body>
         <Modal.Footer>
           {editingId != null && (
-            <Button variant="outline-danger" className="me-auto" onClick={() => handleDelete(editingId)}>
+            <Button
+              variant="outline-danger"
+              className="me-auto"
+              onClick={() => handleDelete(editingId)}
+            >
               Delete
             </Button>
           )}
