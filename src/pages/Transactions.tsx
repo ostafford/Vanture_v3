@@ -88,19 +88,18 @@ export function Transactions() {
   const { filters, sort, setFilters } = useFiltersFromSearchParams()
   const [page, setPage] = useState(0)
   const categories = getCategories()
-  const totalCount = useMemo(
-    () => getFilteredTransactionsCount(filters),
-    [filters, lastSyncCompletedAt]
-  )
+  const totalCount = useMemo(() => {
+    void lastSyncCompletedAt // Recompute when sync completes
+    return getFilteredTransactionsCount(filters)
+  }, [filters, lastSyncCompletedAt])
   const limit = (page + 1) * DEFAULT_PAGE_SIZE
-  const grouped = useMemo(
-    () =>
-      getTransactionsGroupedByDate(filters, sort, {
-        limit,
-        offset: 0,
-      }),
-    [filters, sort, limit, lastSyncCompletedAt]
-  )
+  const grouped = useMemo(() => {
+    void lastSyncCompletedAt // Recompute when sync completes
+    return getTransactionsGroupedByDate(filters, sort, {
+      limit,
+      offset: 0,
+    })
+  }, [filters, sort, limit, lastSyncCompletedAt])
   const dateKeys = useMemo(
     () => Object.keys(grouped).sort().reverse(),
     [grouped]
