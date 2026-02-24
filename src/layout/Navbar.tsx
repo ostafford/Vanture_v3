@@ -31,6 +31,7 @@ export function Navbar({ sidebarCollapsed }: NavbarProps) {
   const [lastSync, setLastSync] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [syncError, setSyncError] = useState<string | null>(null)
+  const isDemoMode = getAppSetting('demo_mode') === '1'
 
   useEffect(() => {
     setLastSync(getAppSetting('last_sync'))
@@ -39,7 +40,7 @@ export function Navbar({ sidebarCollapsed }: NavbarProps) {
   async function handleSync() {
     const token = sessionStore.getState().getToken()
     if (!token || syncing) return
-    if (getAppSetting('demo_mode') === '1') {
+    if (isDemoMode) {
       toast.info('Demo mode – no sync.')
       return
     }
@@ -78,13 +79,17 @@ export function Navbar({ sidebarCollapsed }: NavbarProps) {
           {sidebarCollapsed ? (
             <i className="mdi mdi-menu" aria-hidden />
           ) : (
-            <span className="navbar-brand-text">VANTURA</span>
+            <span className="navbar-brand-block">
+              <span className="navbar-brand-text">VANTURA</span>
+              {isDemoMode && <span className="navbar-demo-badge">DEMO</span>}
+            </span>
           )}
         </button>
       </div>
       {sidebarCollapsed && (
         <span className="navbar-collapsed-brand" aria-hidden>
-          VANTURA
+          <span className="navbar-brand-text">VANTURA</span>
+          {isDemoMode && <span className="navbar-demo-badge">DEMO</span>}
         </span>
       )}
       <div className="navbar-menu-wrapper">

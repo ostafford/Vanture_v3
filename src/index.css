@@ -566,10 +566,27 @@ body {
   font-size: 1.5rem;
   cursor: pointer;
 }
+.vantura-navbar .navbar-brand-wrapper .navbar-brand-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
 .vantura-navbar .navbar-brand-wrapper .navbar-brand-text {
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: 0.12em;
+  background: var(--vantura-primary-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--vantura-primary);
+}
+.vantura-navbar .navbar-brand-wrapper .navbar-brand-block .navbar-demo-badge {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   background: var(--vantura-primary-gradient);
   -webkit-background-clip: text;
   background-clip: text;
@@ -581,6 +598,13 @@ body {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  pointer-events: none;
+}
+.vantura-navbar .navbar-collapsed-brand .navbar-brand-text {
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -589,7 +613,17 @@ body {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: var(--vantura-primary);
-  pointer-events: none;
+}
+.vantura-navbar .navbar-collapsed-brand .navbar-demo-badge {
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  background: var(--vantura-primary-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--vantura-primary);
 }
 .vantura-navbar .navbar-menu-wrapper {
   flex: 1;
