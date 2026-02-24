@@ -11,6 +11,33 @@ export function Unlock() {
   const [loading, setLoading] = useState(false)
   const setUnlocked = useStore(sessionStore, (s) => s.setUnlocked)
 
+  const isDemoMode = getAppSetting('demo_mode') === '1'
+
+  if (isDemoMode) {
+    return (
+      <div className="auth-full-bg">
+        <Card style={{ width: '100%', maxWidth: 400 }} className="auth-card">
+          <Card.Body>
+            <Card.Title className="mb-3">Demo mode</Card.Title>
+            <Card.Text className="text-muted small mb-3 text-center">
+              You&apos;re using sample data. Open the demo to explore the app
+              without connecting your Up Bank account.
+            </Card.Text>
+            <div className="text-center">
+              <Button
+                type="button"
+                className="btn-gradient-primary"
+                onClick={() => setUnlocked('demo')}
+              >
+                Open demo
+              </Button>
+            </div>
+          </Card.Body>
+        </Card>
+      </div>
+    )
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)

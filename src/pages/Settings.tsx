@@ -89,6 +89,10 @@ export function Settings() {
   async function handleReSync() {
     const token = sessionStore.getState().getToken()
     if (!token || syncing) return
+    if (getAppSetting('demo_mode') === '1') {
+      toast.info('Demo mode – no sync.')
+      return
+    }
     setSyncing(true)
     setSyncError(null)
     syncStore.getState().setSyncing(true)
@@ -199,6 +203,7 @@ export function Settings() {
   const effectivePaydayDay = paydayDayValid
     ? paydayDay
     : (paydayDayOptions[0]?.value ?? 1)
+  const isDemoMode = getAppSetting('demo_mode') === '1'
 
   function handlePaydaySubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -411,6 +416,16 @@ export function Settings() {
           Data
         </Card.Header>
         <Card.Body>
+          {isDemoMode && (
+            <div
+              className="alert alert-info mb-4"
+              role="status"
+              id="settings-demo-banner"
+            >
+              You&apos;re using sample data. Clear all data below to connect
+              your real Up Bank account.
+            </div>
+          )}
           <div className="mb-4">
             <h6 className="text-muted mb-2">Re-sync with Up Bank</h6>
             <p className="small text-muted mb-2">
@@ -429,7 +444,7 @@ export function Settings() {
               className="btn-gradient-primary"
               size="sm"
               onClick={handleReSync}
-              disabled={syncing}
+              disabled={syncing || isDemoMode}
               aria-label="Re-sync with Up Bank"
               aria-busy={syncing}
             >
@@ -471,32 +486,34 @@ export function Settings() {
 
           <hr />
 
-          <div className="mb-4">
-            <h6 className="text-muted mb-2">API token</h6>
-            <p className="small text-muted mb-2">
-              If your token has expired (e.g. 48-hour token from Up Bank),
-              update it here. Your passphrase is required; other data is not
-              deleted.
-            </p>
-            <Button
-              variant="outline-primary"
-              size="sm"
-              onClick={() => {
-                setUpdateTokenError(null)
-                setShowUpdateTokenModal(true)
-              }}
-              aria-label="Update API token"
-            >
-              Update API token
-            </Button>
-            {updateTokenSuccess && (
-              <span className="d-block mt-2 text-success small" role="status">
-                API token updated. You can re-sync now.
-              </span>
-            )}
-          </div>
+          {!isDemoMode && (
+            <div className="mb-4">
+              <h6 className="text-muted mb-2">API token</h6>
+              <p className="small text-muted mb-2">
+                If your token has expired (e.g. 48-hour token from Up Bank),
+                update it here. Your passphrase is required; other data is not
+                deleted.
+              </p>
+              <Button
+                variant="outline-primary"
+                size="sm"
+                onClick={() => {
+                  setUpdateTokenError(null)
+                  setShowUpdateTokenModal(true)
+                }}
+                aria-label="Update API token"
+              >
+                Update API token
+              </Button>
+              {updateTokenSuccess && (
+                <span className="d-block mt-2 text-success small" role="status">
+                  API token updated. You can re-sync now.
+                </span>
+              )}
+            </div>
+          )}
 
-          <hr />
+          {!isDemoMode && <hr />}
 
           <div>
             <h6 className="text-muted mb-2">Clear all data</h6>

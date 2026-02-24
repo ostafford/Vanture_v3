@@ -39,6 +39,10 @@ export function Navbar({ sidebarCollapsed }: NavbarProps) {
   async function handleSync() {
     const token = sessionStore.getState().getToken()
     if (!token || syncing) return
+    if (getAppSetting('demo_mode') === '1') {
+      toast.info('Demo mode – no sync.')
+      return
+    }
     setSyncing(true)
     setSyncError(null)
     syncStore.getState().setSyncing(true)

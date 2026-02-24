@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react'
 import { Button, Card, Form, ProgressBar } from 'react-bootstrap'
 import { setAppSetting, getAppSetting } from '@/db'
 import { sessionStore } from '@/stores/sessionStore'
+import { seedDemoData } from '@/db/seedDemoData'
 import {
   generateSalt,
   deriveKeyFromPassphrase,
@@ -118,6 +119,24 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     onComplete()
   }
 
+  function handleTryWithSampleData() {
+    setError(null)
+    setLoading(true)
+    try {
+      seedDemoData()
+      sessionStore.getState().setUnlocked('demo')
+      onComplete()
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to load sample data. Please try again.'
+      )
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const paydayDayOptions = getPaydayDayOptions(paydayFrequency)
   const currentPaydayDayValid = paydayDayOptions.some(
     (opt) => opt.value === paydayDay
@@ -154,12 +173,27 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 downloaded to this device only—no cloud storage; we don&apos;t
                 have servers that store your data.
               </p>
-              <Button
-                className="btn-gradient-primary"
-                onClick={() => setStep(2)}
-              >
-                Get Started
-              </Button>
+              <div className="d-flex flex-column gap-2">
+                <Button
+                  className="btn-gradient-primary"
+                  onClick={() => setStep(2)}
+                  disabled={loading}
+                >
+                  Get Started
+                </Button>
+                <Button
+                  variant="outline-primary"
+                  onClick={handleTryWithSampleData}
+                  disabled={loading}
+                >
+                  {loading ? 'Loading…' : 'Try with sample data'}
+                </Button>
+              </div>
+              {error && (
+                <div className="text-danger small mt-2" role="alert">
+                  {error}
+                </div>
+              )}
             </>
           )}
 
@@ -206,9 +240,22 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   {error}
                 </div>
               )}
-              <Button type="submit" className="btn-gradient-primary">
-                Continue
-              </Button>
+              <div className="d-flex justify-content-between align-items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline-secondary"
+                  onClick={() => {
+                    setError(null)
+                    setStep(1)
+                  }}
+                  aria-label="Back to welcome"
+                >
+                  Back
+                </Button>
+                <Button type="submit" className="btn-gradient-primary">
+                  Continue
+                </Button>
+              </div>
             </Form>
           )}
 
@@ -253,13 +300,27 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   {error}
                 </div>
               )}
-              <Button
-                type="submit"
-                className="btn-gradient-primary"
-                disabled={loading}
-              >
-                {loading ? 'Validating…' : 'Continue'}
-              </Button>
+              <div className="d-flex justify-content-between align-items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline-secondary"
+                  onClick={() => {
+                    setError(null)
+                    setStep(2)
+                  }}
+                  disabled={loading}
+                  aria-label="Back to passphrase"
+                >
+                  Back
+                </Button>
+                <Button
+                  type="submit"
+                  className="btn-gradient-primary"
+                  disabled={loading}
+                >
+                  {loading ? 'Validating…' : 'Continue'}
+                </Button>
+              </div>
             </Form>
           )}
 
@@ -336,9 +397,22 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   {error}
                 </div>
               )}
-              <Button type="submit" className="btn-gradient-primary">
-                Continue
-              </Button>
+              <div className="d-flex justify-content-between align-items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline-secondary"
+                  onClick={() => {
+                    setError(null)
+                    setStep(3)
+                  }}
+                  aria-label="Back to API token"
+                >
+                  Back
+                </Button>
+                <Button type="submit" className="btn-gradient-primary">
+                  Continue
+                </Button>
+              </div>
             </Form>
           )}
 
