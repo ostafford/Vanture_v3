@@ -1,5 +1,12 @@
 import { useState } from 'react'
-import { Card, Button, Modal, Form } from 'react-bootstrap'
+import {
+  Card,
+  Button,
+  Modal,
+  Form,
+  OverlayTrigger,
+  Tooltip,
+} from 'react-bootstrap'
 import {
   getUpcomingChargesGrouped,
   createUpcomingCharge,
@@ -150,9 +157,21 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
               ariaLabel="What are upcoming charges?"
             />
           </div>
-          <Button variant="primary" size="sm" onClick={openCreate}>
-            + Add
-          </Button>
+          <OverlayTrigger
+            placement="top"
+            overlay={
+              <Tooltip id="upcoming-add-tooltip">Add upcoming charge</Tooltip>
+            }
+          >
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={openCreate}
+              aria-label="Add upcoming charge"
+            >
+              <i className="mdi mdi-plus" aria-hidden />
+            </Button>
+          </OverlayTrigger>
         </Card.Header>
         <Card.Body>
           {nextPayday && (

@@ -8,9 +8,12 @@ import {
   Badge,
   Collapse,
   Alert,
+  OverlayTrigger,
+  Tooltip,
 } from 'react-bootstrap'
 import {
   getTrackersWithProgress,
+  getTrackersWithProgressForPeriod,
   getTrackerTransactionsInPeriod,
   getTrackerCategoryIds,
   createTracker,
@@ -23,6 +26,8 @@ import { getPayAmountCents } from '@/services/balance'
 import { formatMoney, formatShortDate } from '@/lib/format'
 import { toast } from '@/stores/toastStore'
 import { HelpPopover } from '@/components/HelpPopover'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
 
 const RESET_FREQUENCIES: { value: TrackerResetFrequency; label: string }[] = [
   { value: 'WEEKLY', label: 'Weekly' },
@@ -58,11 +63,13 @@ export function TrackersSection() {
   const [frequency, setFrequency] = useState<TrackerResetFrequency>('WEEKLY')
   const [resetDay, setResetDay] = useState(1)
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([])
+  const [periodOffset, setPeriodOffset] = useState(0)
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY)
 
-  const trackers = getTrackersWithProgress()
+  const trackers = getTrackersWithProgressForPeriod(periodOffset)
   const categories = getCategories()
   const payAmountCents = getPayAmountCents()
-  const totalPaydayBudgetCents = trackers
+  const totalPaydayBudgetCents = getTrackersWithProgress()
     .filter((t) => t.reset_frequency === 'PAYDAY')
     .reduce((sum, t) => sum + t.budget_amount, 0)
   const paydayBudgetExceedsPay =
@@ -159,22 +166,161 @@ export function TrackersSection() {
   return (
     <>
       <Card>
-        <Card.Header className="d-flex justify-content-between align-items-center section-header">
-          <div className="d-flex align-items-center">
-            <span className="page-title-icon bg-gradient-primary text-white mr-2">
-              <i className="mdi mdi-chart-line" aria-hidden />
-            </span>
-            <span>Trackers</span>
-            <HelpPopover
-              id="trackers-help"
-              title="Trackers"
-              content="Set a budget and reset frequency (Weekly, Fortnightly, Monthly, or Payday). Assign one or more categories to each tracker. The dashboard shows progress, days left, and transactions in the current period."
-              ariaLabel="What are trackers?"
-            />
-          </div>
-          <Button variant="primary" size="sm" onClick={openCreate}>
-            + Add Tracker
-          </Button>
+        <Card.Header className="d-flex flex-column gap-2 section-header">
+          {isMobile ? (
+            <>
+              <div className="d-flex align-items-center justify-content-between">
+                <div className="d-flex align-items-center">
+                  <span className="page-title-icon bg-gradient-primary text-white mr-2">
+                    <i className="mdi mdi-chart-line" aria-hidden />
+                  </span>
+                  <div className="d-flex flex-column">
+                    <span>Trackers</span>
+                    <span className="small text-muted">
+                      {periodOffset === 0
+                        ? '(Current period)'
+                        : periodOffset === -1
+                          ? '(Previous period)'
+                          : `(${-periodOffset} periods ago)`}
+                    </span>
+                  </div>
+                  <HelpPopover
+                    id="trackers-help"
+                    title="Trackers"
+                    content="Set a budget and reset frequency (Weekly, Fortnightly, Monthly, or Payday). Assign one or more categories to each tracker. The dashboard shows progress, days left, and transactions in the current period."
+                    ariaLabel="What are trackers?"
+                  />
+                </div>
+                <OverlayTrigger
+                  placement="top"
+                  overlay={
+                    <Tooltip id="trackers-add-tooltip">Add tracker</Tooltip>
+                  }
+                >
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={openCreate}
+                    aria-label="Add tracker"
+                  >
+                    <i className="mdi mdi-plus" aria-hidden />
+                  </Button>
+                </OverlayTrigger>
+              </div>
+              <div className="d-flex justify-content-center gap-2">
+                <OverlayTrigger
+                  placement="top"
+                  overlay={
+                    <Tooltip id="trackers-prev-tooltip">
+                      Previous period
+                    </Tooltip>
+                  }
+                >
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={() => setPeriodOffset((o) => o - 1)}
+                    aria-label="Previous period"
+                  >
+                    <i className="mdi mdi-chevron-left" aria-hidden />
+                  </Button>
+                </OverlayTrigger>
+                <OverlayTrigger
+                  placement="top"
+                  overlay={
+                    <Tooltip id="trackers-next-tooltip">Next period</Tooltip>
+                  }
+                >
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={() => setPeriodOffset((o) => o + 1)}
+                    disabled={periodOffset >= 0}
+                    aria-label="Next period"
+                  >
+                    <i className="mdi mdi-chevron-right" aria-hidden />
+                  </Button>
+                </OverlayTrigger>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div className="d-flex align-items-center">
+                  <span className="page-title-icon bg-gradient-primary text-white mr-2">
+                    <i className="mdi mdi-chart-line" aria-hidden />
+                  </span>
+                  <div className="d-flex flex-column">
+                    <span>Trackers</span>
+                    <span className="small text-muted">
+                      {periodOffset === 0
+                        ? '(Current period)'
+                        : periodOffset === -1
+                          ? '(Previous period)'
+                          : `(${-periodOffset} periods ago)`}
+                    </span>
+                  </div>
+                  <HelpPopover
+                    id="trackers-help"
+                    title="Trackers"
+                    content="Set a budget and reset frequency (Weekly, Fortnightly, Monthly, or Payday). Assign one or more categories to each tracker. The dashboard shows progress, days left, and transactions in the current period."
+                    ariaLabel="What are trackers?"
+                  />
+                </div>
+                <div className="d-flex gap-1 align-items-center flex-nowrap ms-auto">
+                  <OverlayTrigger
+                    placement="top"
+                    overlay={
+                      <Tooltip id="trackers-prev-tooltip">
+                        Previous period
+                      </Tooltip>
+                    }
+                  >
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={() => setPeriodOffset((o) => o - 1)}
+                      aria-label="Previous period"
+                    >
+                      <i className="mdi mdi-chevron-left" aria-hidden />
+                    </Button>
+                  </OverlayTrigger>
+                  <OverlayTrigger
+                    placement="top"
+                    overlay={
+                      <Tooltip id="trackers-next-tooltip">Next period</Tooltip>
+                    }
+                  >
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={() => setPeriodOffset((o) => o + 1)}
+                      disabled={periodOffset >= 0}
+                      aria-label="Next period"
+                    >
+                      <i className="mdi mdi-chevron-right" aria-hidden />
+                    </Button>
+                  </OverlayTrigger>
+                  <OverlayTrigger
+                    placement="top"
+                    overlay={
+                      <Tooltip id="trackers-add-tooltip">Add tracker</Tooltip>
+                    }
+                  >
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="ms-3"
+                      onClick={openCreate}
+                      aria-label="Add tracker"
+                    >
+                      <i className="mdi mdi-plus" aria-hidden />
+                    </Button>
+                  </OverlayTrigger>
+                </div>
+              </div>
+            </>
+          )}
         </Card.Header>
         <Card.Body>
           {paydayBudgetExceedsPay && (
@@ -237,13 +383,17 @@ export function TrackersSection() {
                     </small>
                     <Collapse in={expandedId === t.id}>
                       <div className="mt-2 small">
-                        {getTrackerTransactionsInPeriod(t.id).length === 0 ? (
+                        {getTrackerTransactionsInPeriod(t.id, periodOffset)
+                          .length === 0 ? (
                           <span className="text-muted">
                             No transactions this period
                           </span>
                         ) : (
                           <ul className="list-unstyled mb-0">
-                            {getTrackerTransactionsInPeriod(t.id).map((tx) => (
+                            {getTrackerTransactionsInPeriod(
+                              t.id,
+                              periodOffset
+                            ).map((tx) => (
                               <li key={tx.id}>
                                 {formatShortDate(
                                   tx.created_at ?? tx.settled_at ?? ''

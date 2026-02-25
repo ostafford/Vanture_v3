@@ -1,6 +1,14 @@
 import { useState } from 'react'
 import { useStore } from 'zustand'
-import { Card, Modal, Button, Row, Col } from 'react-bootstrap'
+import {
+  Card,
+  Modal,
+  Button,
+  Row,
+  Col,
+  OverlayTrigger,
+  Tooltip as BSTooltip,
+} from 'react-bootstrap'
 import {
   BarChart,
   Bar,
@@ -101,35 +109,114 @@ export function InsightsSection() {
   return (
     <>
       <Card>
-        <Card.Header className="d-flex align-items-center justify-content-between flex-wrap gap-2 section-header">
-          <div className="d-flex align-items-center">
-            <span className="page-title-icon bg-gradient-primary text-white mr-2">
-              <i className="mdi mdi-chart-bar" aria-hidden />
-            </span>
-            <span>
-              Weekly Insights ({formatShortDateFromDate(weekRange.start)} –{' '}
-              {formatShortDateFromDate(weekRange.end)})
-            </span>
-          </div>
-          <div className="d-flex gap-1">
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              onClick={() => setWeekOffset((o) => o - 1)}
-              aria-label="Previous week"
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              onClick={() => setWeekOffset((o) => o + 1)}
-              disabled={weekOffset >= 0}
-              aria-label="Next week"
-            >
-              Next
-            </Button>
-          </div>
+        <Card.Header
+          className={
+            isMobile
+              ? 'd-flex flex-column gap-2 section-header'
+              : 'd-flex align-items-center justify-content-between flex-wrap gap-2 section-header'
+          }
+        >
+          {isMobile ? (
+            <>
+              <div className="d-flex align-items-center">
+                <span className="page-title-icon bg-gradient-primary text-white mr-2">
+                  <i className="mdi mdi-chart-bar" aria-hidden />
+                </span>
+                <div className="d-flex flex-column">
+                  <span>Weekly Insights</span>
+                  <span className="small text-muted">
+                    {formatShortDateFromDate(weekRange.start)} –{' '}
+                    {formatShortDateFromDate(weekRange.end)}
+                  </span>
+                </div>
+              </div>
+              <div className="d-flex justify-content-center gap-2">
+                <OverlayTrigger
+                  placement="top"
+                  overlay={
+                    <BSTooltip id="insights-prev-tooltip">
+                      Previous week
+                    </BSTooltip>
+                  }
+                >
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={() => setWeekOffset((o) => o - 1)}
+                    aria-label="Previous week"
+                  >
+                    <i className="mdi mdi-chevron-left" aria-hidden />
+                  </Button>
+                </OverlayTrigger>
+                <OverlayTrigger
+                  placement="top"
+                  overlay={
+                    <BSTooltip id="insights-next-tooltip">Next week</BSTooltip>
+                  }
+                >
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={() => setWeekOffset((o) => o + 1)}
+                    disabled={weekOffset >= 0}
+                    aria-label="Next week"
+                  >
+                    <i className="mdi mdi-chevron-right" aria-hidden />
+                  </Button>
+                </OverlayTrigger>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="d-flex align-items-center">
+                <span className="page-title-icon bg-gradient-primary text-white mr-2">
+                  <i className="mdi mdi-chart-bar" aria-hidden />
+                </span>
+                <div className="d-flex flex-column">
+                  <span>Weekly Insights</span>
+                  <span className="small text-muted">
+                    {formatShortDateFromDate(weekRange.start)} –{' '}
+                    {formatShortDateFromDate(weekRange.end)}
+                  </span>
+                </div>
+              </div>
+              <div className="d-flex gap-2 flex-grow-1 justify-content-end">
+                <OverlayTrigger
+                  placement="top"
+                  overlay={
+                    <BSTooltip id="insights-prev-tooltip">
+                      Previous week
+                    </BSTooltip>
+                  }
+                >
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={() => setWeekOffset((o) => o - 1)}
+                    aria-label="Previous week"
+                  >
+                    <i className="mdi mdi-chevron-left" aria-hidden />
+                  </Button>
+                </OverlayTrigger>
+                <OverlayTrigger
+                  placement="top"
+                  overlay={
+                    <BSTooltip id="insights-next-tooltip">Next week</BSTooltip>
+                  }
+                >
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={() => setWeekOffset((o) => o + 1)}
+                    disabled={weekOffset >= 0}
+                    aria-label="Next week"
+                  >
+                    <i className="mdi mdi-chevron-right" aria-hidden />
+                  </Button>
+                </OverlayTrigger>
+              </div>
+            </>
+          )}
         </Card.Header>
         {import.meta.env.DEV && (
           <Card.Body className="py-1 small text-muted border-bottom">

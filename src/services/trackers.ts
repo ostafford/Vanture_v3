@@ -59,6 +59,112 @@ export function getTrackerSpent(trackerId: number): number {
 }
 
 /**
+ * Spent in a specific period (cents). Same filters as getTrackerSpent but with explicit bounds.
+ */
+export function getTrackerSpentInPeriod(
+  trackerId: number,
+  periodStart: string,
+  periodEnd: string
+): number {
+  const db = getDb()
+  if (!db) return 0
+  const startNorm =
+    periodStart.length >= 10 ? periodStart.slice(0, 10) : periodStart
+  const endNorm = periodEnd.length >= 10 ? periodEnd.slice(0, 10) : periodEnd
+  const stmt = db.prepare(
+    `SELECT COALESCE(SUM(ABS(t.amount)), 0) as spent
+     FROM transactions t
+     INNER JOIN tracker_categories tc ON t.category_id = tc.category_id
+     WHERE tc.tracker_id = ?
+       AND COALESCE(t.created_at, t.settled_at) >= ?
+       AND COALESCE(t.created_at, t.settled_at) < ?
+       AND t.amount < 0 AND t.transfer_account_id IS NULL`
+  )
+  stmt.bind([trackerId, startNorm, endNorm])
+  stmt.step()
+  const row = stmt.get()
+  stmt.free()
+  return row ? Number(row[0]) : 0
+}
+
+/** Step back one period from a given end date. Used for period-offset navigation. */
+function stepBackOnePeriod(
+  frequency: string,
+  resetDay: number | null,
+  periodEnd: string
+): string {
+  const from = new Date(periodEnd + 'T12:00:00Z')
+  if (frequency === 'PAYDAY') {
+    const prev = getPreviousPaydayDate(periodEnd)
+    return prev ?? periodEnd
+  }
+  if (frequency === 'WEEKLY') {
+    const d = new Date(from)
+    d.setUTCDate(d.getUTCDate() - 7)
+    return d.toISOString().slice(0, 10)
+  }
+  if (frequency === 'FORTNIGHTLY') {
+    const d = new Date(from)
+    d.setUTCDate(d.getUTCDate() - 14)
+    return d.toISOString().slice(0, 10)
+  }
+  if (frequency === 'MONTHLY') {
+    const d = new Date(from)
+    d.setUTCMonth(d.getUTCMonth() - 1)
+    const day =
+      resetDay != null && resetDay >= 1 && resetDay <= 28 ? resetDay : 1
+    d.setUTCDate(day)
+    return d.toISOString().slice(0, 10)
+  }
+  return periodEnd
+}
+
+/** Previous payday date before fromDate, using app_settings payday_frequency and payday_day. */
+function getPreviousPaydayDate(fromDate: string): string | null {
+  const frequency = getAppSetting('payday_frequency')
+  const dayStr = getAppSetting('payday_day')
+  if (!frequency) return null
+  const paydayDay = dayStr ? parseInt(dayStr, 10) : 1
+  const from = new Date(fromDate + 'T12:00:00Z')
+  let prev: Date
+  if (frequency === 'WEEKLY') {
+    prev = new Date(from)
+    prev.setUTCDate(prev.getUTCDate() - 7)
+  } else if (frequency === 'FORTNIGHTLY') {
+    prev = new Date(from)
+    prev.setUTCDate(prev.getUTCDate() - 14)
+  } else if (frequency === 'MONTHLY') {
+    prev = new Date(from)
+    prev.setUTCMonth(prev.getUTCMonth() - 1)
+    if (paydayDay >= 1 && paydayDay <= 28) prev.setUTCDate(paydayDay)
+  } else {
+    return null
+  }
+  return prev.toISOString().slice(0, 10)
+}
+
+/** Period bounds for a tracker and period offset. 0 = current period, -1 = previous, etc. */
+export function getPeriodBoundsForOffset(
+  row: TrackerRow,
+  periodOffset: number
+): { periodStart: string; periodEnd: string } | null {
+  const norm = (s: string) => (s.length >= 10 ? s.slice(0, 10) : s)
+  if (periodOffset === 0) {
+    return {
+      periodStart: norm(row.last_reset_date),
+      periodEnd: norm(row.next_reset_date),
+    }
+  }
+  if (periodOffset > 0) return null
+  let end = norm(row.last_reset_date)
+  for (let i = 0; i < -periodOffset - 1; i++) {
+    end = stepBackOnePeriod(row.reset_frequency, row.reset_day, end)
+  }
+  const start = stepBackOnePeriod(row.reset_frequency, row.reset_day, end)
+  return { periodStart: start, periodEnd: end }
+}
+
+/**
  * All active trackers with spent, remaining, daysLeft, progress.
  */
 export function getTrackersWithProgress(): TrackerWithProgress[] {
@@ -106,10 +212,50 @@ export function getTrackersWithProgress(): TrackerWithProgress[] {
 }
 
 /**
- * Transactions in current period for a tracker (for list in UI). Uses display date
- * (created_at with fallback to settled_at) for period and ordering. Returns status for Held/Settled.
+ * Get a single tracker row by id. Returns null if not found or inactive.
  */
-export function getTrackerTransactionsInPeriod(trackerId: number): Array<{
+function getTrackerRow(trackerId: number): TrackerRow | null {
+  const db = getDb()
+  if (!db) return null
+  const stmt = db.prepare(
+    `SELECT id, name, budget_amount, reset_frequency, reset_day, last_reset_date, next_reset_date
+     FROM trackers WHERE id = ? AND is_active = 1`
+  )
+  stmt.bind([trackerId])
+  if (!stmt.step()) {
+    stmt.free()
+    return null
+  }
+  const row = stmt.get() as [
+    number,
+    string,
+    number,
+    string,
+    number | null,
+    string,
+    string,
+  ]
+  stmt.free()
+  return {
+    id: row[0],
+    name: row[1],
+    budget_amount: row[2],
+    reset_frequency: row[3],
+    reset_day: row[4],
+    last_reset_date: row[5],
+    next_reset_date: row[6],
+  }
+}
+
+/**
+ * Transactions in a period for a tracker (for list in UI). Uses display date
+ * (created_at with fallback to settled_at) for period and ordering. Returns status for Held/Settled.
+ * When periodOffset is 0 or omitted, uses current period from DB; otherwise uses computed period.
+ */
+export function getTrackerTransactionsInPeriod(
+  trackerId: number,
+  periodOffset?: number
+): Array<{
   id: string
   description: string
   created_at: string | null
@@ -119,17 +265,35 @@ export function getTrackerTransactionsInPeriod(trackerId: number): Array<{
 }> {
   const db = getDb()
   if (!db) return []
+  let periodStart: string
+  let periodEnd: string
+  if (periodOffset === undefined || periodOffset === 0) {
+    const row = getTrackerRow(trackerId)
+    if (!row) return []
+    periodStart = row.last_reset_date
+    periodEnd = row.next_reset_date
+  } else {
+    const row = getTrackerRow(trackerId)
+    if (!row) return []
+    const bounds = getPeriodBoundsForOffset(row, periodOffset)
+    if (!bounds) return []
+    periodStart = bounds.periodStart
+    periodEnd = bounds.periodEnd
+  }
+  const startNorm =
+    periodStart.length >= 10 ? periodStart.slice(0, 10) : periodStart
+  const endNorm = periodEnd.length >= 10 ? periodEnd.slice(0, 10) : periodEnd
   const stmt = db.prepare(
     `SELECT t.id, t.description, t.created_at, t.settled_at, t.amount, t.status
      FROM transactions t
      INNER JOIN tracker_categories tc ON t.category_id = tc.category_id
      WHERE tc.tracker_id = ?
-       AND COALESCE(t.created_at, t.settled_at) >= (SELECT last_reset_date FROM trackers WHERE id = ?)
-       AND COALESCE(t.created_at, t.settled_at) < (SELECT next_reset_date FROM trackers WHERE id = ?)
+       AND COALESCE(t.created_at, t.settled_at) >= ?
+       AND COALESCE(t.created_at, t.settled_at) < ?
        AND t.amount < 0 AND t.transfer_account_id IS NULL
      ORDER BY COALESCE(t.created_at, t.settled_at) DESC LIMIT 20`
   )
-  stmt.bind([trackerId, trackerId, trackerId])
+  stmt.bind([trackerId, startNorm, endNorm])
   const list: Array<{
     id: string
     description: string
@@ -154,6 +318,62 @@ export function getTrackerTransactionsInPeriod(trackerId: number): Array<{
       settled_at: row[3],
       amount: row[4],
       status: row[5],
+    })
+  }
+  stmt.free()
+  return list
+}
+
+/**
+ * All active trackers with spent, remaining, daysLeft, progress for a given period offset.
+ * periodOffset 0 = current period, -1 = previous period, etc. For past periods, daysLeft is 0.
+ */
+export function getTrackersWithProgressForPeriod(
+  periodOffset: number
+): TrackerWithProgress[] {
+  const db = getDb()
+  if (!db) return []
+  const stmt = db.prepare(
+    `SELECT id, name, budget_amount, reset_frequency, reset_day, last_reset_date, next_reset_date
+     FROM trackers WHERE is_active = 1 ORDER BY name`
+  )
+  const list: TrackerWithProgress[] = []
+  const today = new Date().toISOString().slice(0, 10)
+  while (stmt.step()) {
+    const row = stmt.get() as [
+      number,
+      string,
+      number,
+      string,
+      number | null,
+      string,
+      string,
+    ]
+    const id = row[0]
+    const trackerRow: TrackerRow = {
+      id: row[0],
+      name: row[1],
+      budget_amount: row[2],
+      reset_frequency: row[3],
+      reset_day: row[4],
+      last_reset_date: row[5],
+      next_reset_date: row[6],
+    }
+    const bounds = getPeriodBoundsForOffset(trackerRow, periodOffset)
+    if (!bounds) continue
+    const { periodStart, periodEnd } = bounds
+    const spent = getTrackerSpentInPeriod(id, periodStart, periodEnd)
+    const budget_amount = row[2]
+    const remaining = Math.max(0, budget_amount - spent)
+    const progress = budget_amount > 0 ? (spent / budget_amount) * 100 : 0
+    const daysLeft =
+      periodOffset >= 0 ? Math.max(0, daysBetween(today, periodEnd)) : 0
+    list.push({
+      ...trackerRow,
+      spent,
+      remaining,
+      daysLeft,
+      progress,
     })
   }
   stmt.free()
