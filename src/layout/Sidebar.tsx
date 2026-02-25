@@ -2,19 +2,36 @@ import { Link, useLocation } from 'react-router-dom'
 import { useStore } from 'zustand'
 import { themeStore } from '@/stores/themeStore'
 import { sessionStore } from '@/stores/sessionStore'
+import { uiStore } from '@/stores/uiStore'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { getAppSetting } from '@/db'
 
 const SIDEBAR_WIDTH = 260
 const SIDEBAR_COLLAPSED_WIDTH = 70
 
 interface SidebarProps {
   collapsed: boolean
+  /** When true, sidebar is an overlay drawer (mobile); width is full, labels shown. */
+  overlay?: boolean
+  /** When overlay, whether the drawer is visible (slide-in). */
+  mobileOpen?: boolean
 }
 
-export function Sidebar({ collapsed }: SidebarProps) {
+export function Sidebar({
+  collapsed,
+  overlay = false,
+  mobileOpen = false,
+}: SidebarProps) {
   const location = useLocation()
   useStore(themeStore, (s) => s.theme) // subscribe for theme re-renders
-  const width = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH
+  const isDemoMode = getAppSetting('demo_mode') === '1'
+
+  const width = overlay
+    ? SIDEBAR_WIDTH
+    : collapsed
+      ? SIDEBAR_COLLAPSED_WIDTH
+      : SIDEBAR_WIDTH
+  const showLabels = overlay || !collapsed
 
   const navItems = [
     { to: '/', label: 'Dashboard', icon: 'mdi-home', short: 'D' },
@@ -36,7 +53,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
   return (
     <nav
       data-tour="sidebar-nav"
-      className={`sidebar ${collapsed ? 'collapsed' : ''}`}
+      className={`sidebar ${!showLabels ? 'collapsed' : ''} ${overlay ? 'sidebar-overlay' : ''} ${overlay && mobileOpen ? 'sidebar-overlay-open' : ''}`}
       style={{
         position: 'fixed',
         left: 0,
@@ -46,15 +63,56 @@ export function Sidebar({ collapsed }: SidebarProps) {
         minWidth: width,
         backgroundColor: 'var(--vantura-sidebar-bg)',
         color: 'var(--vantura-sidebar-menu-color)',
-        zIndex: 1030,
-        transition: 'width 0.25s ease, background 0.25s ease',
+        zIndex: 1031,
+        transition:
+          'width 0.25s ease, background 0.25s ease, transform 0.25s ease',
         display: 'flex',
         flexDirection: 'column',
       }}
     >
-      <div className="sidebar-brand">
-        {!collapsed && <span className="brand-text">Vantura</span>}
-      </div>
+      {overlay ? (
+        <div className="sidebar-brand">
+          {showLabels && (
+            <div className="sidebar-brand-block">
+              <span className="brand-text">Vantura</span>
+              {isDemoMode && (
+                <span className="sidebar-demo-badge" aria-hidden>
+                  DEMO
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="sidebar-brand sidebar-brand-btn"
+          onClick={() => uiStore.getState().toggleSidebar()}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {showLabels ? (
+            <>
+              <div className="sidebar-brand-block">
+                <span className="brand-text">Vantura</span>
+                {isDemoMode && (
+                  <span className="sidebar-demo-badge" aria-hidden>
+                    DEMO
+                  </span>
+                )}
+              </div>
+              <i
+                className="mdi mdi-chevron-left sidebar-brand-icon"
+                aria-hidden
+              />
+            </>
+          ) : (
+            <i
+              className="mdi mdi-chevron-right sidebar-brand-icon"
+              aria-hidden
+            />
+          )}
+        </button>
+      )}
       <div className="sidebar-body">
         <ul className="nav">
           {navItems.map((item) => {
@@ -70,7 +128,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
                   style={{ color: 'inherit' }}
                 >
                   <span className="menu-title">
-                    {collapsed ? item.short : item.label}
+                    {showLabels ? item.label : item.short}
                   </span>
                   <i className={`mdi ${item.icon} menu-icon`} aria-hidden />
                 </Link>
@@ -86,10 +144,10 @@ export function Sidebar({ collapsed }: SidebarProps) {
             aria-label="Lock"
           >
             <i className="mdi mdi-lock menu-icon" aria-hidden />
-            {!collapsed && <span className="menu-title">Lock</span>}
+            {showLabels && <span className="menu-title">Lock</span>}
           </button>
           <div className="sidebar-footer-btn-wrapper">
-            <ThemeToggle showLabel={!collapsed} />
+            <ThemeToggle showLabel={showLabels} />
           </div>
         </div>
       </div>

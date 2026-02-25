@@ -12,6 +12,8 @@ import { getCategories } from '@/services/categories'
 import { formatMoney, formatShortDate } from '@/lib/format'
 import { toast } from '@/stores/toastStore'
 import { HelpPopover } from '@/components/HelpPopover'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
 
 const FREQUENCIES = [
   'WEEKLY',
@@ -42,6 +44,7 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
   const { nextPay, later, nextPayday } = getUpcomingChargesGrouped()
   const reserved = getReservedAmount()
   const categories = getCategories()
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY)
 
   function openCreate() {
     setEditingCharge(null)
@@ -161,6 +164,93 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
             <p className="text-muted small mb-0">
               No upcoming charges. Add a regular charge to track.
             </p>
+          ) : isMobile ? (
+            <div className="upcoming-list-vertical">
+              {nextPay.length > 0 && (
+                <div className="mb-3">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <strong>Next pay</strong>
+                    <span className="text-danger fw-normal small">
+                      ${formatMoney(nextPayTotal)} total
+                    </span>
+                  </div>
+                  {nextPay.map((c) => (
+                    <Card
+                      key={c.id}
+                      className="mb-2 upcoming-card"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openEdit(c)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          openEdit(c)
+                        }
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <Card.Body className="py-2 px-3">
+                        <div className="d-flex justify-content-between align-items-start gap-2">
+                          <div>
+                            <div className="fw-medium">{c.name}</div>
+                            <div className="small text-muted">
+                              {formatShortDate(c.next_charge_date)} ·{' '}
+                              {c.frequency.charAt(0) +
+                                c.frequency.slice(1).toLowerCase()}
+                            </div>
+                          </div>
+                          <div className="text-end">
+                            ${formatMoney(c.amount)}
+                          </div>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  ))}
+                </div>
+              )}
+              {later.length > 0 && (
+                <div>
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <strong>Later</strong>
+                    <span className="text-muted small">
+                      ${formatMoney(laterTotal)}
+                    </span>
+                  </div>
+                  {later.map((c) => (
+                    <Card
+                      key={c.id}
+                      className="mb-2 upcoming-card"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openEdit(c)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          openEdit(c)
+                        }
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <Card.Body className="py-2 px-3">
+                        <div className="d-flex justify-content-between align-items-start gap-2">
+                          <div>
+                            <div className="fw-medium">{c.name}</div>
+                            <div className="small text-muted">
+                              {formatShortDate(c.next_charge_date)} ·{' '}
+                              {c.frequency.charAt(0) +
+                                c.frequency.slice(1).toLowerCase()}
+                            </div>
+                          </div>
+                          <div className="text-end">
+                            ${formatMoney(c.amount)}
+                          </div>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
           ) : (
             <table className="table table-striped mb-0">
               <thead>
@@ -210,7 +300,7 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
         </Card.Body>
       </Card>
 
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>
             {editingCharge ? 'Edit upcoming charge' : 'Add upcoming charge'}

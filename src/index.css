@@ -188,6 +188,19 @@ body {
   border-color: var(--vantura-border);
   background-color: var(--vantura-surface);
 }
+.offcanvas {
+  background-color: var(--vantura-surface);
+  color: var(--vantura-text);
+}
+.offcanvas-header {
+  border-color: var(--vantura-border);
+}
+.offcanvas-title {
+  color: var(--vantura-text);
+}
+.offcanvas-body {
+  color: var(--vantura-text);
+}
 .text-muted {
   color: var(--vantura-text-secondary) !important;
 }
@@ -430,13 +443,62 @@ body {
   padding-right: 2.25rem;
   border-bottom: 1px solid var(--vantura-border);
 }
+.sidebar .sidebar-brand.sidebar-brand-btn {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  justify-content: space-between;
+  transition: background 0.25s ease;
+}
+.sidebar .sidebar-brand.sidebar-brand-btn:hover {
+  background: var(--vantura-sidebar-hover-bg);
+}
+.sidebar .sidebar-brand .sidebar-brand-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+  background: var(--vantura-primary-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--vantura-primary);
+}
 .sidebar .sidebar-brand .brand-text {
   font-size: 1.5rem;
   font-weight: 500;
-  color: var(--vantura-sidebar-menu-color);
+  background: var(--vantura-primary-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--vantura-primary);
 }
 [data-theme='dark'] .sidebar .sidebar-brand .brand-text {
-  color: var(--vantura-sidebar-menu-color);
+  background: var(--vantura-primary-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--vantura-primary);
+}
+.sidebar .sidebar-brand .sidebar-brand-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+}
+.sidebar .sidebar-brand .sidebar-demo-badge {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  background: var(--vantura-primary-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--vantura-primary);
 }
 .sidebar.collapsed .nav-link {
   justify-content: center;
@@ -452,7 +514,12 @@ body {
 .sidebar.collapsed .nav-item {
   padding: 0;
 }
-
+.sidebar.collapsed .sidebar-brand.sidebar-brand-btn {
+  justify-content: center;
+}
+.sidebar.collapsed .sidebar-brand .sidebar-brand-icon {
+  margin-left: 0;
+}
 .sidebar .sidebar-body {
   flex: 1;
   display: flex;
@@ -561,10 +628,16 @@ body {
 .vantura-navbar .navbar-brand-wrapper .navbar-toggler {
   border: 0;
   background: transparent;
-  color: var(--vantura-sidebar-menu-color);
   padding: 0.5rem 1rem;
   font-size: 1.5rem;
   cursor: pointer;
+}
+.vantura-navbar .navbar-brand-wrapper .navbar-toggler .mdi {
+  background: var(--vantura-primary-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--vantura-primary);
 }
 .vantura-navbar .navbar-brand-wrapper .navbar-brand-block {
   display: flex;
@@ -639,6 +712,78 @@ body {
 .vantura-navbar .navbar-sync-label {
   font-size: 0.7rem;
   color: var(--vantura-text-secondary);
+}
+
+/* Mobile / portrait: sidebar overlay and navbar */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1030;
+  background: rgba(0, 0, 0, 0.4);
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+}
+
+.sidebar.sidebar-overlay {
+  transform: translateX(-100%);
+}
+.sidebar.sidebar-overlay.sidebar-overlay-open {
+  transform: translateX(0);
+}
+
+@media (max-width: 768px) {
+  .vantura-navbar.vantura-navbar-mobile .navbar-brand-wrapper {
+    width: 56px;
+    min-width: 56px;
+  }
+  .vantura-navbar.vantura-navbar-mobile .navbar-toggler {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .vantura-navbar .navbar-mobile-brand {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+    pointer-events: none;
+  }
+  .vantura-navbar .navbar-mobile-brand .navbar-brand-text {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    background: var(--vantura-primary-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: var(--vantura-primary);
+  }
+  .vantura-navbar .navbar-mobile-brand .navbar-demo-badge {
+    font-size: 0.5rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    background: var(--vantura-primary-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: var(--vantura-primary);
+  }
+  .content-wrapper {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .transactions-list-vertical {
+    overflow-x: hidden;
+    padding-bottom: 1rem;
+  }
+  .transactions-list-vertical .transactions-card .card-body {
+    word-wrap: break-word;
+  }
 }
 
 /* Phase 8: Purple React progress bar gradient */

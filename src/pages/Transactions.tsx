@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Card, Form, Row, Col, Button, Dropdown } from 'react-bootstrap'
+import { Card, Form, Row, Col, Button, Dropdown, Modal } from 'react-bootstrap'
 import { useStore } from 'zustand'
 import {
   getTransactionsGroupedByDate,
@@ -17,6 +17,8 @@ import {
   formatShortDate,
   formatShortDateWithYear,
 } from '@/lib/format'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
 
 const SORT_OPTIONS: { value: TransactionSort; label: string }[] = [
   { value: 'date', label: 'Date' },
@@ -87,6 +89,8 @@ export function Transactions() {
   const lastSyncCompletedAt = useStore(syncStore, (s) => s.lastSyncCompletedAt)
   const { filters, sort, setFilters } = useFiltersFromSearchParams()
   const [page, setPage] = useState(0)
+  const [filtersDrawerOpen, setFiltersDrawerOpen] = useState(false)
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY)
   const categories = getCategories()
   const totalCount = useMemo(() => {
     void lastSyncCompletedAt // Recompute when sync completes
@@ -157,156 +161,353 @@ export function Transactions() {
       </div>
       <Card className="mb-3 grid-margin">
         <Card.Body>
-          <Row className="g-2 mb-3">
-            <Col md={2}>
-              <Form.Control
-                id="transactions-filter-date-from"
-                name="dateFrom"
-                type="date"
-                value={filters.dateFrom ?? ''}
-                onChange={(e) =>
-                  updateFilter('dateFrom', e.target.value || undefined)
-                }
-                placeholder="From"
-              />
-            </Col>
-            <Col md={2}>
-              <Form.Control
-                id="transactions-filter-date-to"
-                name="dateTo"
-                type="date"
-                value={filters.dateTo ?? ''}
-                onChange={(e) =>
-                  updateFilter('dateTo', e.target.value || undefined)
-                }
-                placeholder="To"
-              />
-            </Col>
-            <Col md={2}>
-              <Dropdown
-                autoClose="outside"
-                onSelect={(e) => {
-                  if (e === '__all__') {
-                    updateFilter('categoryIds', [])
-                    return
-                  }
-                  if (e == null) return
-                  const current = filters.categoryIds ?? []
-                  const set = new Set(current)
-                  if (set.has(e)) set.delete(e)
-                  else set.add(e)
-                  updateFilter('categoryIds', Array.from(set))
-                }}
-              >
-                <Dropdown.Toggle
-                  id="transactions-filter-category"
+          {isMobile ? (
+            <>
+              <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                <Button
                   variant="outline-secondary"
-                  className="w-100 text-start d-flex align-items-center justify-content-between"
+                  onClick={() => setFiltersDrawerOpen(true)}
+                  aria-label="Open filters"
                 >
-                  <span className="text-truncate">
-                    {(filters.categoryIds?.length ?? 0) === 0
-                      ? 'All categories'
-                      : filters.categoryIds!.length === 1
-                        ? (categories.find(
-                            (c) => c.id === filters.categoryIds![0]
-                          )?.name ?? '1 category')
-                        : `${filters.categoryIds!.length} categories`}
-                  </span>
-                </Dropdown.Toggle>
-                <Dropdown.Menu className="p-0">
-                  <Dropdown.Item
-                    eventKey="__all__"
-                    active={(filters.categoryIds?.length ?? 0) === 0}
-                  >
-                    All categories
-                  </Dropdown.Item>
-                  <Dropdown.Divider />
-                  {categories.map((c) => (
-                    <Dropdown.Item
-                      key={c.id}
-                      eventKey={c.id}
-                      as="div"
-                      className="d-flex align-items-center"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Form.Check
-                        type="checkbox"
-                        id={`transactions-cat-${c.id}`}
-                        label={c.name}
-                        checked={(filters.categoryIds ?? []).includes(c.id)}
-                        onChange={() => {
+                  <i className="mdi mdi-filter-variant me-1" aria-hidden />
+                  Filters
+                </Button>
+                <Form.Select
+                  id="transactions-sort-mobile"
+                  value={sort}
+                  onChange={(e) =>
+                    updateSort(e.target.value as TransactionSort)
+                  }
+                  className="w-auto"
+                >
+                  {SORT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      Sort: {o.label}
+                    </option>
+                  ))}
+                </Form.Select>
+              </div>
+              <Modal
+                show={filtersDrawerOpen}
+                onHide={() => setFiltersDrawerOpen(false)}
+                centered
+              >
+                <Modal.Header closeButton>
+                  <Modal.Title>Filters</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                  <div className="d-flex flex-column gap-3">
+                    <Form.Group>
+                      <Form.Label>Date from</Form.Label>
+                      <Form.Control
+                        id="transactions-filter-date-from-mobile"
+                        type="date"
+                        value={filters.dateFrom ?? ''}
+                        onChange={(e) =>
+                          updateFilter('dateFrom', e.target.value || undefined)
+                        }
+                      />
+                    </Form.Group>
+                    <Form.Group>
+                      <Form.Label>Date to</Form.Label>
+                      <Form.Control
+                        id="transactions-filter-date-to-mobile"
+                        type="date"
+                        value={filters.dateTo ?? ''}
+                        onChange={(e) =>
+                          updateFilter('dateTo', e.target.value || undefined)
+                        }
+                      />
+                    </Form.Group>
+                    <Form.Group>
+                      <Form.Label>Category</Form.Label>
+                      <Dropdown
+                        autoClose="outside"
+                        onSelect={(e) => {
+                          if (e === '__all__') {
+                            updateFilter('categoryIds', [])
+                            return
+                          }
+                          if (e == null) return
                           const current = filters.categoryIds ?? []
                           const set = new Set(current)
-                          if (set.has(c.id)) set.delete(c.id)
-                          else set.add(c.id)
+                          if (set.has(e)) set.delete(e)
+                          else set.add(e)
                           updateFilter('categoryIds', Array.from(set))
                         }}
-                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Dropdown.Toggle
+                          id="transactions-filter-category-mobile"
+                          variant="outline-secondary"
+                          className="w-100 text-start"
+                        >
+                          {(filters.categoryIds?.length ?? 0) === 0
+                            ? 'All categories'
+                            : filters.categoryIds!.length === 1
+                              ? (categories.find(
+                                  (c) => c.id === filters.categoryIds![0]
+                                )?.name ?? '1 category')
+                              : `${filters.categoryIds!.length} categories`}
+                        </Dropdown.Toggle>
+                        <Dropdown.Menu className="p-0">
+                          <Dropdown.Item
+                            eventKey="__all__"
+                            active={(filters.categoryIds?.length ?? 0) === 0}
+                          >
+                            All categories
+                          </Dropdown.Item>
+                          <Dropdown.Divider />
+                          {categories.map((c) => (
+                            <Dropdown.Item
+                              key={c.id}
+                              eventKey={c.id}
+                              as="div"
+                              className="d-flex align-items-center"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Form.Check
+                                type="checkbox"
+                                id={`transactions-cat-mobile-${c.id}`}
+                                label={c.name}
+                                checked={(filters.categoryIds ?? []).includes(
+                                  c.id
+                                )}
+                                onChange={() => {
+                                  const current = filters.categoryIds ?? []
+                                  const set = new Set(current)
+                                  if (set.has(c.id)) set.delete(c.id)
+                                  else set.add(c.id)
+                                  updateFilter('categoryIds', Array.from(set))
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </Dropdown.Item>
+                          ))}
+                        </Dropdown.Menu>
+                      </Dropdown>
+                    </Form.Group>
+                    <Form.Group>
+                      <Form.Label>Amount min ($)</Form.Label>
+                      <Form.Control
+                        id="transactions-filter-amount-min-mobile"
+                        type="number"
+                        placeholder="Min"
+                        value={
+                          filters.amountMin != null
+                            ? filters.amountMin / 100
+                            : ''
+                        }
+                        onChange={(e) => {
+                          const v = e.target.value
+                          updateFilter(
+                            'amountMin',
+                            v === '' ? undefined : Number(v) * 100
+                          )
+                        }}
                       />
+                    </Form.Group>
+                    <Form.Group>
+                      <Form.Label>Amount max ($)</Form.Label>
+                      <Form.Control
+                        id="transactions-filter-amount-max-mobile"
+                        type="number"
+                        placeholder="Max"
+                        value={
+                          filters.amountMax != null
+                            ? filters.amountMax / 100
+                            : ''
+                        }
+                        onChange={(e) => {
+                          const v = e.target.value
+                          updateFilter(
+                            'amountMax',
+                            v === '' ? undefined : Number(v) * 100
+                          )
+                        }}
+                      />
+                    </Form.Group>
+                    <Form.Group>
+                      <Form.Label>Search</Form.Label>
+                      <Form.Control
+                        id="transactions-filter-search-mobile"
+                        type="search"
+                        placeholder="Search"
+                        value={filters.search ?? ''}
+                        onChange={(e) =>
+                          updateFilter('search', e.target.value || undefined)
+                        }
+                      />
+                    </Form.Group>
+                  </div>
+                </Modal.Body>
+                <Modal.Footer>
+                  <Button
+                    variant="primary"
+                    onClick={() => setFiltersDrawerOpen(false)}
+                  >
+                    Done
+                  </Button>
+                </Modal.Footer>
+              </Modal>
+            </>
+          ) : (
+            <Row className="g-2 mb-3">
+              <Col md={2}>
+                <Form.Control
+                  id="transactions-filter-date-from"
+                  name="dateFrom"
+                  type="date"
+                  value={filters.dateFrom ?? ''}
+                  onChange={(e) =>
+                    updateFilter('dateFrom', e.target.value || undefined)
+                  }
+                  placeholder="From"
+                />
+              </Col>
+              <Col md={2}>
+                <Form.Control
+                  id="transactions-filter-date-to"
+                  name="dateTo"
+                  type="date"
+                  value={filters.dateTo ?? ''}
+                  onChange={(e) =>
+                    updateFilter('dateTo', e.target.value || undefined)
+                  }
+                  placeholder="To"
+                />
+              </Col>
+              <Col md={2}>
+                <Dropdown
+                  autoClose="outside"
+                  onSelect={(e) => {
+                    if (e === '__all__') {
+                      updateFilter('categoryIds', [])
+                      return
+                    }
+                    if (e == null) return
+                    const current = filters.categoryIds ?? []
+                    const set = new Set(current)
+                    if (set.has(e)) set.delete(e)
+                    else set.add(e)
+                    updateFilter('categoryIds', Array.from(set))
+                  }}
+                >
+                  <Dropdown.Toggle
+                    id="transactions-filter-category"
+                    variant="outline-secondary"
+                    className="w-100 text-start d-flex align-items-center justify-content-between"
+                  >
+                    <span className="text-truncate">
+                      {(filters.categoryIds?.length ?? 0) === 0
+                        ? 'All categories'
+                        : filters.categoryIds!.length === 1
+                          ? (categories.find(
+                              (c) => c.id === filters.categoryIds![0]
+                            )?.name ?? '1 category')
+                          : `${filters.categoryIds!.length} categories`}
+                    </span>
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu className="p-0">
+                    <Dropdown.Item
+                      eventKey="__all__"
+                      active={(filters.categoryIds?.length ?? 0) === 0}
+                    >
+                      All categories
                     </Dropdown.Item>
+                    <Dropdown.Divider />
+                    {categories.map((c) => (
+                      <Dropdown.Item
+                        key={c.id}
+                        eventKey={c.id}
+                        as="div"
+                        className="d-flex align-items-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Form.Check
+                          type="checkbox"
+                          id={`transactions-cat-${c.id}`}
+                          label={c.name}
+                          checked={(filters.categoryIds ?? []).includes(c.id)}
+                          onChange={() => {
+                            const current = filters.categoryIds ?? []
+                            const set = new Set(current)
+                            if (set.has(c.id)) set.delete(c.id)
+                            else set.add(c.id)
+                            updateFilter('categoryIds', Array.from(set))
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </Dropdown.Item>
+                    ))}
+                  </Dropdown.Menu>
+                </Dropdown>
+              </Col>
+              <Col md={1}>
+                <Form.Control
+                  id="transactions-filter-amount-min"
+                  name="amountMin"
+                  type="number"
+                  placeholder="Min $"
+                  value={
+                    filters.amountMin != null ? filters.amountMin / 100 : ''
+                  }
+                  onChange={(e) => {
+                    const v = e.target.value
+                    updateFilter(
+                      'amountMin',
+                      v === '' ? undefined : Number(v) * 100
+                    )
+                  }}
+                />
+              </Col>
+              <Col md={1}>
+                <Form.Control
+                  id="transactions-filter-amount-max"
+                  name="amountMax"
+                  type="number"
+                  placeholder="Max $"
+                  value={
+                    filters.amountMax != null ? filters.amountMax / 100 : ''
+                  }
+                  onChange={(e) => {
+                    const v = e.target.value
+                    updateFilter(
+                      'amountMax',
+                      v === '' ? undefined : Number(v) * 100
+                    )
+                  }}
+                />
+              </Col>
+              <Col md={2}>
+                <Form.Control
+                  id="transactions-filter-search"
+                  name="search"
+                  type="search"
+                  placeholder="Search"
+                  value={filters.search ?? ''}
+                  onChange={(e) =>
+                    updateFilter('search', e.target.value || undefined)
+                  }
+                />
+              </Col>
+              <Col md={2}>
+                <Form.Select
+                  id="transactions-sort"
+                  name="sort"
+                  value={sort}
+                  onChange={(e) =>
+                    updateSort(e.target.value as TransactionSort)
+                  }
+                >
+                  {SORT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      Sort: {o.label}
+                    </option>
                   ))}
-                </Dropdown.Menu>
-              </Dropdown>
-            </Col>
-            <Col md={1}>
-              <Form.Control
-                id="transactions-filter-amount-min"
-                name="amountMin"
-                type="number"
-                placeholder="Min $"
-                value={filters.amountMin != null ? filters.amountMin / 100 : ''}
-                onChange={(e) => {
-                  const v = e.target.value
-                  updateFilter(
-                    'amountMin',
-                    v === '' ? undefined : Number(v) * 100
-                  )
-                }}
-              />
-            </Col>
-            <Col md={1}>
-              <Form.Control
-                id="transactions-filter-amount-max"
-                name="amountMax"
-                type="number"
-                placeholder="Max $"
-                value={filters.amountMax != null ? filters.amountMax / 100 : ''}
-                onChange={(e) => {
-                  const v = e.target.value
-                  updateFilter(
-                    'amountMax',
-                    v === '' ? undefined : Number(v) * 100
-                  )
-                }}
-              />
-            </Col>
-            <Col md={2}>
-              <Form.Control
-                id="transactions-filter-search"
-                name="search"
-                type="search"
-                placeholder="Search"
-                value={filters.search ?? ''}
-                onChange={(e) =>
-                  updateFilter('search', e.target.value || undefined)
-                }
-              />
-            </Col>
-            <Col md={2}>
-              <Form.Select
-                id="transactions-sort"
-                name="sort"
-                value={sort}
-                onChange={(e) => updateSort(e.target.value as TransactionSort)}
-              >
-                {SORT_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    Sort: {o.label}
-                  </option>
-                ))}
-              </Form.Select>
-            </Col>
-          </Row>
+                </Form.Select>
+              </Col>
+            </Row>
+          )}
           {totalCount === 0 ? (
             <p className="text-muted mb-0">
               No transactions match your filters.
@@ -320,7 +521,87 @@ export function Transactions() {
         </Card.Body>
       </Card>
 
-      {dateKeys.length === 0 ? null : (
+      {dateKeys.length === 0 ? null : isMobile ? (
+        <div className="transactions-list-vertical">
+          {dateKeys.flatMap((dateStr) => {
+            const showYear =
+              !filters.dateFrom &&
+              !filters.dateTo &&
+              (filters.categoryIds?.length ?? 0) > 0
+            const displayDate =
+              dateStr === 'Unknown'
+                ? 'Unknown'
+                : showYear
+                  ? formatShortDateWithYear(dateStr)
+                  : formatShortDate(dateStr)
+            return grouped[dateStr].map((row) => {
+              const isDebit = row.amount < 0
+              const absCents = Math.abs(row.amount)
+              const roundUps = roundUpsByParent.get(row.id) ?? []
+              return (
+                <Card key={row.id} className="mb-2 transactions-card">
+                  <Card.Body className="py-2 px-3">
+                    <div className="d-flex justify-content-between align-items-start gap-2">
+                      <div className="flex-grow-1 min-width-0">
+                        <div className="fw-medium text-break">
+                          {row.description || row.raw_text || 'Unknown'}
+                        </div>
+                        <div className="small text-muted">
+                          {displayDate}
+                          {row.category_name ? ` · ${row.category_name}` : ''}
+                        </div>
+                        <span
+                          className={`badge mt-1 ${
+                            row.status === 'HELD'
+                              ? 'bg-warning text-dark'
+                              : 'bg-secondary'
+                          }`}
+                        >
+                          {row.status === 'HELD' ? 'Held' : 'Settled'}
+                        </span>
+                      </div>
+                      <div
+                        className={`text-end flex-shrink-0 ${isDebit ? '' : 'text-success'}`}
+                      >
+                        {isDebit ? '-' : '+'}${formatMoney(absCents)}
+                      </div>
+                    </div>
+                    {roundUps.length > 0 && (
+                      <div className="mt-2 pt-2 border-top border-secondary border-opacity-25">
+                        {roundUps.map((ru) => (
+                          <div
+                            key={ru.id}
+                            className="small text-muted d-flex justify-content-between"
+                          >
+                            <span>
+                              Round-up to{' '}
+                              {ru.transfer_account_display_name ??
+                                'Loose Change'}
+                            </span>
+                            <span className="text-success">
+                              +${formatMoney(Math.abs(ru.amount))}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </Card.Body>
+                </Card>
+              )
+            })
+          })}
+          {hasMore && (
+            <div className="d-flex justify-content-center mt-3 mb-2">
+              <Button
+                variant="outline-primary"
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Load more
+              </Button>
+            </div>
+          )}
+        </div>
+      ) : (
         <>
           <Card>
             <Card.Body>
@@ -378,7 +659,6 @@ export function Transactions() {
                             Round-up to{' '}
                             {ru.transfer_account_display_name ?? 'Loose Change'}
                           </td>
-                          <td />
                           <td />
                           <td className="text-end text-success">
                             +${formatMoney(Math.abs(ru.amount))}

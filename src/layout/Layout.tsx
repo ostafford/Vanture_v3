@@ -1,41 +1,70 @@
-import { useEffect } from 'react'
-import { Outlet } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { Outlet, useLocation } from 'react-router-dom'
 import { useStore } from 'zustand'
 import { uiStore } from '@/stores/uiStore'
 import { persistErrorStore } from '@/stores/persistErrorStore'
 import { Sidebar, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from './Sidebar'
 import { Navbar } from './Navbar'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { MOBILE_MEDIA_QUERY, MOBILE_BREAKPOINT_PX } from '@/lib/constants'
 
 const VIEWPORT_AUTO_COLLAPSE_PX = 1280
 const SIDEBAR_COLLAPSED_KEY = 'vantura_sidebar_collapsed'
 
 export function Layout() {
   const sidebarCollapsed = useStore(uiStore, (s) => s.sidebarCollapsed)
+  const sidebarMobileOpen = useStore(uiStore, (s) => s.sidebarMobileOpen)
+  const setSidebarMobileOpen = useStore(uiStore, (s) => s.setSidebarMobileOpen)
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY)
+  const location = useLocation()
+  const widthRef = useRef(
+    typeof window !== 'undefined' ? window.innerWidth : 1280
+  )
+
   const sidebarWidth = sidebarCollapsed
     ? SIDEBAR_COLLAPSED_WIDTH
     : SIDEBAR_WIDTH
 
   useEffect(() => {
+    const w =
+      typeof window !== 'undefined'
+        ? window.innerWidth
+        : VIEWPORT_AUTO_COLLAPSE_PX
+    if (w <= MOBILE_BREAKPOINT_PX) return
+
     const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
-    const preferCollapsed = stored === '1'
-    if (window.innerWidth < VIEWPORT_AUTO_COLLAPSE_PX) {
-      uiStore.getState().setSidebarCollapsed(true)
-    } else if (stored !== null) {
-      uiStore.getState().setSidebarCollapsed(preferCollapsed)
+    if (stored !== null) {
+      uiStore.getState().setSidebarCollapsed(stored === '1')
+    } else {
+      uiStore.getState().setSidebarCollapsed(w < VIEWPORT_AUTO_COLLAPSE_PX)
     }
   }, [])
 
   useEffect(() => {
     const onResize = () => {
-      if (window.innerWidth < VIEWPORT_AUTO_COLLAPSE_PX) {
-        uiStore.getState().setSidebarCollapsed(true)
-      } else {
-        uiStore.getState().setSidebarCollapsed(false)
+      const w = window.innerWidth
+      if (w > MOBILE_BREAKPOINT_PX) {
+        const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
+        if (stored !== null) {
+          uiStore.getState().setSidebarCollapsed(stored === '1')
+        } else {
+          uiStore.getState().setSidebarCollapsed(w < VIEWPORT_AUTO_COLLAPSE_PX)
+        }
+      }
+
+      widthRef.current = w
+      if (window.matchMedia(MOBILE_MEDIA_QUERY).matches === false) {
+        uiStore.getState().setSidebarMobileOpen(false)
       }
     }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+
+  useEffect(() => {
+    if (!isMobile) return
+    setSidebarMobileOpen(false)
+  }, [isMobile, location.pathname, setSidebarMobileOpen])
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, sidebarCollapsed ? '1' : '0')
@@ -44,11 +73,32 @@ export function Layout() {
   const persistError = useStore(persistErrorStore, (s) => s.message)
   const setPersistError = useStore(persistErrorStore, (s) => s.setPersistError)
 
+  const contentMarginLeft = isMobile ? 0 : sidebarWidth
+
   return (
     <div className="container-scroller">
-      <Sidebar collapsed={sidebarCollapsed} />
-      <Navbar sidebarCollapsed={sidebarCollapsed} />
-      <div className="page-body-wrapper" style={{ marginLeft: sidebarWidth }}>
+      {isMobile && sidebarMobileOpen && (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Close menu"
+          onClick={() => setSidebarMobileOpen(false)}
+        />
+      )}
+      <Sidebar
+        collapsed={!isMobile && sidebarCollapsed}
+        overlay={isMobile}
+        mobileOpen={sidebarMobileOpen}
+      />
+      <Navbar
+        sidebarCollapsed={sidebarCollapsed}
+        isMobile={isMobile}
+        sidebarMobileOpen={sidebarMobileOpen}
+      />
+      <div
+        className="page-body-wrapper"
+        style={{ marginLeft: contentMarginLeft }}
+      >
         <main
           className="content-wrapper"
           style={{ minHeight: 'calc(100vh - 70px)' }}

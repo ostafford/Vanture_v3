@@ -269,7 +269,12 @@ export function TrackersSection() {
         </Card.Body>
       </Card>
 
-      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
+      <Modal
+        show={showModal}
+        onHide={() => setShowModal(false)}
+        size="lg"
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>
             {editingId != null ? 'Edit tracker' : 'Add tracker'}

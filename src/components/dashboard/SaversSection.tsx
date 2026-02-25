@@ -16,6 +16,8 @@ import { getSaverChartColors, setSaverChartColor } from '@/lib/chartColors'
 import { formatMoney } from '@/lib/format'
 import { ChartColorPicker } from '@/components/ChartColorPicker'
 import { toast } from '@/stores/toastStore'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
 
 const SAVER_AXIS_WIDTH = 70
 
@@ -26,6 +28,7 @@ export function SaversSection() {
   const [targetDate, setTargetDate] = useState('')
   const [monthlyTransfer, setMonthlyTransfer] = useState('')
   const [barColor, setBarColor] = useState<string | null>(null)
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY)
 
   const savers = getSaversWithProgress()
 
@@ -123,112 +126,214 @@ export function SaversSection() {
             <>
               <ResponsiveContainer
                 width="100%"
-                height={Math.max(260, chartData.length * 52)}
+                height={
+                  isMobile
+                    ? Math.max(280, chartData.length * 56)
+                    : Math.max(260, chartData.length * 52)
+                }
               >
-                <BarChart
-                  data={chartData}
-                  layout="vertical"
-                  margin={{
-                    top: 8,
-                    right: 24,
-                    left: SAVER_AXIS_WIDTH,
-                    bottom: 8,
-                  }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="var(--vantura-border, #ebedf2)"
-                  />
-                  <XAxis
-                    type="number"
-                    domain={[0, maxDomain]}
-                    tickFormatter={(v) => `$${v}`}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    width={SAVER_AXIS_WIDTH}
-                    tick={(props) => {
-                      const displayValue =
-                        props.tickFormatter && props.payload
-                          ? props.tickFormatter(
-                              props.payload.value,
-                              props.index
-                            )
-                          : props.payload?.value
-                      return (
-                        <Text {...props} width={undefined}>
-                          {displayValue}
-                        </Text>
-                      )
-                    }}
-                  />
-                  <Tooltip
-                    formatter={(value: number) => [`$${value.toFixed(2)}`, '']}
-                    labelFormatter={(label) => label}
-                    content={({ active, payload }) => {
-                      if (
-                        !active ||
-                        !payload?.length ||
-                        !payload[0].payload.saver
-                      )
-                        return null
-                      const { saver } = payload[0].payload
-                      return (
-                        <div className="bg-surface border rounded shadow-sm p-2 small">
-                          <strong>{saver.name}</strong>
-                          <div>
-                            ${formatMoney(saver.current_balance)} of $
-                            {formatMoney(saver.goal_amount ?? 0)}
-                          </div>
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="p-0 mt-1"
-                            onClick={() => openEdit(saver)}
-                          >
-                            Edit goals
-                          </Button>
-                        </div>
-                      )
-                    }}
-                  />
-                  <Bar
-                    dataKey="current"
-                    stackId="a"
-                    fillOpacity={0.3}
-                    strokeWidth={1}
-                    onClick={(data: ChartRow) => openEdit(data.saver)}
-                    cursor="pointer"
-                    name="Saved"
+                {isMobile ? (
+                  <BarChart
+                    data={chartData}
+                    margin={{ top: 8, right: 8, left: 8, bottom: 60 }}
                   >
-                    {chartData.map((row) => (
-                      <Cell
-                        key={row.id}
-                        fill={row.currentFill}
-                        stroke={row.currentFill}
-                      />
-                    ))}
-                  </Bar>
-                  <Bar
-                    dataKey="remaining"
-                    stackId="a"
-                    fill="var(--vantura-border)"
-                    fillOpacity={0.5}
-                    stroke="var(--vantura-border)"
-                    strokeWidth={1}
-                    onClick={(data: ChartRow) => openEdit(data.saver)}
-                    cursor="pointer"
-                    name="Remaining"
-                  />
-                </BarChart>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="var(--vantura-border, #ebedf2)"
+                    />
+                    <XAxis
+                      type="category"
+                      dataKey="name"
+                      tick={{ fontSize: 11 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                      interval={0}
+                    />
+                    <YAxis
+                      type="number"
+                      domain={[0, maxDomain]}
+                      tickFormatter={(v) => `$${v}`}
+                      width={40}
+                      tick={{ fontSize: 11 }}
+                    />
+                    <Tooltip
+                      formatter={(value: number) => [
+                        `$${Number(value).toFixed(2)}`,
+                        '',
+                      ]}
+                      labelFormatter={(label) => label}
+                      content={({ active, payload }) => {
+                        if (
+                          !active ||
+                          !payload?.length ||
+                          !payload[0].payload.saver
+                        )
+                          return null
+                        const { saver } = payload[0].payload
+                        return (
+                          <div className="bg-surface border rounded shadow-sm p-2 small">
+                            <strong>{saver.name}</strong>
+                            <div>
+                              ${formatMoney(saver.current_balance)} of $
+                              {formatMoney(saver.goal_amount ?? 0)}
+                            </div>
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="p-0 mt-1"
+                              onClick={() => openEdit(saver)}
+                            >
+                              Edit goals
+                            </Button>
+                          </div>
+                        )
+                      }}
+                    />
+                    <Bar
+                      dataKey="current"
+                      stackId="a"
+                      fillOpacity={0.3}
+                      strokeWidth={1}
+                      onClick={(data: ChartRow) => openEdit(data.saver)}
+                      cursor="pointer"
+                      name="Saved"
+                      radius={[4, 4, 0, 0]}
+                    >
+                      {chartData.map((row) => (
+                        <Cell
+                          key={row.id}
+                          fill={row.currentFill}
+                          stroke={row.currentFill}
+                        />
+                      ))}
+                    </Bar>
+                    <Bar
+                      dataKey="remaining"
+                      stackId="a"
+                      fill="var(--vantura-border)"
+                      fillOpacity={0.5}
+                      stroke="var(--vantura-border)"
+                      strokeWidth={1}
+                      onClick={(data: ChartRow) => openEdit(data.saver)}
+                      cursor="pointer"
+                      name="Remaining"
+                      radius={[0, 0, 0, 0]}
+                    />
+                  </BarChart>
+                ) : (
+                  <BarChart
+                    data={chartData}
+                    layout="vertical"
+                    margin={{
+                      top: 8,
+                      right: 24,
+                      left: SAVER_AXIS_WIDTH,
+                      bottom: 8,
+                    }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="var(--vantura-border, #ebedf2)"
+                    />
+                    <XAxis
+                      type="number"
+                      domain={[0, maxDomain]}
+                      tickFormatter={(v) => `$${v}`}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={SAVER_AXIS_WIDTH}
+                      tick={(props) => {
+                        const displayValue =
+                          props.tickFormatter && props.payload
+                            ? props.tickFormatter(
+                                props.payload.value,
+                                props.index
+                              )
+                            : props.payload?.value
+                        return (
+                          <Text {...props} width={undefined}>
+                            {displayValue}
+                          </Text>
+                        )
+                      }}
+                    />
+                    <Tooltip
+                      formatter={(value: number) => [
+                        `$${value.toFixed(2)}`,
+                        '',
+                      ]}
+                      labelFormatter={(label) => label}
+                      content={({ active, payload }) => {
+                        if (
+                          !active ||
+                          !payload?.length ||
+                          !payload[0].payload.saver
+                        )
+                          return null
+                        const { saver } = payload[0].payload
+                        return (
+                          <div className="bg-surface border rounded shadow-sm p-2 small">
+                            <strong>{saver.name}</strong>
+                            <div>
+                              ${formatMoney(saver.current_balance)} of $
+                              {formatMoney(saver.goal_amount ?? 0)}
+                            </div>
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="p-0 mt-1"
+                              onClick={() => openEdit(saver)}
+                            >
+                              Edit goals
+                            </Button>
+                          </div>
+                        )
+                      }}
+                    />
+                    <Bar
+                      dataKey="current"
+                      stackId="a"
+                      fillOpacity={0.3}
+                      strokeWidth={1}
+                      onClick={(data: ChartRow) => openEdit(data.saver)}
+                      cursor="pointer"
+                      name="Saved"
+                    >
+                      {chartData.map((row) => (
+                        <Cell
+                          key={row.id}
+                          fill={row.currentFill}
+                          stroke={row.currentFill}
+                        />
+                      ))}
+                    </Bar>
+                    <Bar
+                      dataKey="remaining"
+                      stackId="a"
+                      fill="var(--vantura-border)"
+                      fillOpacity={0.5}
+                      stroke="var(--vantura-border)"
+                      strokeWidth={1}
+                      onClick={(data: ChartRow) => openEdit(data.saver)}
+                      cursor="pointer"
+                      name="Remaining"
+                    />
+                  </BarChart>
+                )}
               </ResponsiveContainer>
             </>
           )}
         </Card.Body>
       </Card>
 
-      <Modal show={editingId != null} onHide={() => setEditingId(null)}>
+      <Modal
+        show={editingId != null}
+        onHide={() => setEditingId(null)}
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>Edit saver goals</Modal.Title>
         </Modal.Header>

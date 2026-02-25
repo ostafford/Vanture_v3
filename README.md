@@ -42,7 +42,7 @@ User- and developer-visible changes are listed in [CHANGELOG.md](CHANGELOG.md). 
 
 ### Phase 5: Polish — Complete
 
-- **Responsive (13"-27"):** Max-width 1400px; sidebar auto-collapses below 1280px. Error boundary; DB/persist error handling; loading states. Paginated transactions (50 per page). PWA (service worker, manifest, installable). See `src/layout/Layout.tsx`, `src/components/ErrorBoundary.tsx`, `vite.config.ts`.
+- **Responsive (13"-27" desktop; mobile/portrait ≤768px):** Max-width 1400px; sidebar auto-collapses below 1280px; below 768px sidebar is an overlay drawer and content is full width. Vertical bar charts and card-based lists on mobile for better portrait use. Error boundary; DB/persist error handling; loading states. Paginated transactions (50 per page). PWA (service worker, manifest, installable). See `src/layout/Layout.tsx`, `src/components/ErrorBoundary.tsx`, `vite.config.ts`.
 - **Help page (user guide at `/help`) and optional dashboard tour (first-time and re-runnable from Settings).**
 
 ### Phase 6: Deployment — Implemented

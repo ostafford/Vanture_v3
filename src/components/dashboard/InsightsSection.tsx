@@ -27,6 +27,8 @@ import {
 import { ChartColorPicker } from '@/components/ChartColorPicker'
 import { StatCard } from '@/components/StatCard'
 import { toast } from '@/stores/toastStore'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
 
 /**
  * Weekly Insights card: Money In (income), Money Out (spending), Savers (saver movement),
@@ -45,6 +47,7 @@ export function InsightsSection() {
   const [editingCategory, setEditingCategory] =
     useState<EditingCategory | null>(null)
   const [categoryBarColor, setCategoryBarColor] = useState<string | null>(null)
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY)
 
   const accent = useStore(accentStore, (s) => s.accent)
   const weekRange = getWeekRange(weekOffset)
@@ -202,67 +205,137 @@ export function InsightsSection() {
           {categories.length > 0 ? (
             <ResponsiveContainer
               width="100%"
-              height={Math.max(200, chartData.length * 32)}
+              height={
+                isMobile
+                  ? Math.max(280, chartData.length * 48)
+                  : Math.max(200, chartData.length * 32)
+              }
             >
-              <BarChart
-                data={chartData}
-                layout="vertical"
-                margin={{ top: 8, right: 24, left: 88, bottom: 8 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="var(--vantura-border, #ebedf2)"
-                />
-                <XAxis
-                  type="number"
-                  domain={[0, maxDomain]}
-                  tickFormatter={(v) => `$${v}`}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  width={80}
-                  tick={{ fontSize: 12 }}
-                />
-                <Tooltip
-                  formatter={(value: number) => [
-                    `$${value.toFixed(2)}`,
-                    'Spend',
-                  ]}
-                  labelFormatter={(label) => label}
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null
-                    const p = payload[0].payload
-                    return (
-                      <div className="bg-surface border rounded shadow-sm p-2 small">
-                        <strong>{p.name}</strong>
-                        <div>${p.totalDollars.toFixed(2)} spent</div>
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="p-0 mt-1"
-                          onClick={() => openCategoryEdit(p)}
-                        >
-                          Edit colour
-                        </Button>
-                      </div>
-                    )
-                  }}
-                />
-                <Bar
-                  dataKey="totalDollars"
-                  fillOpacity={0.3}
-                  strokeWidth={1}
-                  name="Spend"
-                  radius={[0, 4, 4, 0]}
-                  onClick={(data: {
-                    category_id: string
-                    name: string
-                    totalDollars: number
-                  }) => openCategoryEdit(data)}
-                  cursor="pointer"
-                />
-              </BarChart>
+              {isMobile ? (
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 8, right: 8, left: 8, bottom: 60 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="var(--vantura-border, #ebedf2)"
+                  />
+                  <XAxis
+                    type="category"
+                    dataKey="name"
+                    tick={{ fontSize: 11 }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                    interval={0}
+                  />
+                  <YAxis
+                    type="number"
+                    domain={[0, maxDomain]}
+                    tickFormatter={(v) => `$${v}`}
+                    width={40}
+                    tick={{ fontSize: 11 }}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => [
+                      `$${Number(value).toFixed(2)}`,
+                      'Spend',
+                    ]}
+                    labelFormatter={(label) => label}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null
+                      const p = payload[0].payload
+                      return (
+                        <div className="bg-surface border rounded shadow-sm p-2 small">
+                          <strong>{p.name}</strong>
+                          <div>${p.totalDollars.toFixed(2)} spent</div>
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="p-0 mt-1"
+                            onClick={() => openCategoryEdit(p)}
+                          >
+                            Edit colour
+                          </Button>
+                        </div>
+                      )
+                    }}
+                  />
+                  <Bar
+                    dataKey="totalDollars"
+                    fillOpacity={0.3}
+                    strokeWidth={1}
+                    name="Spend"
+                    radius={[4, 4, 0, 0]}
+                    onClick={(data: {
+                      category_id: string
+                      name: string
+                      totalDollars: number
+                    }) => openCategoryEdit(data)}
+                    cursor="pointer"
+                  />
+                </BarChart>
+              ) : (
+                <BarChart
+                  data={chartData}
+                  layout="vertical"
+                  margin={{ top: 8, right: 24, left: 88, bottom: 8 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="var(--vantura-border, #ebedf2)"
+                  />
+                  <XAxis
+                    type="number"
+                    domain={[0, maxDomain]}
+                    tickFormatter={(v) => `$${v}`}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={80}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => [
+                      `$${value.toFixed(2)}`,
+                      'Spend',
+                    ]}
+                    labelFormatter={(label) => label}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null
+                      const p = payload[0].payload
+                      return (
+                        <div className="bg-surface border rounded shadow-sm p-2 small">
+                          <strong>{p.name}</strong>
+                          <div>${p.totalDollars.toFixed(2)} spent</div>
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="p-0 mt-1"
+                            onClick={() => openCategoryEdit(p)}
+                          >
+                            Edit colour
+                          </Button>
+                        </div>
+                      )
+                    }}
+                  />
+                  <Bar
+                    dataKey="totalDollars"
+                    fillOpacity={0.3}
+                    strokeWidth={1}
+                    name="Spend"
+                    radius={[0, 4, 4, 0]}
+                    onClick={(data: {
+                      category_id: string
+                      name: string
+                      totalDollars: number
+                    }) => openCategoryEdit(data)}
+                    cursor="pointer"
+                  />
+                </BarChart>
+              )}
             </ResponsiveContainer>
           ) : (
             <p className="text-muted small mb-0">
@@ -276,6 +349,7 @@ export function InsightsSection() {
         show={editingCategory != null}
         onHide={() => setEditingCategory(null)}
         aria-labelledby="insights-color-modal-title"
+        centered
       >
         <Modal.Header closeButton>
           <Modal.Title id="insights-color-modal-title">

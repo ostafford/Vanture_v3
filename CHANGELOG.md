@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Mobile / portrait layout (≤768px):** Optimised for vertical/portrait screens. Sidebar becomes an overlay drawer (hamburger in navbar opens it); content is full width with vertical scroll only. Weekly Insights and Savers charts use vertical bar charts on narrow viewports. Transactions page: vertical card list and filters in a drawer (Filters button). Upcoming section: vertical cards on mobile. See `src/lib/constants.ts` (MOBILE_BREAKPOINT_PX), `src/hooks/useMediaQuery.ts`, `src/layout/Layout.tsx`, `src/pages/Transactions.tsx`, `src/components/dashboard/InsightsSection.tsx`, `src/components/dashboard/SaversSection.tsx`, `src/components/dashboard/UpcomingSection.tsx`.
 - **Quality gates:** `typecheck`, `format:check`, and `validate` scripts; CI runs format-check, lint, typecheck, tests, and `npm audit --audit-level=critical` before build.
 - **Tests:** Vitest; tests for `lib/crypto` (encrypt/decrypt round-trip), `lib/format`, `lib/payday`, and `services/balance` (reserved amount).
 - **Pre-commit:** Husky + lint-staged to run Prettier and ESLint on staged `src/**/*.{ts,tsx,css}`.

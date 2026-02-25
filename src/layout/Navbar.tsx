@@ -11,6 +11,8 @@ import { UpBankUnauthorizedError, SYNC_401_MESSAGE } from '@/api/upBank'
 
 interface NavbarProps {
   sidebarCollapsed: boolean
+  isMobile?: boolean
+  sidebarMobileOpen?: boolean
 }
 
 function formatLastSync(iso: string | null): string {
@@ -26,12 +28,25 @@ function formatLastSync(iso: string | null): string {
   }
 }
 
-export function Navbar({ sidebarCollapsed }: NavbarProps) {
+export function Navbar({
+  sidebarCollapsed,
+  isMobile = false,
+  sidebarMobileOpen = false,
+}: NavbarProps) {
   const toggleSidebar = useStore(uiStore, (s) => s.toggleSidebar)
+  const setSidebarMobileOpen = useStore(uiStore, (s) => s.setSidebarMobileOpen)
   const [lastSync, setLastSync] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [syncError, setSyncError] = useState<string | null>(null)
   const isDemoMode = getAppSetting('demo_mode') === '1'
+
+  function handleNavToggle() {
+    if (isMobile) {
+      setSidebarMobileOpen(!sidebarMobileOpen)
+    } else {
+      toggleSidebar()
+    }
+  }
 
   useEffect(() => {
     setLastSync(getAppSetting('last_sync'))
@@ -68,26 +83,28 @@ export function Navbar({ sidebarCollapsed }: NavbarProps) {
   }
 
   return (
-    <nav className={`vantura-navbar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+    <nav
+      className={`vantura-navbar ${sidebarCollapsed && !isMobile ? 'collapsed' : ''} ${isMobile ? 'vantura-navbar-mobile' : ''}`}
+    >
       <div className="navbar-brand-wrapper">
         <button
           type="button"
           className="navbar-toggler"
-          onClick={toggleSidebar}
-          aria-label="Toggle sidebar"
+          onClick={handleNavToggle}
+          aria-label={isMobile ? 'Open menu' : 'Toggle sidebar'}
+          aria-expanded={isMobile ? sidebarMobileOpen : undefined}
         >
-          {sidebarCollapsed ? (
-            <i className="mdi mdi-menu" aria-hidden />
-          ) : (
-            <span className="navbar-brand-block">
-              <span className="navbar-brand-text">VANTURA</span>
-              {isDemoMode && <span className="navbar-demo-badge">DEMO</span>}
-            </span>
-          )}
+          <i className="mdi mdi-menu" aria-hidden />
         </button>
       </div>
-      {sidebarCollapsed && (
+      {sidebarCollapsed && !isMobile && (
         <span className="navbar-collapsed-brand" aria-hidden>
+          <span className="navbar-brand-text">VANTURA</span>
+          {isDemoMode && <span className="navbar-demo-badge">DEMO</span>}
+        </span>
+      )}
+      {isMobile && !sidebarMobileOpen && (
+        <span className="navbar-mobile-brand" aria-hidden>
           <span className="navbar-brand-text">VANTURA</span>
           {isDemoMode && <span className="navbar-demo-badge">DEMO</span>}
         </span>

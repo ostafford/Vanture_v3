@@ -538,6 +538,7 @@ export function Settings() {
         onHide={() => !clearing && setShowClearModal(false)}
         aria-labelledby="clear-data-modal-title"
         aria-describedby="clear-data-modal-description"
+        centered
       >
         <Modal.Header closeButton={!clearing}>
           <Modal.Title id="clear-data-modal-title">Clear all data</Modal.Title>
@@ -584,6 +585,7 @@ export function Settings() {
         onHide={closeUpdateTokenModal}
         aria-labelledby="update-token-modal-title"
         aria-describedby="update-token-modal-description"
+        centered
       >
         <Modal.Header closeButton={!updateTokenLoading}>
           <Modal.Title id="update-token-modal-title">
