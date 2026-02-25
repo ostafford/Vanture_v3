@@ -31,7 +31,7 @@ User- and developer-visible changes are listed in [CHANGELOG.md](CHANGELOG.md). 
 
 - **Dashboard (3-column):** Savers (left), Weekly insights (center), Trackers (right); Upcoming transactions below. Balance card (Available, Spendable with prorated reserved amount). Navbar: Sync, Last synced, Lock, Theme.
 - **Spendable balance:** Available minus reserved for upcoming charges (prorated by next payday; monthly/quarterly/yearly). See `src/services/balance.ts`, `src/components/BalanceCard.tsx`.
-- **Trackers:** Create/edit with name, budget, reset frequency (Weekly/Fortnightly/Monthly/Payday), multi-category. Progress bar, days left, transactions in period. See `src/services/trackers.ts`, `src/components/dashboard/TrackersSection.tsx`.
+- **Trackers:** Create/edit with name, budget, reset frequency (Weekly/Fortnightly/Monthly/Payday), multi-category, optional badge color. Progress bar, days left, transactions in period. See `src/services/trackers.ts`, `src/components/dashboard/TrackersSection.tsx`.
 - **Savers:** Saver accounts, balance vs goal, progress bars, goal amount, target date, monthly transfer. See `src/services/savers.ts`, `src/components/dashboard/SaversSection.tsx`.
 - **Weekly insights:** Money In, Money Out, Saver changes, Charges count, Payments; category breakdown. See `src/services/insights.ts`, `src/components/dashboard/InsightsSection.tsx`.
 - **Upcoming charges:** Manual entry (name, amount, frequency, next charge date, category, Include in Spendable). Grouped by Next pay / Later. See `src/services/upcoming.ts`, `src/components/dashboard/UpcomingSection.tsx`.
@@ -42,7 +42,7 @@ User- and developer-visible changes are listed in [CHANGELOG.md](CHANGELOG.md). 
 
 ### Phase 5: Polish — Complete
 
-- **Responsive (13"-27" desktop; mobile/portrait ≤768px):** Max-width 1400px; sidebar auto-collapses below 1280px; below 768px sidebar is an overlay drawer and content is full width. Vertical bar charts and card-based lists on mobile for better portrait use. Error boundary; DB/persist error handling; loading states. Paginated transactions (50 per page). PWA (service worker, manifest, installable). See `src/layout/Layout.tsx`, `src/components/ErrorBoundary.tsx`, `vite.config.ts`.
+- **Responsive (13"-27" desktop; mobile/portrait ≤768px):** Max-width 1400px; sidebar auto-collapses below 1280px; below 768px sidebar is an overlay drawer and content is full width. Vertical bar charts and card-based lists on mobile for better portrait use. Desktop horizontal bar charts (Insights, Savers) use wrapped Y-axis labels for a compact left axis (`src/components/dashboard/ChartWrappedTicks.tsx`, `src/lib/wrapLabel.ts`). Error boundary; DB/persist error handling; loading states. Paginated transactions (50 per page). PWA (service worker, manifest, installable). See `src/layout/Layout.tsx`, `src/components/ErrorBoundary.tsx`, `vite.config.ts`.
 - **Help page (user guide at `/help`) and optional dashboard tour (first-time and re-runnable from Settings).**
 
 ### Phase 6: Deployment — Implemented
@@ -68,7 +68,7 @@ npm run dev
 
 **Build:** `npm run build`.
 
-**Validate (format, lint, typecheck):** `npm run validate`. CI runs validate, tests, and `npm audit --audit-level=critical` before build.
+**Validate (format, lint, typecheck):** `npm run validate`. CI runs format-check, lint, typecheck, tests, and `npm audit --audit-level=critical` before build.
 
 **Up Bank Personal Access Token:** Create in Up app > Profile > Data sharing > Personal access tokens. Enter during onboarding (step 3); it is validated, encrypted with your passphrase-derived key, and stored locally. Your passphrase is never stored.
 

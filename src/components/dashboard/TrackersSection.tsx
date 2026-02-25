@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import {
   Card,
   Button,
@@ -28,12 +28,24 @@ import { toast } from '@/stores/toastStore'
 import { HelpPopover } from '@/components/HelpPopover'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
+import { ACCENT_PALETTES, type AccentId } from '@/lib/accentPalettes'
+
+const BADGE_COLOR_SWATCHES = (Object.keys(ACCENT_PALETTES) as AccentId[]).map(
+  (id) => ACCENT_PALETTES[id].primary
+)
 
 const RESET_FREQUENCIES: { value: TrackerResetFrequency; label: string }[] = [
   { value: 'WEEKLY', label: 'Weekly' },
   { value: 'FORTNIGHTLY', label: 'Fortnightly' },
   { value: 'MONTHLY', label: 'Monthly' },
   { value: 'PAYDAY', label: 'Payday' },
+]
+
+const FREQUENCY_ORDER: TrackerResetFrequency[] = [
+  'PAYDAY',
+  'WEEKLY',
+  'FORTNIGHTLY',
+  'MONTHLY',
 ]
 
 function getTrackerProgressStyle(progress: number): {
@@ -63,6 +75,7 @@ export function TrackersSection() {
   const [frequency, setFrequency] = useState<TrackerResetFrequency>('WEEKLY')
   const [resetDay, setResetDay] = useState(1)
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([])
+  const [badgeColor, setBadgeColor] = useState<string | null>(null)
   const [periodOffset, setPeriodOffset] = useState(0)
   const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY)
 
@@ -84,6 +97,7 @@ export function TrackersSection() {
     setFrequency('WEEKLY')
     setResetDay(1)
     setSelectedCategoryIds([])
+    setBadgeColor(null)
     setShowModal(true)
   }
 
@@ -93,6 +107,7 @@ export function TrackersSection() {
     budget_amount: number
     reset_frequency: string
     reset_day: number | null
+    badge_color?: string | null
   }) {
     setEditingId(t.id)
     setName(t.name)
@@ -100,6 +115,7 @@ export function TrackersSection() {
     setFrequency(t.reset_frequency as TrackerResetFrequency)
     setResetDay(t.reset_day ?? 1)
     setSelectedCategoryIds(getTrackerCategoryIds(t.id))
+    setBadgeColor(t.badge_color ?? null)
     setShowModal(true)
   }
 
@@ -114,7 +130,8 @@ export function TrackersSection() {
         budgetCents,
         frequency,
         resetDay,
-        selectedCategoryIds
+        selectedCategoryIds,
+        badgeColor
       )
       toast.success('Tracker saved.')
     } else {
@@ -123,7 +140,8 @@ export function TrackersSection() {
         budgetCents,
         frequency,
         resetDay,
-        selectedCategoryIds
+        selectedCategoryIds,
+        badgeColor
       )
       toast.success('Tracker created.')
     }
@@ -187,7 +205,7 @@ export function TrackersSection() {
                   <HelpPopover
                     id="trackers-help"
                     title="Trackers"
-                    content="Set a budget and reset frequency (Weekly, Fortnightly, Monthly, or Payday). Assign one or more categories to each tracker. The dashboard shows progress, days left, and transactions in the current period."
+                    content="Set a budget and reset frequency (Weekly, Fortnightly, Monthly, or Payday). Assign one or more categories to each tracker. The dashboard shows progress, days left, and transactions in the current period. Each tracker uses its own reset period (Weekly, Payday, etc.); Previous/Next steps each tracker back or forward by that period."
                     ariaLabel="What are trackers?"
                   />
                 </div>
@@ -263,7 +281,7 @@ export function TrackersSection() {
                   <HelpPopover
                     id="trackers-help"
                     title="Trackers"
-                    content="Set a budget and reset frequency (Weekly, Fortnightly, Monthly, or Payday). Assign one or more categories to each tracker. The dashboard shows progress, days left, and transactions in the current period."
+                    content="Set a budget and reset frequency (Weekly, Fortnightly, Monthly, or Payday). Assign one or more categories to each tracker. The dashboard shows progress, days left, and transactions in the current period. Each tracker uses its own reset period (Weekly, Payday, etc.); Previous/Next steps each tracker back or forward by that period."
                     ariaLabel="What are trackers?"
                   />
                 </div>
@@ -336,84 +354,175 @@ export function TrackersSection() {
               No trackers yet. Add one to get started.
             </p>
           ) : (
-            <div className="d-flex flex-column gap-3">
-              {trackers.map((t) => {
-                const progressStyle = getTrackerProgressStyle(t.progress)
-                return (
-                  <div key={t.id}>
-                    <div
-                      className="d-flex justify-content-between align-items-start"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() =>
-                        setExpandedId(expandedId === t.id ? null : t.id)
-                      }
-                    >
-                      <div>
-                        <strong>{t.name}</strong>
-                        <Badge bg="info" className="ms-2">
-                          {t.daysLeft} days
-                        </Badge>
-                      </div>
-                      <Button
-                        variant="outline-secondary"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          openEdit(t)
-                        }}
-                      >
-                        Edit
-                      </Button>
-                    </div>
-                    <h6
-                      className={`text-${progressStyle.variant} mt-1 text-end`}
-                    >
-                      ${formatMoney(t.remaining)} left
-                    </h6>
-                    <ProgressBar
-                      now={Math.min(100, t.progress)}
-                      variant={progressStyle.variant}
-                      striped={progressStyle.striped}
-                      animated={progressStyle.animated}
-                      label={`${Math.round(t.progress)}%`}
-                    />
-                    <small className="text-muted">
-                      ${formatMoney(t.spent)} of ${formatMoney(t.budget_amount)}{' '}
-                      spent
-                    </small>
-                    <Collapse in={expandedId === t.id}>
-                      <div className="mt-2 small">
-                        {getTrackerTransactionsInPeriod(t.id, periodOffset)
-                          .length === 0 ? (
-                          <span className="text-muted">
-                            No transactions this period
-                          </span>
-                        ) : (
-                          <ul className="list-unstyled mb-0">
-                            {getTrackerTransactionsInPeriod(
-                              t.id,
-                              periodOffset
-                            ).map((tx) => (
-                              <li key={tx.id}>
-                                {formatShortDate(
-                                  tx.created_at ?? tx.settled_at ?? ''
-                                )}{' '}
-                                {tx.description} $
-                                {formatMoney(Math.abs(tx.amount))}
-                                {tx.status === 'HELD' && (
-                                  <span className="text-muted small ms-1">
-                                    (Held)
-                                  </span>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    </Collapse>
-                  </div>
+            <div
+              style={{ maxHeight: '50vh', overflowY: 'auto' }}
+              className="d-flex flex-column gap-3"
+            >
+              {[...trackers]
+                .sort(
+                  (a, b) =>
+                    FREQUENCY_ORDER.indexOf(
+                      a.reset_frequency as TrackerResetFrequency
+                    ) -
+                    FREQUENCY_ORDER.indexOf(
+                      b.reset_frequency as TrackerResetFrequency
+                    )
                 )
-              })}
+                .map((t, index, sorted) => {
+                  const showGroupLabel =
+                    index === 0 ||
+                    sorted[index - 1].reset_frequency !== t.reset_frequency
+                  const groupLabel = RESET_FREQUENCIES.find(
+                    (f) => f.value === t.reset_frequency
+                  )?.label
+                  const progressStyle = getTrackerProgressStyle(t.progress)
+                  const frequencyLabel =
+                    RESET_FREQUENCIES.find((f) => f.value === t.reset_frequency)
+                      ?.label ?? t.reset_frequency
+                  const periodRangeText =
+                    t.period_start && t.period_end
+                      ? `${formatShortDate(t.period_start)} – ${formatShortDate(t.period_end)}`
+                      : ''
+                  const daysTooltipText = periodRangeText
+                    ? `${t.daysLeft} days left in this ${frequencyLabel.toLowerCase()} period (${periodRangeText})`
+                    : `${t.daysLeft} days left in this ${frequencyLabel.toLowerCase()} period`
+                  return (
+                    <Fragment key={t.id}>
+                      {showGroupLabel && (
+                        <>
+                          {index > 0 && (
+                            <hr className="my-2 border-secondary" />
+                          )}
+                          {/* Section heading for this frequency group (Payday, Weekly, etc.) */}
+                          <h6
+                            className={`text-center fw-semibold text-muted text-uppercase small mb-2${index > 0 ? ' mt-2' : ''}`}
+                            id={`tracker-group-${t.reset_frequency}`}
+                          >
+                            {groupLabel}
+                          </h6>
+                        </>
+                      )}
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`${t.name}, edit tracker`}
+                        onClick={() => openEdit(t)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            openEdit(t)
+                          }
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div className="d-flex justify-content-between align-items-start">
+                          <strong>{t.name}</strong>
+                          <div className="d-flex gap-1 align-items-center">
+                            {t.badge_color && t.badge_color.trim() ? (
+                              <span
+                                className="badge"
+                                style={{
+                                  backgroundColor: t.badge_color.trim(),
+                                  color: 'white',
+                                }}
+                              >
+                                {frequencyLabel}
+                              </span>
+                            ) : (
+                              <Badge bg="secondary">{frequencyLabel}</Badge>
+                            )}
+                            <OverlayTrigger
+                              placement="top"
+                              overlay={
+                                <Tooltip id={`trackers-days-tooltip-${t.id}`}>
+                                  {daysTooltipText}
+                                </Tooltip>
+                              }
+                            >
+                              <Badge bg="info">{t.daysLeft} days</Badge>
+                            </OverlayTrigger>
+                          </div>
+                        </div>
+                        <h6
+                          className={`text-${progressStyle.variant} mt-1 text-end`}
+                        >
+                          ${formatMoney(t.remaining)} left
+                        </h6>
+                        <ProgressBar
+                          now={Math.min(100, t.progress)}
+                          variant={progressStyle.variant}
+                          striped={progressStyle.striped}
+                          animated={progressStyle.animated}
+                          label={`${Math.round(t.progress)}%`}
+                        />
+                        <div
+                          className="d-flex justify-content-between align-items-center"
+                          role="button"
+                          tabIndex={0}
+                          aria-label={
+                            expandedId === t.id
+                              ? 'Collapse transactions'
+                              : 'View transactions for this period'
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setExpandedId(expandedId === t.id ? null : t.id)
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              setExpandedId(expandedId === t.id ? null : t.id)
+                            }
+                          }}
+                          style={{ cursor: 'pointer' }}
+                          title="View transactions"
+                        >
+                          <small className="text-muted">
+                            ${formatMoney(t.spent)} of $
+                            {formatMoney(t.budget_amount)} spent
+                          </small>
+                          {t.period_start && t.period_end && (
+                            <span className="small text-muted text-end">
+                              {formatShortDate(t.period_start)} –{' '}
+                              {formatShortDate(t.period_end)}
+                            </span>
+                          )}
+                        </div>
+                        <Collapse in={expandedId === t.id}>
+                          <div className="mt-2 small">
+                            {getTrackerTransactionsInPeriod(t.id, periodOffset)
+                              .length === 0 ? (
+                              <span className="text-muted">
+                                No transactions this period
+                              </span>
+                            ) : (
+                              <ul className="list-unstyled mb-0">
+                                {getTrackerTransactionsInPeriod(
+                                  t.id,
+                                  periodOffset
+                                ).map((tx) => (
+                                  <li key={tx.id}>
+                                    {formatShortDate(
+                                      tx.created_at ?? tx.settled_at ?? ''
+                                    )}{' '}
+                                    {tx.description} $
+                                    {formatMoney(Math.abs(tx.amount))}
+                                    {tx.status === 'HELD' && (
+                                      <span className="text-muted small ms-1">
+                                        (Held)
+                                      </span>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </Collapse>
+                      </div>
+                    </Fragment>
+                  )
+                })}
             </div>
           )}
         </Card.Body>
@@ -496,6 +605,54 @@ export function TrackersSection() {
                 </Form.Select>
               </Form.Group>
             )}
+            <Form.Group className="mb-2">
+              <Form.Label>Frequency badge colour</Form.Label>
+              <div className="d-flex flex-wrap gap-2 align-items-center">
+                {BADGE_COLOR_SWATCHES.map((hex) => {
+                  const isSelected = badgeColor === hex
+                  return (
+                    <button
+                      key={hex}
+                      type="button"
+                      className="border rounded-circle p-0 d-flex align-items-center justify-content-center"
+                      style={{
+                        width: 32,
+                        height: 32,
+                        background: hex,
+                        borderWidth: isSelected ? 3 : 1,
+                        borderColor: isSelected
+                          ? 'var(--vantura-text)'
+                          : 'var(--vantura-border)',
+                      }}
+                      onClick={() => setBadgeColor(hex)}
+                      aria-label={`Select badge colour ${hex}`}
+                      aria-pressed={isSelected}
+                    >
+                      {isSelected && (
+                        <i
+                          className="mdi mdi-check text-white"
+                          style={{
+                            fontSize: '1rem',
+                            textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                          }}
+                          aria-hidden
+                        />
+                      )}
+                    </button>
+                  )
+                })}
+                {badgeColor != null && (
+                  <button
+                    type="button"
+                    className="btn btn-link btn-sm p-0 text-muted"
+                    onClick={() => setBadgeColor(null)}
+                    aria-label="Use default badge colour"
+                  >
+                    Use default
+                  </button>
+                )}
+              </div>
+            </Form.Group>
             {modalPaydayExceedsPay && (
               <Alert variant="warning" className="mb-2">
                 Total PAYDAY budgets will be ${formatMoney(newTotalPaydayCents)}{' '}

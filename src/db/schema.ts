@@ -5,7 +5,7 @@
 
 import type { Database } from 'sql.js'
 
-const SCHEMA_VERSION = 1
+const SCHEMA_VERSION = 2
 
 const DDL_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS accounts (
@@ -66,7 +66,8 @@ const DDL_STATEMENTS = [
     last_reset_date TEXT NOT NULL,
     next_reset_date TEXT NOT NULL,
     is_active INTEGER DEFAULT 1,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    badge_color TEXT
   )`,
   `CREATE TABLE IF NOT EXISTS tracker_categories (
     tracker_id INTEGER NOT NULL,
@@ -114,6 +115,29 @@ export function runSchema(database: Database): void {
     `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
     [String(SCHEMA_VERSION)]
   )
+}
+
+/**
+ * Run migrations for existing databases (called when loading from IndexedDB).
+ * Idempotent: checks schema_version and only runs pending migrations.
+ */
+export function runMigrations(database: Database): void {
+  const stmt = database.prepare(
+    `SELECT value FROM app_settings WHERE key = 'schema_version'`
+  )
+  stmt.step()
+  const row = stmt.get()
+  stmt.free()
+  const version = row ? parseInt(String(row[0]), 10) : 0
+  if (version >= SCHEMA_VERSION) return
+
+  if (version < 2) {
+    database.run(`ALTER TABLE trackers ADD COLUMN badge_color TEXT`)
+    database.run(
+      `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
+      ['2']
+    )
+  }
 }
 
 export { SCHEMA_VERSION }

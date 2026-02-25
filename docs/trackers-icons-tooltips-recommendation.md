@@ -91,3 +91,5 @@ Recommend **chevrons** to match calendar/period semantics and to differentiate f
 - **Recommendation:** Period nav as **icons + tooltips** at all widths; remove the 900px compact-nav text/symbol swap.
 - **Why:** Consistent behaviour on resize, one layout rule for the controls, matches Add and common patterns (calendars, banking, dashboards), preserves accessibility via tooltips and aria-labels.
 - **Scope:** TrackersSection + optional removal of `TRACKER_COMPACT_NAV_*` constants; no change to period logic or other sections.
+
+**Related:** Trackers are grouped by reset frequency (Payday, Weekly, etc.); each group uses a centered `<h6>` section heading in TrackersSection for clarity and semantics.

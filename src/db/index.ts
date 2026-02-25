@@ -165,6 +165,9 @@ export async function initDb(): Promise<void> {
 
   if (existing && existing.byteLength > 0) {
     db = new SQL.Database(new Uint8Array(existing))
+    const { runMigrations } = await import('./schema')
+    runMigrations(db)
+    schedulePersist()
   } else {
     db = new SQL.Database()
     const { runSchema } = await import('./schema')

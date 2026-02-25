@@ -16,11 +16,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **CHANGELOG.md:** Keep a Changelog format; README links to it and documents updating Unreleased when adding features.
 - **Help:** User guide at `/help` (What is Vantura, getting started, Spendable, Trackers, Savers, Upcoming, security). Help popover/link from onboarding and Settings.
 - **Dashboard tour:** First-time product tour (driver.js) over balance cards, Savers, Trackers, Weekly insights, Upcoming, sidebar, Lock. Can be run again from Settings ("Show dashboard tour again").
+- **Trackers period navigation (icons + tooltips):** Previous/Next use chevron icons with tooltips ("Previous period", "Next period") at all viewport widths; removes the previous 900px text/icon label swap. See `src/components/dashboard/TrackersSection.tsx`. Aligns with `docs/trackers-icons-tooltips-recommendation.md`.
+- **Chart axis labels (wrapped ticks):** Wrapped Y-axis tick component for Recharts horizontal bar charts (`src/components/dashboard/ChartWrappedTicks.tsx`), plus word-boundary-aware `src/lib/wrapLabel.ts`. Used in Weekly Insights and Savers for a compact left axis on desktop.
+- **Trackers badge color (schema v2):** Optional `badge_color` per tracker; migration in `src/db/schema.ts` adds the column for existing DBs. Trackers UI and `src/services/trackers.ts` read/write it; TrackersSection shows a coloured badge when set.
 
 ### Changed
 
 - **Sync state:** Centralised sync state in `syncStore` (`lastSyncCompletedAt`, syncing flag) used by Navbar, Dashboard, Settings, and Transactions for consistent "last synced" and sync-in-progress behaviour.
 - **UI / styling:** Theme and accent colour options (Settings); layout/styling refinements (e.g. index.css, BalanceCard, StatCard, dashboard sections, Navbar, Sidebar).
+- **Trackers:** Removed `TRACKER_COMPACT_NAV_*` constants from `src/lib/constants.ts`; period nav is now icon + tooltip at all widths.
 
 ## [0.0.1] - 2025-02-23
 

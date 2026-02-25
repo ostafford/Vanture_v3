@@ -37,6 +37,10 @@ import { StatCard } from '@/components/StatCard'
 import { toast } from '@/stores/toastStore'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
+import {
+  WrappedYAxisTick,
+  WrappedXAxisTick,
+} from '@/components/dashboard/ChartWrappedTicks'
 
 /**
  * Weekly Insights card: Money In (income), Money Out (spending), Savers (saver movement),
@@ -301,7 +305,7 @@ export function InsightsSection() {
               {isMobile ? (
                 <BarChart
                   data={chartData}
-                  margin={{ top: 8, right: 8, left: 8, bottom: 60 }}
+                  margin={{ top: 8, right: 8, left: 8, bottom: 20 }}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -310,10 +314,14 @@ export function InsightsSection() {
                   <XAxis
                     type="category"
                     dataKey="name"
-                    tick={{ fontSize: 11 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
+                    tick={(props) => (
+                      <WrappedXAxisTick
+                        {...props}
+                        fontSize={11}
+                        maxCharsPerLine={12}
+                      />
+                    )}
+                    height={40}
                     interval={0}
                   />
                   <YAxis
@@ -366,7 +374,7 @@ export function InsightsSection() {
                 <BarChart
                   data={chartData}
                   layout="vertical"
-                  margin={{ top: 8, right: 24, left: 88, bottom: 8 }}
+                  margin={{ top: 8, right: 24, left: 56, bottom: 8 }}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -380,8 +388,14 @@ export function InsightsSection() {
                   <YAxis
                     type="category"
                     dataKey="name"
-                    width={80}
-                    tick={{ fontSize: 12 }}
+                    width={56}
+                    tick={(props) => (
+                      <WrappedYAxisTick
+                        {...props}
+                        fontSize={12}
+                        maxCharsPerLine={10}
+                      />
+                    )}
                   />
                   <Tooltip
                     formatter={(value: number) => [

@@ -9,7 +9,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
-  Text,
 } from 'recharts'
 import { getSaversWithProgress, updateSaverGoals } from '@/services/savers'
 import { getSaverChartColors, setSaverChartColor } from '@/lib/chartColors'
@@ -18,8 +17,10 @@ import { ChartColorPicker } from '@/components/ChartColorPicker'
 import { toast } from '@/stores/toastStore'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
-
-const SAVER_AXIS_WIDTH = 70
+import {
+  WrappedYAxisTick,
+  WrappedXAxisTick,
+} from '@/components/dashboard/ChartWrappedTicks'
 
 export function SaversSection() {
   const [, setRefresh] = useState(0)
@@ -135,7 +136,7 @@ export function SaversSection() {
                 {isMobile ? (
                   <BarChart
                     data={chartData}
-                    margin={{ top: 8, right: 8, left: 8, bottom: 60 }}
+                    margin={{ top: 8, right: 8, left: 8, bottom: 20 }}
                   >
                     <CartesianGrid
                       strokeDasharray="3 3"
@@ -144,10 +145,14 @@ export function SaversSection() {
                     <XAxis
                       type="category"
                       dataKey="name"
-                      tick={{ fontSize: 11 }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
+                      tick={(props) => (
+                        <WrappedXAxisTick
+                          {...props}
+                          fontSize={11}
+                          maxCharsPerLine={12}
+                        />
+                      )}
+                      height={40}
                       interval={0}
                     />
                     <YAxis
@@ -225,12 +230,7 @@ export function SaversSection() {
                   <BarChart
                     data={chartData}
                     layout="vertical"
-                    margin={{
-                      top: 8,
-                      right: 24,
-                      left: SAVER_AXIS_WIDTH,
-                      bottom: 8,
-                    }}
+                    margin={{ top: 8, right: 24, left: 56, bottom: 8 }}
                   >
                     <CartesianGrid
                       strokeDasharray="3 3"
@@ -244,21 +244,14 @@ export function SaversSection() {
                     <YAxis
                       type="category"
                       dataKey="name"
-                      width={SAVER_AXIS_WIDTH}
-                      tick={(props) => {
-                        const displayValue =
-                          props.tickFormatter && props.payload
-                            ? props.tickFormatter(
-                                props.payload.value,
-                                props.index
-                              )
-                            : props.payload?.value
-                        return (
-                          <Text {...props} width={undefined}>
-                            {displayValue}
-                          </Text>
-                        )
-                      }}
+                      width={56}
+                      tick={(props) => (
+                        <WrappedYAxisTick
+                          {...props}
+                          fontSize={12}
+                          maxCharsPerLine={10}
+                        />
+                      )}
                     />
                     <Tooltip
                       formatter={(value: number) => [
