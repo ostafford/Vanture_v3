@@ -9,6 +9,23 @@ const DEMO_ACCOUNT_ID = 'demo-account-main'
 const DEMO_SAVER_ID = 'demo-saver-1'
 const NOW = new Date().toISOString()
 
+/** Timezone-safe YYYY-MM-DD for the 1st of the current month (UTC). */
+function firstOfCurrentMonthUTC(): string {
+  const d = new Date()
+  const y = d.getUTCFullYear()
+  const m = d.getUTCMonth()
+  return `${y}-${String(m + 1).padStart(2, '0')}-01`
+}
+
+/** Timezone-safe YYYY-MM-DD for the 1st of the next month (UTC). */
+function firstOfNextMonthUTC(): string {
+  const d = new Date()
+  const y = d.getUTCFullYear()
+  const m = d.getUTCMonth()
+  const next = new Date(Date.UTC(y, m + 1, 1))
+  return next.toISOString().slice(0, 10)
+}
+
 function run(sql: string, params: (string | number | null)[] = []): void {
   const db = getDb()
   if (!db) throw new Error('Database not ready')
@@ -153,13 +170,12 @@ export function seedDemoData(): void {
     ]
   )
 
-  // Trackers: last_reset_date and next_reset_date for current period
-  const lastReset = new Date()
-  lastReset.setDate(1)
-  const lastResetStr = lastReset.toISOString().slice(0, 10)
-  const nextReset = new Date(lastReset)
-  nextReset.setMonth(nextReset.getMonth() + 1)
-  const nextResetStr = nextReset.toISOString().slice(0, 10)
+  // Trackers: last_reset_date and next_reset_date for current period (timezone-safe UTC)
+  const lastResetStr = firstOfCurrentMonthUTC()
+  const nextResetStr = firstOfNextMonthUTC()
+
+  // Idempotency: remove demo trackers so re-seeding does not create duplicates (tracker_categories CASCADE)
+  run(`DELETE FROM trackers WHERE name IN ('Groceries', 'Dining & Takeaway')`)
 
   run(
     `INSERT INTO trackers (name, budget_amount, reset_frequency, reset_day, start_date, last_reset_date, next_reset_date, is_active, created_at)
@@ -203,11 +219,13 @@ export function seedDemoData(): void {
     [tracker2Id, catDining]
   )
 
-  // Upcoming charges
+  // Upcoming charges (idempotent: delete demo entries first; Rent = first of next month to avoid month overflow)
+  run(`DELETE FROM upcoming_charges WHERE name IN ('Netflix', 'Rent')`)
+
   const nextCharge1 = new Date()
   nextCharge1.setDate(nextCharge1.getDate() + 5)
-  const nextCharge2 = new Date()
-  nextCharge2.setMonth(nextCharge2.getMonth() + 1)
+  const rentNextChargeDate = firstOfNextMonthUTC()
+
   run(
     `INSERT INTO upcoming_charges (name, amount, frequency, next_charge_date, category_id, is_reserved, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -224,14 +242,6 @@ export function seedDemoData(): void {
   run(
     `INSERT INTO upcoming_charges (name, amount, frequency, next_charge_date, category_id, is_reserved, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [
-      'Rent',
-      180000,
-      'MONTHLY',
-      nextCharge2.toISOString().slice(0, 10),
-      null,
-      1,
-      NOW,
-    ]
+    ['Rent', 180000, 'MONTHLY', rentNextChargeDate, null, 1, NOW]
   )
 }

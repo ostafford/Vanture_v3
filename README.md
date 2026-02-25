@@ -51,7 +51,7 @@ User- and developer-visible changes are listed in [CHANGELOG.md](CHANGELOG.md). 
 
 ### Phase 7: Settings — Implemented
 
-- **Settings page:** Re-sync (button, Last synced, error state); Clear all data (confirmation; deletes database, reloads to Onboarding). See `src/pages/Settings.tsx`, `src/db/index.ts`.
+- **Settings page:** Re-sync (button, Last synced, error state); theme and accent colour options; "Show dashboard tour again" button; Clear all data (confirmation; deletes database, reloads to Onboarding). See `src/pages/Settings.tsx`, `src/db/index.ts`.
 
 ## Security
 
@@ -68,11 +68,13 @@ npm run dev
 
 **Build:** `npm run build`.
 
-**Validate (format, lint, typecheck):** `npm run validate`.
+**Validate (format, lint, typecheck):** `npm run validate`. CI runs validate, tests, and `npm audit --audit-level=critical` before build.
 
 **Up Bank Personal Access Token:** Create in Up app > Profile > Data sharing > Personal access tokens. Enter during onboarding (step 3); it is validated, encrypted with your passphrase-derived key, and stored locally. Your passphrase is never stored.
 
 **First run:** Onboarding guides you through passphrase creation, API token, payday schedule, and initial sync. After that, you see the Unlock screen on each app open until you enter your passphrase.
+
+**Demo / sample data:** On the first onboarding step you can choose "Try with sample data" to use the app without an Up Bank token. Demo data is generated once at onboarding; trackers and weekly insights include current and previous periods/weeks so you can try period navigation and comparisons. In demo mode the Unlock screen offers "Open demo" (no passphrase required) and a "DEMO" badge appears in the navbar and sidebar.
 
 **Troubleshooting:**
 
@@ -86,8 +88,8 @@ npm run dev
 
 **Custom domain at root:** Set `base: '/'` in `vite.config.ts` if deploying to a custom domain at root.
 
-**Local preview:** `npm run preview` (default `/`); use `npm run preview -- --base /Vanture_v3/` to mimic production base path.
+**Local preview:** `npm run preview` (uses base `/Vanture_v3/` from vite.config). To preview at site root: `npm run preview -- --base /`.
 
 ## Documentation
 
-Internal architecture and phase docs (Arch_Docs) are not in the public repo. For user- and developer-visible changes, see [CHANGELOG.md](CHANGELOG.md).
+Internal architecture and phase docs (Arch_Docs) are not in the public repo. Design and recommendation docs may be in `docs/`. For user- and developer-visible changes, see [CHANGELOG.md](CHANGELOG.md).

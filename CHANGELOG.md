@@ -20,7 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - **Sync state:** Centralised sync state in `syncStore` (`lastSyncCompletedAt`, syncing flag) used by Navbar, Dashboard, Settings, and Transactions for consistent "last synced" and sync-in-progress behaviour.
-- **UI / styling:** Theme and layout/styling refinements (e.g. index.css, BalanceCard, StatCard, dashboard sections, Navbar, Sidebar).
+- **UI / styling:** Theme and accent colour options (Settings); layout/styling refinements (e.g. index.css, BalanceCard, StatCard, dashboard sections, Navbar, Sidebar).
 
 ## [0.0.1] - 2025-02-23
 
