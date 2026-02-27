@@ -17,7 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Help:** User guide at `/help` (What is Vantura, getting started, Spendable, Trackers, Savers, Upcoming, security). Help popover/link from onboarding and Settings.
 - **Dashboard tour:** First-time product tour (driver.js) over balance cards, Savers, Trackers, Weekly insights, Upcoming, sidebar, Lock. Can be run again from Settings ("Show dashboard tour again").
 - **Trackers period navigation (icons + tooltips):** Previous/Next use chevron icons with tooltips ("Previous period", "Next period") at all viewport widths; removes the previous 900px text/icon label swap. See `src/components/dashboard/TrackersSection.tsx`. Aligns with `docs/trackers-icons-tooltips-recommendation.md`.
-- **Chart axis labels (wrapped ticks):** Wrapped Y-axis tick component for Recharts horizontal bar charts (`src/components/dashboard/ChartWrappedTicks.tsx`), plus word-boundary-aware `src/lib/wrapLabel.ts`. Used in Weekly Insights and Savers for a compact left axis on desktop.
+- **Chart axis labels (D3 bar charts):** D3-based bar chart components for Weekly Insights and Savers with estimated axis label space for a compact left axis on desktop and readable labels on mobile (`src/components/charts/InsightsBarChart.tsx`, `src/components/charts/SaversBarChart.tsx`, `src/lib/chartLabelSpace.ts`).
 - **Trackers badge color (schema v2):** Optional `badge_color` per tracker; migration in `src/db/schema.ts` adds the column for existing DBs. Trackers UI and `src/services/trackers.ts` read/write it; TrackersSection shows a coloured badge when set.
 
 ### Changed

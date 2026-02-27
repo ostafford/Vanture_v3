@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   formatMoney,
+  formatDollars,
   formatDate,
   formatShortDate,
   formatShortDateFromDate,
@@ -13,6 +14,18 @@ describe('formatMoney', () => {
     expect(formatMoney(100)).toBe('1.00')
     expect(formatMoney(12345)).toBe('123.45')
     expect(formatMoney(-500)).toBe('-5.00')
+  })
+})
+
+describe('formatDollars', () => {
+  it('formats dollars with two decimals', () => {
+    expect(formatDollars(0)).toBe('0.00')
+    expect(formatDollars(1.5)).toBe('1.50')
+    expect(formatDollars(123.456)).toBe('123.46')
+  })
+  it('returns 0.00 for non-finite input', () => {
+    expect(formatDollars(NaN)).toBe('0.00')
+    expect(formatDollars(Infinity)).toBe('0.00')
   })
 })
 

@@ -10,22 +10,17 @@ import {
   Tooltip as BSTooltip,
 } from 'react-bootstrap'
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts'
-import {
   getWeekRange,
   getWeeklyInsights,
   getWeeklyCategoryBreakdown,
   getWeeklyInsightsRawCount,
   getWeeklyInsightsDebugCounts,
 } from '@/services/insights'
-import { formatMoney, formatShortDateFromDate } from '@/lib/format'
+import {
+  formatMoney,
+  formatShortDateFromDate,
+  formatDollars,
+} from '@/lib/format'
 import { accentStore } from '@/stores/accentStore'
 import { ACCENT_PALETTES } from '@/lib/accentPalettes'
 import {
@@ -37,10 +32,8 @@ import { StatCard } from '@/components/StatCard'
 import { toast } from '@/stores/toastStore'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
-import {
-  WrappedYAxisTick,
-  WrappedXAxisTick,
-} from '@/components/dashboard/ChartWrappedTicks'
+import { InsightsBarChart } from '@/components/charts/InsightsBarChart'
+import type { InsightsChartDatum } from '@/types/charts'
 
 /**
  * Weekly Insights card: Money In (income), Money Out (spending), Savers (saver movement),
@@ -75,19 +68,25 @@ export function InsightsSection() {
   const chartPalette = ACCENT_PALETTES[accent].chartPalette
   const categoryColors = getInsightsCategoryColors()
 
-  const chartData = categories.map((c, index) => ({
-    category_id: c.category_id,
-    name: c.category_name,
-    totalDollars: c.total / 100,
-    fill:
-      categoryColors[c.category_id] ??
-      chartPalette[index % chartPalette.length],
-    stroke:
-      categoryColors[c.category_id] ??
-      chartPalette[index % chartPalette.length],
-  }))
+  const chartData: InsightsChartDatum[] = categories.map((c, index) => {
+    const totalDollars = Number.isFinite(c.total / 100) ? c.total / 100 : 0
+    return {
+      category_id: c.category_id,
+      name: c.category_name,
+      totalDollars,
+      fill:
+        categoryColors[c.category_id] ??
+        chartPalette[index % chartPalette.length],
+      stroke:
+        categoryColors[c.category_id] ??
+        chartPalette[index % chartPalette.length],
+    }
+  })
 
-  const maxDomain = Math.max(...chartData.map((d) => d.totalDollars), 1)
+  const maxDomain = Math.max(
+    1,
+    ...chartData.map((d) => d.totalDollars).filter(Number.isFinite)
+  )
 
   function openCategoryEdit(payload: {
     category_id: string
@@ -294,150 +293,53 @@ export function InsightsSection() {
             </Col>
           </Row>
           {categories.length > 0 ? (
-            <ResponsiveContainer
-              width="100%"
-              height={
-                isMobile
-                  ? Math.max(280, chartData.length * 48)
-                  : Math.max(200, chartData.length * 32)
-              }
-            >
-              {isMobile ? (
-                <BarChart
-                  data={chartData}
-                  margin={{ top: 8, right: 8, left: 8, bottom: 20 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="var(--vantura-border, #ebedf2)"
-                  />
-                  <XAxis
-                    type="category"
-                    dataKey="name"
-                    tick={(props) => (
-                      <WrappedXAxisTick
-                        {...props}
-                        fontSize={11}
-                        maxCharsPerLine={12}
-                      />
-                    )}
-                    height={40}
-                    interval={0}
-                  />
-                  <YAxis
-                    type="number"
-                    domain={[0, maxDomain]}
-                    tickFormatter={(v) => `$${v}`}
-                    width={40}
-                    tick={{ fontSize: 11 }}
-                  />
-                  <Tooltip
-                    formatter={(value: number) => [
-                      `$${Number(value).toFixed(2)}`,
-                      'Spend',
-                    ]}
-                    labelFormatter={(label) => label}
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null
-                      const p = payload[0].payload
-                      return (
-                        <div className="bg-surface border rounded shadow-sm p-2 small">
-                          <strong>{p.name}</strong>
-                          <div>${p.totalDollars.toFixed(2)} spent</div>
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="p-0 mt-1"
-                            onClick={() => openCategoryEdit(p)}
-                          >
-                            Edit colour
-                          </Button>
-                        </div>
-                      )
-                    }}
-                  />
-                  <Bar
-                    dataKey="totalDollars"
-                    fillOpacity={0.3}
-                    strokeWidth={1}
-                    name="Spend"
-                    radius={[4, 4, 0, 0]}
-                    onClick={(data: {
-                      category_id: string
-                      name: string
-                      totalDollars: number
-                    }) => openCategoryEdit(data)}
-                    cursor="pointer"
-                  />
-                </BarChart>
-              ) : (
-                <BarChart
-                  data={chartData}
-                  layout="vertical"
-                  margin={{ top: 8, right: 24, left: 56, bottom: 8 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="var(--vantura-border, #ebedf2)"
-                  />
-                  <XAxis
-                    type="number"
-                    domain={[0, maxDomain]}
-                    tickFormatter={(v) => `$${v}`}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    width={56}
-                    tick={(props) => (
-                      <WrappedYAxisTick
-                        {...props}
-                        fontSize={12}
-                        maxCharsPerLine={10}
-                      />
-                    )}
-                  />
-                  <Tooltip
-                    formatter={(value: number) => [
-                      `$${value.toFixed(2)}`,
-                      'Spend',
-                    ]}
-                    labelFormatter={(label) => label}
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null
-                      const p = payload[0].payload
-                      return (
-                        <div className="bg-surface border rounded shadow-sm p-2 small">
-                          <strong>{p.name}</strong>
-                          <div>${p.totalDollars.toFixed(2)} spent</div>
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="p-0 mt-1"
-                            onClick={() => openCategoryEdit(p)}
-                          >
-                            Edit colour
-                          </Button>
-                        </div>
-                      )
-                    }}
-                  />
-                  <Bar
-                    dataKey="totalDollars"
-                    fillOpacity={0.3}
-                    strokeWidth={1}
-                    name="Spend"
-                    radius={[0, 4, 4, 0]}
-                    onClick={(data: {
-                      category_id: string
-                      name: string
-                      totalDollars: number
-                    }) => openCategoryEdit(data)}
-                    cursor="pointer"
-                  />
-                </BarChart>
-              )}
-            </ResponsiveContainer>
+            <>
+              <div
+                className="visually-hidden"
+                role="region"
+                aria-label="Spending by category this week (table)"
+              >
+                <table className="table table-sm mb-0">
+                  <caption className="visually-hidden">
+                    Spending by category this week
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Category</th>
+                      <th scope="col" className="text-end">
+                        Spent
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {chartData.map((d) => (
+                      <tr key={d.category_id}>
+                        <td>{d.name}</td>
+                        <td className="text-end">
+                          ${formatDollars(d.totalDollars)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div
+                style={{
+                  width: '100%',
+                  height: isMobile
+                    ? Math.max(280, chartData.length * 48)
+                    : Math.max(200, chartData.length * 32),
+                }}
+              >
+                <InsightsBarChart
+                  chartData={chartData}
+                  maxDomain={maxDomain}
+                  isMobile={isMobile}
+                  onBarClick={(d) => openCategoryEdit(d)}
+                  aria-label="Spending by category this week (bar chart)"
+                />
+              </div>
+            </>
           ) : (
             <p className="text-muted small mb-0">
               No spending by category this week.
@@ -463,7 +365,7 @@ export function InsightsSection() {
               <p className="mb-2">
                 <strong>{editingCategory.category_name}</strong>
                 <span className="text-muted small ms-1">
-                  ${editingCategory.totalDollars.toFixed(2)} this week
+                  ${formatDollars(editingCategory.totalDollars)} this week
                 </span>
               </p>
               <ChartColorPicker

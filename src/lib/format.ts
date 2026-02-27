@@ -6,6 +6,11 @@ export function formatMoney(cents: number): string {
   return (cents / 100).toFixed(2)
 }
 
+/** Format dollars for display (e.g. tooltips, axis labels). Use when value is already in dollars. */
+export function formatDollars(dollars: number): string {
+  return Number.isFinite(dollars) ? dollars.toFixed(2) : '0.00'
+}
+
 export function formatDate(isoDate: string): string {
   try {
     const d = new Date(isoDate + (isoDate.length === 10 ? 'T12:00:00Z' : ''))

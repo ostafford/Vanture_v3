@@ -1,15 +1,5 @@
 import { useState } from 'react'
 import { Card, Button, Modal, Form } from 'react-bootstrap'
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-} from 'recharts'
 import { getSaversWithProgress, updateSaverGoals } from '@/services/savers'
 import { getSaverChartColors, setSaverChartColor } from '@/lib/chartColors'
 import { formatMoney } from '@/lib/format'
@@ -17,10 +7,8 @@ import { ChartColorPicker } from '@/components/ChartColorPicker'
 import { toast } from '@/stores/toastStore'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
-import {
-  WrappedYAxisTick,
-  WrappedXAxisTick,
-} from '@/components/dashboard/ChartWrappedTicks'
+import { SaversBarChart } from '@/components/charts/SaversBarChart'
+import type { SaversChartRow } from '@/types/charts'
 
 export function SaversSection() {
   const [, setRefresh] = useState(0)
@@ -69,23 +57,22 @@ export function SaversSection() {
 
   const saverColors = getSaverChartColors()
 
-  type ChartRow = {
-    id: string
-    name: string
-    current: number
-    remaining: number
-    goal: number
-    saver: (typeof savers)[0]
-    currentFill: string
-  }
-
-  const chartData: ChartRow[] = savers.map((s) => {
-    const currentDollars = s.current_balance / 100
+  const chartData: SaversChartRow[] = savers.map((s) => {
+    const currentDollars = Number.isFinite(s.current_balance / 100)
+      ? s.current_balance / 100
+      : 0
     const goalDollars =
-      s.goal_amount != null && s.goal_amount > 0
+      s.goal_amount != null &&
+      s.goal_amount > 0 &&
+      Number.isFinite(s.goal_amount / 100)
         ? s.goal_amount / 100
         : currentDollars
-    const remaining = Math.max(0, goalDollars - currentDollars)
+    const remaining = Math.max(
+      0,
+      Number.isFinite(goalDollars - currentDollars)
+        ? goalDollars - currentDollars
+        : 0
+    )
     return {
       id: s.id,
       name: s.name,
@@ -98,8 +85,8 @@ export function SaversSection() {
   })
 
   const maxDomain = Math.max(
-    ...chartData.map((d) => d.current + d.remaining),
-    1
+    1,
+    ...chartData.map((d) => d.current + d.remaining).filter(Number.isFinite)
   )
 
   return (
@@ -125,198 +112,59 @@ export function SaversSection() {
             </p>
           ) : (
             <>
-              <ResponsiveContainer
-                width="100%"
-                height={
-                  isMobile
-                    ? Math.max(280, chartData.length * 56)
-                    : Math.max(260, chartData.length * 52)
-                }
+              <div
+                className="visually-hidden"
+                role="region"
+                aria-label="Savers progress (table)"
               >
-                {isMobile ? (
-                  <BarChart
-                    data={chartData}
-                    margin={{ top: 8, right: 8, left: 8, bottom: 20 }}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="var(--vantura-border, #ebedf2)"
-                    />
-                    <XAxis
-                      type="category"
-                      dataKey="name"
-                      tick={(props) => (
-                        <WrappedXAxisTick
-                          {...props}
-                          fontSize={11}
-                          maxCharsPerLine={12}
-                        />
-                      )}
-                      height={40}
-                      interval={0}
-                    />
-                    <YAxis
-                      type="number"
-                      domain={[0, maxDomain]}
-                      tickFormatter={(v) => `$${v}`}
-                      width={40}
-                      tick={{ fontSize: 11 }}
-                    />
-                    <Tooltip
-                      formatter={(value: number) => [
-                        `$${Number(value).toFixed(2)}`,
-                        '',
-                      ]}
-                      labelFormatter={(label) => label}
-                      content={({ active, payload }) => {
-                        if (
-                          !active ||
-                          !payload?.length ||
-                          !payload[0].payload.saver
-                        )
-                          return null
-                        const { saver } = payload[0].payload
-                        return (
-                          <div className="bg-surface border rounded shadow-sm p-2 small">
-                            <strong>{saver.name}</strong>
-                            <div>
-                              ${formatMoney(saver.current_balance)} of $
-                              {formatMoney(saver.goal_amount ?? 0)}
-                            </div>
-                            <Button
-                              variant="link"
-                              size="sm"
-                              className="p-0 mt-1"
-                              onClick={() => openEdit(saver)}
-                            >
-                              Edit goals
-                            </Button>
-                          </div>
-                        )
-                      }}
-                    />
-                    <Bar
-                      dataKey="current"
-                      stackId="a"
-                      fillOpacity={0.3}
-                      strokeWidth={1}
-                      onClick={(data: ChartRow) => openEdit(data.saver)}
-                      cursor="pointer"
-                      name="Saved"
-                      radius={[4, 4, 0, 0]}
-                    >
-                      {chartData.map((row) => (
-                        <Cell
-                          key={row.id}
-                          fill={row.currentFill}
-                          stroke={row.currentFill}
-                        />
-                      ))}
-                    </Bar>
-                    <Bar
-                      dataKey="remaining"
-                      stackId="a"
-                      fill="var(--vantura-border)"
-                      fillOpacity={0.5}
-                      stroke="var(--vantura-border)"
-                      strokeWidth={1}
-                      onClick={(data: ChartRow) => openEdit(data.saver)}
-                      cursor="pointer"
-                      name="Remaining"
-                      radius={[0, 0, 0, 0]}
-                    />
-                  </BarChart>
-                ) : (
-                  <BarChart
-                    data={chartData}
-                    layout="vertical"
-                    margin={{ top: 8, right: 24, left: 56, bottom: 8 }}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="var(--vantura-border, #ebedf2)"
-                    />
-                    <XAxis
-                      type="number"
-                      domain={[0, maxDomain]}
-                      tickFormatter={(v) => `$${v}`}
-                    />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      width={56}
-                      tick={(props) => (
-                        <WrappedYAxisTick
-                          {...props}
-                          fontSize={12}
-                          maxCharsPerLine={10}
-                        />
-                      )}
-                    />
-                    <Tooltip
-                      formatter={(value: number) => [
-                        `$${value.toFixed(2)}`,
-                        '',
-                      ]}
-                      labelFormatter={(label) => label}
-                      content={({ active, payload }) => {
-                        if (
-                          !active ||
-                          !payload?.length ||
-                          !payload[0].payload.saver
-                        )
-                          return null
-                        const { saver } = payload[0].payload
-                        return (
-                          <div className="bg-surface border rounded shadow-sm p-2 small">
-                            <strong>{saver.name}</strong>
-                            <div>
-                              ${formatMoney(saver.current_balance)} of $
-                              {formatMoney(saver.goal_amount ?? 0)}
-                            </div>
-                            <Button
-                              variant="link"
-                              size="sm"
-                              className="p-0 mt-1"
-                              onClick={() => openEdit(saver)}
-                            >
-                              Edit goals
-                            </Button>
-                          </div>
-                        )
-                      }}
-                    />
-                    <Bar
-                      dataKey="current"
-                      stackId="a"
-                      fillOpacity={0.3}
-                      strokeWidth={1}
-                      onClick={(data: ChartRow) => openEdit(data.saver)}
-                      cursor="pointer"
-                      name="Saved"
-                    >
-                      {chartData.map((row) => (
-                        <Cell
-                          key={row.id}
-                          fill={row.currentFill}
-                          stroke={row.currentFill}
-                        />
-                      ))}
-                    </Bar>
-                    <Bar
-                      dataKey="remaining"
-                      stackId="a"
-                      fill="var(--vantura-border)"
-                      fillOpacity={0.5}
-                      stroke="var(--vantura-border)"
-                      strokeWidth={1}
-                      onClick={(data: ChartRow) => openEdit(data.saver)}
-                      cursor="pointer"
-                      name="Remaining"
-                    />
-                  </BarChart>
-                )}
-              </ResponsiveContainer>
+                <table className="table table-sm mb-0">
+                  <caption className="visually-hidden">
+                    Savers: saved amount and goal
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Saver</th>
+                      <th scope="col" className="text-end">
+                        Saved
+                      </th>
+                      <th scope="col" className="text-end">
+                        Goal
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {chartData.map((d) => (
+                      <tr key={d.id}>
+                        <td>{d.name}</td>
+                        <td className="text-end">
+                          ${formatMoney(d.saver.current_balance)}
+                        </td>
+                        <td className="text-end">
+                          {d.saver.goal_amount != null
+                            ? `$${formatMoney(d.saver.goal_amount)}`
+                            : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div
+                style={{
+                  width: '100%',
+                  height: isMobile
+                    ? Math.max(280, chartData.length * 56)
+                    : Math.max(260, chartData.length * 52),
+                }}
+              >
+                <SaversBarChart
+                  chartData={chartData}
+                  maxDomain={maxDomain}
+                  isMobile={isMobile}
+                  onBarClick={(row) => openEdit(row.saver)}
+                  aria-label="Savers progress (bar chart)"
+                />
+              </div>
             </>
           )}
         </Card.Body>
