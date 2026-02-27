@@ -32,8 +32,8 @@ User- and developer-visible changes are listed in [CHANGELOG.md](CHANGELOG.md). 
 - **Dashboard (3-column):** Savers (left), Weekly insights (center), Trackers (right); Upcoming transactions below. Balance card (Available, Spendable with prorated reserved amount). Navbar: Sync, Last synced, Lock, Theme.
 - **Spendable balance:** Available minus reserved for upcoming charges (prorated by next payday; monthly/quarterly/yearly). See `src/services/balance.ts`, `src/components/BalanceCard.tsx`.
 - **Trackers:** Create/edit with name, budget, reset frequency (Weekly/Fortnightly/Monthly/Payday), multi-category, optional badge color. Progress bar, days left, transactions in period. See `src/services/trackers.ts`, `src/components/dashboard/TrackersSection.tsx`.
-- **Savers:** Saver accounts, balance vs goal, progress bars, goal amount, target date, monthly transfer. See `src/services/savers.ts`, `src/components/dashboard/SaversSection.tsx`.
-- **Weekly insights:** Money In, Money Out, Saver changes, Charges count, Payments; category breakdown. See `src/services/insights.ts`, `src/components/dashboard/InsightsSection.tsx`.
+- **Savers:** Saver accounts, balance vs goal, progress bars, goal amount, target date, monthly transfer. Click a bar or use Edit goals for custom bar colour. See `src/services/savers.ts`, `src/components/dashboard/SaversSection.tsx`.
+- **Weekly insights:** Money In, Money Out, Saver changes, Charges count, Payments; category breakdown. Click a category bar to set a custom colour (applies to that category in all weeks). See `src/services/insights.ts`, `src/components/dashboard/InsightsSection.tsx`.
 - **Upcoming charges:** Manual entry (name, amount, frequency, next charge date, category, Include in Spendable). Grouped by Next pay / Later. See `src/services/upcoming.ts`, `src/components/dashboard/UpcomingSection.tsx`.
 
 ### Phase 4: Transactions & Filtering — Implemented

@@ -224,6 +224,9 @@ export function SaversSection() {
             </Form.Group>
             <Form.Group className="mb-2">
               <Form.Label id="saver-edit-bar-color-label">Bar color</Form.Label>
+              <Form.Text className="d-block text-muted small mb-1">
+                This bar colour applies to this saver.
+              </Form.Text>
               <ChartColorPicker
                 aria-label="Saver bar color"
                 value={barColor}

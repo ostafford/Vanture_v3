@@ -26,6 +26,7 @@ import { ACCENT_PALETTES } from '@/lib/accentPalettes'
 import {
   getInsightsCategoryColors,
   setInsightsCategoryColor,
+  normalizeCategoryIdForColor,
 } from '@/lib/chartColors'
 import { ChartColorPicker } from '@/components/ChartColorPicker'
 import { StatCard } from '@/components/StatCard'
@@ -70,16 +71,15 @@ export function InsightsSection() {
 
   const chartData: InsightsChartDatum[] = categories.map((c, index) => {
     const totalDollars = Number.isFinite(c.total / 100) ? c.total / 100 : 0
+    const colorKey = normalizeCategoryIdForColor(c.category_id)
     return {
-      category_id: c.category_id,
+      category_id: c.category_id ?? '',
       name: c.category_name,
       totalDollars,
       fill:
-        categoryColors[c.category_id] ??
-        chartPalette[index % chartPalette.length],
+        categoryColors[colorKey] ?? chartPalette[index % chartPalette.length],
       stroke:
-        categoryColors[c.category_id] ??
-        chartPalette[index % chartPalette.length],
+        categoryColors[colorKey] ?? chartPalette[index % chartPalette.length],
     }
   })
 
@@ -98,7 +98,8 @@ export function InsightsSection() {
       category_name: payload.name,
       totalDollars: payload.totalDollars,
     })
-    setCategoryBarColor(categoryColors[payload.category_id] ?? null)
+    const colorKey = normalizeCategoryIdForColor(payload.category_id)
+    setCategoryBarColor(categoryColors[colorKey] ?? null)
   }
 
   function handleSaveCategoryColor() {
@@ -106,7 +107,7 @@ export function InsightsSection() {
     setInsightsCategoryColor(editingCategory.category_id, categoryBarColor)
     setEditingCategory(null)
     setRefresh((r) => r + 1)
-    toast.success('Category colour updated.')
+    toast.success('Colour updated for all weeks.')
   }
 
   return (
@@ -367,6 +368,10 @@ export function InsightsSection() {
                 <span className="text-muted small ms-1">
                   ${formatDollars(editingCategory.totalDollars)} this week
                 </span>
+              </p>
+              <p className="text-muted small mb-3">
+                This colour will apply to this category in all weeks (past and
+                future).
               </p>
               <ChartColorPicker
                 aria-label="Category bar colour"

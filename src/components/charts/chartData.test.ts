@@ -133,6 +133,37 @@ describe('buildInsightsChartData', () => {
     expect(chartData[0].totalDollars).toBe(0)
     expect(maxDomain).toBe(1)
   })
+
+  it('applies same category color across different weeks (cross-week persistence)', () => {
+    const categoryColors: Record<string, string> = {
+      groceries: '#ff0000',
+      transport: '#00ff00',
+    }
+    const week1Categories = [
+      { category_id: 'groceries', category_name: 'Groceries', total: 10000 },
+      { category_id: 'transport', category_name: 'Transport', total: 5000 },
+    ]
+    const week2Categories = [
+      { category_id: 'groceries', category_name: 'Groceries', total: 8000 },
+      { category_id: 'food', category_name: 'Food', total: 3000 },
+    ]
+    const { chartData: week1Data } = buildInsightsChartData(
+      week1Categories,
+      categoryColors,
+      palette
+    )
+    const { chartData: week2Data } = buildInsightsChartData(
+      week2Categories,
+      categoryColors,
+      palette
+    )
+    const groceriesWeek1 = week1Data.find((d) => d.category_id === 'groceries')
+    const groceriesWeek2 = week2Data.find((d) => d.category_id === 'groceries')
+    expect(groceriesWeek1?.fill).toBe('#ff0000')
+    expect(groceriesWeek1?.stroke).toBe('#ff0000')
+    expect(groceriesWeek2?.fill).toBe('#ff0000')
+    expect(groceriesWeek2?.stroke).toBe('#ff0000')
+  })
 })
 
 describe('buildSaversChartData', () => {

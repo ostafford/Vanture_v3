@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Trackers period navigation (icons + tooltips):** Previous/Next use chevron icons with tooltips ("Previous period", "Next period") at all viewport widths; removes the previous 900px text/icon label swap. See `src/components/dashboard/TrackersSection.tsx`. Aligns with `docs/trackers-icons-tooltips-recommendation.md`.
 - **Chart axis labels (D3 bar charts):** D3-based bar chart components for Weekly Insights and Savers with estimated axis label space for a compact left axis on desktop and readable labels on mobile (`src/components/charts/InsightsBarChart.tsx`, `src/components/charts/SaversBarChart.tsx`, `src/lib/chartLabelSpace.ts`).
 - **Trackers badge color (schema v2):** Optional `badge_color` per tracker; migration in `src/db/schema.ts` adds the column for existing DBs. Trackers UI and `src/services/trackers.ts` read/write it; TrackersSection shows a coloured badge when set.
+- **Weekly Insights category colours (global persistence):** Category bar colours chosen in the Weekly Insights chart now apply to that category in all weeks (past, current, and future). Modal helper text and toast ("Colour updated for all weeks.") clarify the behaviour. Uncategorised transactions use a stable colour key for consistency. Savers Edit goals modal: helper text "This bar colour applies to this saver." See `src/lib/chartColors.ts`, `src/components/dashboard/InsightsSection.tsx`, `src/components/dashboard/SaversSection.tsx`.
 
 ### Changed
 

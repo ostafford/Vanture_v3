@@ -8,6 +8,20 @@ import { getAppSetting, setAppSetting } from '@/db'
 const SAVER_CHART_COLORS_KEY = 'saver_chart_colors'
 const INSIGHTS_CATEGORY_COLORS_KEY = 'insights_category_colors'
 
+/** Sentinel for uncategorised transactions (null/empty category_id). */
+export const UNCATEGORISED_COLOR_KEY = '__uncategorised__'
+
+/**
+ * Normalize category_id for color storage/lookup. Null/empty becomes a stable
+ * sentinel so "Uncategorised" bars get consistent colors across weeks.
+ */
+export function normalizeCategoryIdForColor(
+  categoryId: string | null | undefined
+): string {
+  const id = categoryId == null ? '' : String(categoryId).trim()
+  return id === '' ? UNCATEGORISED_COLOR_KEY : id
+}
+
 function parseJsonMap(key: string): Record<string, string> {
   try {
     const raw = getAppSetting(key) ?? '{}'
@@ -52,18 +66,21 @@ export function getInsightsCategoryColors(): Record<string, string> {
 }
 
 export function setInsightsCategoryColor(
-  categoryId: string,
+  categoryId: string | null | undefined,
   hex: string | null
 ): void {
+  const key = normalizeCategoryIdForColor(categoryId)
   const map = parseJsonMap(INSIGHTS_CATEGORY_COLORS_KEY)
   if (hex == null || hex === '') {
-    delete map[categoryId]
+    delete map[key]
   } else {
-    map[categoryId] = hex
+    map[key] = hex
   }
   setAppSetting(INSIGHTS_CATEGORY_COLORS_KEY, JSON.stringify(map))
 }
 
-export function clearInsightsCategoryColor(categoryId: string): void {
+export function clearInsightsCategoryColor(
+  categoryId: string | null | undefined
+): void {
   setInsightsCategoryColor(categoryId, null)
 }
