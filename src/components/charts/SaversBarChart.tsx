@@ -4,6 +4,7 @@ import type { SaversChartRow } from '@/types/charts'
 import { formatMoney, formatDollars } from '@/lib/format'
 import {
   estimateLeftAxisLabelSpace,
+  estimateLeftAxisValueLabelSpace,
   estimateBottomAxisLabelSpace,
 } from '@/lib/chartLabelSpace'
 
@@ -13,7 +14,6 @@ const BAR_MAX_WIDTH = 32
 const MARGIN_TOP = 8
 const MARGIN_RIGHT_DESKTOP = 24
 const MARGIN_RIGHT_MOBILE = 8
-const MARGIN_LEFT_MOBILE = 40
 const TOOLTIP_OFFSET = 10
 const TOOLTIP_PADDING = 8
 
@@ -73,7 +73,7 @@ export function SaversBarChart({
     })
 
     const left = isMobile
-      ? MARGIN_LEFT_MOBILE
+      ? estimateLeftAxisValueLabelSpace(maxDomain, 11)
       : estimateLeftAxisLabelSpace(names, 12)
     const bottom = isMobile
       ? estimateBottomAxisLabelSpace(names, 11, { rotatedDeg: -60 })
@@ -256,7 +256,7 @@ export function SaversBarChart({
         .attr('transform', 'rotate(-60)')
         .style('text-anchor', 'end')
         .style('font-size', '11px')
-        .attr('fill', BORDER_COLOR)
+        .attr('fill', 'currentColor')
 
       g.append('g')
         .call(yAxis)

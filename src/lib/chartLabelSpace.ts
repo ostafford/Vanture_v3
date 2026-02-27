@@ -4,6 +4,8 @@
  * (left Y-axis and bottom X-axis label space).
  */
 
+import { formatDollars } from '@/lib/format'
+
 const PX_PER_CHAR = 7
 const BUFFER_EMOJI = 1.2
 const MIN_LEFT_PX = 56
@@ -27,6 +29,27 @@ export function estimateLeftAxisLabelSpace(
   const minPx = options?.minPx ?? MIN_LEFT_PX
   const space = Math.min(Math.max(labelWidth + TICK_PADDING, minPx), maxPx)
   return space
+}
+
+/**
+ * Estimates left margin for value (price) Y-axis labels (e.g. "$0.00", "$1000.00").
+ * Used when mobile charts display dollar amounts on the left axis.
+ */
+export function estimateLeftAxisValueLabelSpace(
+  maxDomain: number,
+  fontSize: number = 11,
+  options?: { maxPx?: number; minPx?: number }
+): number {
+  const labels: string[] = [
+    '$0.00',
+    '$' + formatDollars(maxDomain),
+    '$' + formatDollars(maxDomain / 2),
+  ].filter((v, i, arr) => arr.indexOf(v) === i)
+  return estimateLeftAxisLabelSpace(labels, fontSize, {
+    minPx: 50,
+    maxPx: MAX_LEFT_PX,
+    ...options,
+  })
 }
 
 /**
