@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useStore } from 'zustand'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { initDb, getAppSetting } from '@/db'
 import { advanceNextPaydayIfNeeded, recalculateTrackers } from '@/services/sync'
 import { themeStore } from '@/stores/themeStore'
@@ -10,6 +10,11 @@ import { Layout } from '@/layout/Layout'
 import { ToastProvider } from '@/components/ToastProvider'
 import { Dashboard } from '@/pages/Dashboard'
 import { Transactions } from '@/pages/Transactions'
+import { AnalyticsLayout } from '@/pages/analytics/AnalyticsLayout'
+import { AnalyticsTrackers } from '@/pages/analytics/AnalyticsTrackers'
+import { AnalyticsTrackersDetail } from '@/pages/analytics/AnalyticsTrackersDetail'
+import { AnalyticsSavers } from '@/pages/analytics/AnalyticsSavers'
+import { AnalyticsInsights } from '@/pages/analytics/AnalyticsInsights'
 import { Settings } from '@/pages/Settings'
 import { Help } from '@/pages/Help'
 import { Unlock } from '@/pages/Unlock'
@@ -190,6 +195,19 @@ function AppContent() {
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="transactions" element={<Transactions />} />
+            <Route path="analytics" element={<AnalyticsLayout />}>
+              <Route
+                index
+                element={<Navigate to="/analytics/trackers" replace />}
+              />
+              <Route path="trackers" element={<AnalyticsTrackers />} />
+              <Route
+                path="trackers/:trackerId"
+                element={<AnalyticsTrackersDetail />}
+              />
+              <Route path="savers" element={<AnalyticsSavers />} />
+              <Route path="insights" element={<AnalyticsInsights />} />
+            </Route>
             <Route path="settings" element={<Settings />} />
             <Route path="help" element={<Help />} />
           </Route>

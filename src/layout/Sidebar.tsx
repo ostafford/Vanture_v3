@@ -36,6 +36,12 @@ export function Sidebar({
   const navItems = [
     { to: '/', label: 'Dashboard', icon: 'mdi-home', short: 'D' },
     {
+      to: '/analytics',
+      label: 'Analytics',
+      icon: 'mdi-chart-box',
+      short: 'A',
+    },
+    {
       to: '/transactions',
       label: 'Transactions',
       icon: 'mdi-credit-card-multiple',
@@ -116,7 +122,12 @@ export function Sidebar({
       <div className="sidebar-body">
         <ul className="nav">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.to
+            const isActive =
+              item.to === '/'
+                ? location.pathname === '/'
+                : location.pathname === item.to ||
+                  (item.to !== '/' &&
+                    location.pathname.startsWith(item.to + '/'))
             return (
               <li
                 key={item.to}

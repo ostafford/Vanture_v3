@@ -198,6 +198,82 @@ export interface CategoryBreakdownRow {
 }
 
 /**
+ * Multi-week insights history for analytics. Returns array from oldest to newest.
+ */
+export interface InsightsHistoryRow {
+  weekOffset: number
+  weekLabel: string
+  weekStart: string
+  weekEnd: string
+  moneyIn: number
+  moneyOut: number
+  saverChanges: number
+  charges: number
+}
+
+export function getInsightsHistory(weeksBack: number): InsightsHistoryRow[] {
+  const result: InsightsHistoryRow[] = []
+  for (let offset = -weeksBack + 1; offset <= 0; offset++) {
+    const range = getWeekRange(offset)
+    const insights = getWeeklyInsights(range)
+    const startStr = range.startStr
+    const endStr = range.endStr.slice(0, 10)
+    const label =
+      offset === 0
+        ? 'This week'
+        : offset === -1
+          ? 'Last week'
+          : `${-offset} weeks ago`
+    result.push({
+      weekOffset: offset,
+      weekLabel: label,
+      weekStart: startStr,
+      weekEnd: endStr,
+      moneyIn: insights.moneyIn,
+      moneyOut: insights.moneyOut,
+      saverChanges: insights.saverChanges,
+      charges: insights.charges,
+    })
+  }
+  return result
+}
+
+/**
+ * Per-category spending for a category over multiple weeks (for trend comparison).
+ */
+export interface CategoryBreakdownHistoryRow {
+  weekOffset: number
+  weekLabel: string
+  weekStart: string
+  total: number
+}
+
+export function getCategoryBreakdownHistory(
+  categoryId: string,
+  weeksBack: number
+): CategoryBreakdownHistoryRow[] {
+  const result: CategoryBreakdownHistoryRow[] = []
+  for (let offset = -weeksBack + 1; offset <= 0; offset++) {
+    const range = getWeekRange(offset)
+    const rows = getWeeklyCategoryBreakdown(range)
+    const row = rows.find((r) => r.category_id === categoryId)
+    const label =
+      offset === 0
+        ? 'This week'
+        : offset === -1
+          ? 'Last week'
+          : `${-offset}w ago`
+    result.push({
+      weekOffset: offset,
+      weekLabel: label,
+      weekStart: range.startStr,
+      total: row?.total ?? 0,
+    })
+  }
+  return result
+}
+
+/**
  * Spending by category for the week. Same definition as Money Out (spending only, no transfers),
  * grouped by category. Used for the Weekly Insights bar chart.
  */

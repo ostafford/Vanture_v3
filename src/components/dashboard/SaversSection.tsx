@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Card, Button, Modal, Form } from 'react-bootstrap'
 import { getSaversWithProgress, updateSaverGoals } from '@/services/savers'
 import { getSaverChartColors, setSaverChartColor } from '@/lib/chartColors'
@@ -99,10 +100,19 @@ export function SaversSection() {
             </span>
             <span>Savers</span>
           </div>
-          <span className="text-success fw-normal">
-            ${formatMoney(totalBalance)}{' '}
-            <span className="text-muted">total</span>
-          </span>
+          <div className="d-flex align-items-center gap-2">
+            <Link
+              to="/analytics/savers"
+              className="btn btn-outline-secondary btn-sm"
+              aria-label="View savers analytics"
+            >
+              <i className="mdi mdi-chart-box" aria-hidden />
+            </Link>
+            <span className="text-success fw-normal">
+              ${formatMoney(totalBalance)}{' '}
+              <span className="text-muted">total</span>
+            </span>
+          </div>
         </Card.Header>
         <Card.Body>
           {savers.length === 0 ? (

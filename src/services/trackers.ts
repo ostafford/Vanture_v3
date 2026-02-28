@@ -223,7 +223,7 @@ export function getTrackersWithProgress(): TrackerWithProgress[] {
 /**
  * Get a single tracker row by id. Returns null if not found or inactive.
  */
-function getTrackerRow(trackerId: number): TrackerRow | null {
+export function getTracker(trackerId: number): TrackerRow | null {
   const db = getDb()
   if (!db) return null
   const stmt = db.prepare(
@@ -282,12 +282,12 @@ export function getTrackerTransactionsInPeriod(
   let periodStart: string
   let periodEnd: string
   if (periodOffset === undefined || periodOffset === 0) {
-    const row = getTrackerRow(trackerId)
+    const row = getTracker(trackerId)
     if (!row) return []
     periodStart = row.last_reset_date
     periodEnd = row.next_reset_date
   } else {
-    const row = getTrackerRow(trackerId)
+    const row = getTracker(trackerId)
     if (!row) return []
     const bounds = getPeriodBoundsForOffset(row, periodOffset)
     if (!bounds) return []
@@ -574,6 +574,242 @@ export function deleteTracker(id: number): void {
   if (!db) throw new Error('Database not ready')
   db.run(`UPDATE trackers SET is_active = 0 WHERE id = ?`, [id])
   schedulePersist()
+}
+
+/**
+ * Period history for analytics: last N periods with budget, spent, remaining.
+ * Returns array from oldest to newest (index 0 = furthest back).
+ */
+export interface TrackerPeriodHistoryRow {
+  periodOffset: number
+  periodLabel: string
+  periodStart: string
+  periodEnd: string
+  budget: number
+  spent: number
+  remaining: number
+  progress: number
+}
+
+export function getTrackerPeriodHistory(
+  trackerId: number,
+  periodsBack: number
+): TrackerPeriodHistoryRow[] {
+  const row = getTracker(trackerId)
+  if (!row || periodsBack < 1) return []
+  const result: TrackerPeriodHistoryRow[] = []
+  for (let offset = -periodsBack + 1; offset <= 0; offset++) {
+    const bounds = getPeriodBoundsForOffset(row, offset)
+    if (!bounds) continue
+    const { periodStart, periodEnd } = bounds
+    const spent = getTrackerSpentInPeriod(trackerId, periodStart, periodEnd)
+    const budget = row.budget_amount
+    const remaining = Math.max(0, budget - spent)
+    const progress = budget > 0 ? (spent / budget) * 100 : 0
+    const label =
+      offset === 0
+        ? 'Current'
+        : offset === -1
+          ? 'Previous'
+          : `${-offset} periods ago`
+    result.push({
+      periodOffset: offset,
+      periodLabel: label,
+      periodStart,
+      periodEnd,
+      budget,
+      spent,
+      remaining,
+      progress,
+    })
+  }
+  return result
+}
+
+/**
+ * Transaction timeline for analytics: all spending transactions for a tracker
+ * from first to current, for cumulative chart. Optionally filter by date range.
+ */
+export interface TrackerTransactionTimelineRow {
+  id: string
+  date: string
+  amount: number
+  description: string
+  status: string
+  cumulativeSpent: number
+}
+
+export function getTrackerTransactionTimeline(
+  trackerId: number,
+  options?: { dateFrom?: string; dateTo?: string; limit?: number }
+): TrackerTransactionTimelineRow[] {
+  const db = getDb()
+  if (!db) return []
+  const limit = options?.limit ?? 1000
+  let dateFilter = ''
+  const params: (string | number)[] = [trackerId]
+  if (options?.dateFrom) {
+    dateFilter += ' AND COALESCE(t.created_at, t.settled_at) >= ?'
+    params.push(options.dateFrom)
+  }
+  if (options?.dateTo) {
+    dateFilter += ' AND COALESCE(t.created_at, t.settled_at) < ?'
+    params.push(options.dateTo)
+  }
+  params.push(limit)
+  const stmt = db.prepare(
+    `SELECT t.id, t.description, t.created_at, t.settled_at, t.amount, t.status
+     FROM transactions t
+     INNER JOIN tracker_categories tc ON t.category_id = tc.category_id
+     WHERE tc.tracker_id = ? AND t.amount < 0 AND t.transfer_account_id IS NULL
+     ${dateFilter}
+     ORDER BY COALESCE(t.created_at, t.settled_at) ASC LIMIT ?`
+  )
+  stmt.bind(params)
+  const raw: Array<{
+    id: string
+    description: string
+    created_at: string | null
+    settled_at: string | null
+    amount: number
+    status: string
+  }> = []
+  while (stmt.step()) {
+    const r = stmt.get() as [
+      string,
+      string,
+      string | null,
+      string | null,
+      number,
+      string,
+    ]
+    raw.push({
+      id: r[0],
+      description: r[1],
+      created_at: r[2],
+      settled_at: r[3],
+      amount: r[4],
+      status: r[5],
+    })
+  }
+  stmt.free()
+  let cumulative = 0
+  return raw.map((r) => {
+    const absAmount = Math.abs(r.amount)
+    cumulative += absAmount
+    const date = r.created_at ?? r.settled_at ?? ''
+    return {
+      id: r.id,
+      date: date.slice(0, 10),
+      amount: absAmount,
+      description: r.description,
+      status: r.status,
+      cumulativeSpent: cumulative,
+    }
+  })
+}
+
+/**
+ * Paginated transactions for a tracker (for detail table). Ordered newest first.
+ */
+export function getTrackerTransactionsForTable(
+  trackerId: number,
+  options?: {
+    dateFrom?: string
+    dateTo?: string
+    limit?: number
+    offset?: number
+  }
+): Array<{
+  id: string
+  date: string
+  amount: number
+  description: string
+  status: string
+}> {
+  const db = getDb()
+  if (!db) return []
+  const limit = options?.limit ?? 50
+  const offset = options?.offset ?? 0
+  let dateFilter = ''
+  const params: (string | number)[] = [trackerId]
+  if (options?.dateFrom) {
+    dateFilter += ' AND COALESCE(t.created_at, t.settled_at) >= ?'
+    params.push(options.dateFrom)
+  }
+  if (options?.dateTo) {
+    dateFilter += ' AND COALESCE(t.created_at, t.settled_at) < ?'
+    params.push(options.dateTo)
+  }
+  params.push(limit, offset)
+  const stmt = db.prepare(
+    `SELECT t.id, t.description, t.created_at, t.settled_at, t.amount, t.status
+     FROM transactions t
+     INNER JOIN tracker_categories tc ON t.category_id = tc.category_id
+     WHERE tc.tracker_id = ? AND t.amount < 0 AND t.transfer_account_id IS NULL
+     ${dateFilter}
+     ORDER BY COALESCE(t.created_at, t.settled_at) DESC LIMIT ? OFFSET ?`
+  )
+  stmt.bind(params)
+  const list: Array<{
+    id: string
+    date: string
+    amount: number
+    description: string
+    status: string
+  }> = []
+  while (stmt.step()) {
+    const r = stmt.get() as [
+      string,
+      string,
+      string | null,
+      string | null,
+      number,
+      string,
+    ]
+    const date = r[2] ?? r[3] ?? ''
+    list.push({
+      id: r[0],
+      date: date.slice(0, 10),
+      amount: Math.abs(r[4]),
+      description: r[1],
+      status: r[5],
+    })
+  }
+  stmt.free()
+  return list
+}
+
+/**
+ * Count of transactions for a tracker (optionally filtered by date). For pagination.
+ */
+export function getTrackerTransactionsCount(
+  trackerId: number,
+  options?: { dateFrom?: string; dateTo?: string }
+): number {
+  const db = getDb()
+  if (!db) return 0
+  let dateFilter = ''
+  const params: (string | number)[] = [trackerId]
+  if (options?.dateFrom) {
+    dateFilter += ' AND COALESCE(t.created_at, t.settled_at) >= ?'
+    params.push(options.dateFrom)
+  }
+  if (options?.dateTo) {
+    dateFilter += ' AND COALESCE(t.created_at, t.settled_at) < ?'
+    params.push(options.dateTo)
+  }
+  const stmt = db.prepare(
+    `SELECT COUNT(*) as n FROM transactions t
+     INNER JOIN tracker_categories tc ON t.category_id = tc.category_id
+     WHERE tc.tracker_id = ? AND t.amount < 0 AND t.transfer_account_id IS NULL
+     ${dateFilter}`
+  )
+  stmt.bind(params)
+  stmt.step()
+  const row = stmt.get()
+  stmt.free()
+  return row ? Number(row[0]) : 0
 }
 
 /**

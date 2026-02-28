@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useStore } from 'zustand'
 import {
   Card,
@@ -134,7 +135,14 @@ export function InsightsSection() {
                   </span>
                 </div>
               </div>
-              <div className="d-flex justify-content-center gap-2">
+              <div className="d-flex justify-content-center gap-2 align-items-center">
+                <Link
+                  to="/analytics/insights"
+                  className="btn btn-outline-secondary btn-sm"
+                  aria-label="View insights analytics"
+                >
+                  <i className="mdi mdi-chart-box" aria-hidden />
+                </Link>
                 <OverlayTrigger
                   placement="top"
                   overlay={
@@ -184,7 +192,14 @@ export function InsightsSection() {
                   </span>
                 </div>
               </div>
-              <div className="d-flex gap-2 flex-grow-1 justify-content-end">
+              <div className="d-flex gap-2 flex-grow-1 justify-content-end align-items-center">
+                <Link
+                  to="/analytics/insights"
+                  className="btn btn-outline-secondary btn-sm"
+                  aria-label="View insights analytics"
+                >
+                  <i className="mdi mdi-chart-box" aria-hidden />
+                </Link>
                 <OverlayTrigger
                   placement="top"
                   overlay={

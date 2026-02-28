@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Card,
   Button,
@@ -209,21 +210,30 @@ export function TrackersSection() {
                     ariaLabel="What are trackers?"
                   />
                 </div>
-                <OverlayTrigger
-                  placement="top"
-                  overlay={
-                    <Tooltip id="trackers-add-tooltip">Add tracker</Tooltip>
-                  }
-                >
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={openCreate}
-                    aria-label="Add tracker"
+                <div className="d-flex gap-1">
+                  <Link
+                    to="/analytics/trackers"
+                    className="btn btn-outline-secondary btn-sm"
+                    aria-label="View trackers analytics"
                   >
-                    <i className="mdi mdi-plus" aria-hidden />
-                  </Button>
-                </OverlayTrigger>
+                    <i className="mdi mdi-chart-box" aria-hidden />
+                  </Link>
+                  <OverlayTrigger
+                    placement="top"
+                    overlay={
+                      <Tooltip id="trackers-add-tooltip">Add tracker</Tooltip>
+                    }
+                  >
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={openCreate}
+                      aria-label="Add tracker"
+                    >
+                      <i className="mdi mdi-plus" aria-hidden />
+                    </Button>
+                  </OverlayTrigger>
+                </div>
               </div>
               <div className="d-flex justify-content-center gap-2">
                 <OverlayTrigger
@@ -319,6 +329,13 @@ export function TrackersSection() {
                       <i className="mdi mdi-chevron-right" aria-hidden />
                     </Button>
                   </OverlayTrigger>
+                  <Link
+                    to="/analytics/trackers"
+                    className="btn btn-outline-secondary btn-sm me-1"
+                    aria-label="View trackers analytics"
+                  >
+                    <i className="mdi mdi-chart-box" aria-hidden />
+                  </Link>
                   <OverlayTrigger
                     placement="top"
                     overlay={
@@ -328,7 +345,7 @@ export function TrackersSection() {
                     <Button
                       variant="primary"
                       size="sm"
-                      className="ms-3"
+                      className="ms-2"
                       onClick={openCreate}
                       aria-label="Add tracker"
                     >
@@ -418,6 +435,23 @@ export function TrackersSection() {
                         <div className="d-flex justify-content-between align-items-start">
                           <strong>{t.name}</strong>
                           <div className="d-flex gap-1 align-items-center">
+                            <OverlayTrigger
+                              placement="top"
+                              overlay={
+                                <Tooltip id={`trackers-analytics-${t.id}`}>
+                                  View analytics
+                                </Tooltip>
+                              }
+                            >
+                              <Link
+                                to={`/analytics/trackers/${t.id}`}
+                                className="btn btn-link btn-sm p-0 text-primary"
+                                onClick={(e) => e.stopPropagation()}
+                                aria-label={`View analytics for ${t.name}`}
+                              >
+                                <i className="mdi mdi-chart-line" aria-hidden />
+                              </Link>
+                            </OverlayTrigger>
                             {t.badge_color && t.badge_color.trim() ? (
                               <span
                                 className="badge"

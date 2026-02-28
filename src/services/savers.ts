@@ -4,6 +4,84 @@
 
 import { getDb, schedulePersist } from '@/db'
 
+/**
+ * Balance history point for a saver (reconstructed from transactions).
+ * balance = running sum of transaction amounts (positive = in, negative = out).
+ */
+export interface SaverBalanceHistoryRow {
+  date: string
+  balance: number
+  amount: number
+  transactionId: string
+  description: string
+}
+
+/**
+ * Balance-over-time timeline for a saver, reconstructed from transactions
+ * where transfer_account_id = saverId. Ordered by date ASC.
+ * Use for cumulative/line charts in analytics.
+ */
+export function getSaverBalanceHistory(
+  saverId: string,
+  options?: { dateFrom?: string; dateTo?: string; limit?: number }
+): SaverBalanceHistoryRow[] {
+  const db = getDb()
+  if (!db) return []
+  const limit = options?.limit ?? 500
+  let dateFilter = ''
+  const params: (string | number)[] = [saverId]
+  if (options?.dateFrom) {
+    dateFilter += ' AND COALESCE(t.created_at, t.settled_at) >= ?'
+    params.push(options.dateFrom)
+  }
+  if (options?.dateTo) {
+    dateFilter += ' AND COALESCE(t.created_at, t.settled_at) < ?'
+    params.push(options.dateTo)
+  }
+  params.push(limit)
+  const stmt = db.prepare(
+    `SELECT t.id, t.description, t.created_at, t.settled_at, t.amount
+     FROM transactions t
+     WHERE t.transfer_account_id = ? ${dateFilter}
+     ORDER BY COALESCE(t.created_at, t.settled_at) ASC LIMIT ?`
+  )
+  stmt.bind(params)
+  const rows: Array<{
+    id: string
+    description: string
+    date: string
+    amount: number
+  }> = []
+  while (stmt.step()) {
+    const r = stmt.get() as [
+      string,
+      string,
+      string | null,
+      string | null,
+      number,
+    ]
+    const date = r[2] ?? r[3] ?? ''
+    rows.push({
+      id: r[0],
+      description: r[1],
+      date: date.slice(0, 10),
+      amount: r[4],
+    })
+  }
+  stmt.free()
+  let balance = 0
+  return rows.map((r) => {
+    balance += r.amount
+    return {
+      date: r.date,
+      balance,
+      amount: r.amount,
+      transactionId: r.id,
+      description: r.description,
+    }
+  })
+}
+
 export interface SaverRow {
   id: string
   name: string
