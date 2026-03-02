@@ -8,9 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- (No changes yet)
+
+## [0.0.2] - 2025-03-03
+
+### Added
+
 - **Mobile / portrait layout (≤768px):** Optimised for vertical/portrait screens. Sidebar becomes an overlay drawer (hamburger in navbar opens it); content is full width with vertical scroll only. Weekly Insights and Savers charts use vertical bar charts on narrow viewports. Transactions page: vertical card list and filters in a drawer (Filters button). Upcoming section: vertical cards on mobile. See `src/lib/constants.ts` (MOBILE_BREAKPOINT_PX), `src/hooks/useMediaQuery.ts`, `src/layout/Layout.tsx`, `src/pages/Transactions.tsx`, `src/components/dashboard/InsightsSection.tsx`, `src/components/dashboard/SaversSection.tsx`, `src/components/dashboard/UpcomingSection.tsx`.
 - **Quality gates:** `typecheck`, `format:check`, and `validate` scripts; CI runs format-check, lint, typecheck, tests, and `npm audit --audit-level=critical` before build.
-- **Tests:** Vitest; tests for `lib/crypto` (encrypt/decrypt round-trip), `lib/format`, `lib/payday`, and `services/balance` (reserved amount).
+- **Tests:** Vitest for `lib/crypto`, `lib/format`, `lib/payday`, `lib/chartColors`, `lib/chartLabelSpace`, `components/charts/chartData`, and `services/balance`.
 - **Pre-commit:** Husky + lint-staged to run Prettier and ESLint on staged `src/**/*.{ts,tsx,css}`.
 - **SECURITY.md:** Data handling and vulnerability reporting.
 - **CHANGELOG.md:** Keep a Changelog format; README links to it and documents updating Unreleased when adding features.
@@ -38,5 +44,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Deployment (Phase 6):** Production build with GitHub Pages base path; GitHub Actions deploy on push to `main`; SPA routing via `404.html`.
 - **Settings (Phase 7):** Re-sync, Clear all data (confirmation modal, delete DB, reload to Onboarding).
 
-[Unreleased]: https://github.com/ostafford/Vanture_v3/compare/v0.0.1...HEAD
+[Unreleased]: https://github.com/ostafford/Vanture_v3/compare/v0.0.2...HEAD
+[0.0.2]: https://github.com/ostafford/Vanture_v3/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/ostafford/Vanture_v3/releases/tag/v0.0.1

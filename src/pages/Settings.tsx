@@ -120,6 +120,7 @@ export function Settings() {
   async function handleClearAllData() {
     setClearing(true)
     try {
+      localStorage.removeItem('vantura_sidebar_collapsed')
       await deleteDatabase()
       toast.success('All data cleared.')
       sessionStore.getState().lock()
@@ -548,9 +549,15 @@ export function Settings() {
           <Modal.Title id="clear-data-modal-title">Clear all data</Modal.Title>
         </Modal.Header>
         <Modal.Body id="clear-data-modal-description">
-          All local data will be permanently deleted, including your encrypted
-          Personal Access Token. You will need to re-enter your passphrase and
-          Personal Access Token to use the app again. This cannot be undone.
+          <p className="mb-2">
+            All local data will be permanently deleted, including your encrypted
+            Personal Access Token. You will need to re-enter your passphrase and
+            Personal Access Token to use the app again. This cannot be undone.
+          </p>
+          <p className="small text-muted mb-0">
+            To verify: open DevTools (F12) → Application → IndexedDB. The
+            vantura-db database will be removed after clearing.
+          </p>
         </Modal.Body>
         <Modal.Footer>
           <Button
