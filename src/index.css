@@ -23,6 +23,7 @@
   --vantura-sidebar-active-color: #b66dff;
   --vantura-sidebar-hover-bg: #f8f8f8;
   --vantura-navbar-bg: #ffffff;
+  --vantura-bg-elevated: #ffffff;
   /* Phase 11: Chart translucent fills — Purple React style */
   --vantura-chart-opacity: 0.3;
   /* Theme-aware striped table */
@@ -51,6 +52,7 @@
   --vantura-sidebar-active-color: rgba(255, 255, 255, 0.7);
   --vantura-sidebar-hover-bg: rgba(255, 255, 255, 0.08);
   --vantura-navbar-bg: #18151e;
+  --vantura-bg-elevated: #282037;
   /* Theme-aware striped table */
   --vantura-table-striped-bg: rgba(255, 255, 255, 0.05);
   /* Theme-aware table hover — stronger so hover is clear in dark mode */
