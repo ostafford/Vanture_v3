@@ -44,6 +44,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Deployment (Phase 6):** Production build with GitHub Pages base path; GitHub Actions deploy on push to `main`; SPA routing via `404.html`.
 - **Settings (Phase 7):** Re-sync, Clear all data (confirmation modal, delete DB, reload to Onboarding).
 
-[Unreleased]: https://github.com/ostafford/Vanture_v3/compare/v0.0.2...HEAD
-[0.0.2]: https://github.com/ostafford/Vanture_v3/compare/v0.0.1...v0.0.2
-[0.0.1]: https://github.com/ostafford/Vanture_v3/releases/tag/v0.0.1
+[Unreleased]: https://github.com/ostafford/Vantura_v3/compare/v0.0.2...HEAD
+[0.0.2]: https://github.com/ostafford/Vantura_v3/compare/v0.0.1...v0.0.2
+[0.0.1]: https://github.com/ostafford/Vantura_v3/releases/tag/v0.0.1

@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath } from 'node:url'
 
-const base = '/Vanture_v3/'
+const base = '/Vantura_v3/'
 
 export default defineConfig({
   base,

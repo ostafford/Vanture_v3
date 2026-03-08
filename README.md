@@ -2,7 +2,7 @@
 
 Desktop-first financial insights app that syncs with Up Bank. Data is stored locally; nothing leaves your device.
 
-**Live app:** [https://ostafford.github.io/Vanture_v3/](https://ostafford.github.io/Vanture_v3/)
+**Live app:** [https://ostafford.github.io/Vantura_v3/](https://ostafford.github.io/Vantura_v3/)
 
 ## Quick start
 
@@ -47,7 +47,7 @@ User- and developer-visible changes are listed in [CHANGELOG.md](CHANGELOG.md). 
 
 ### Phase 6: Deployment — Implemented
 
-- **Build:** `npm run build` → `dist/` with base `/Vanture_v3/`; `dist/index.html` copied to `dist/404.html` for SPA routing. GitHub Actions (`.github/workflows/deploy.yml`) deploys on push to `main`.
+- **Build:** `npm run build` → `dist/` with base `/Vantura_v3/`; `dist/index.html` copied to `dist/404.html` for SPA routing. GitHub Actions (`.github/workflows/deploy.yml`) deploys on push to `main`.
 
 ### Phase 7: Settings — Implemented
 
@@ -85,11 +85,11 @@ npm run dev
 
 ## Deployment
 
-**GitHub Pages:** In repo Settings > Pages > Build and deployment > Source, choose "GitHub Actions". Push to `main` to trigger deploy. Live site: [https://ostafford.github.io/Vanture_v3/](https://ostafford.github.io/Vanture_v3/).
+**GitHub Pages:** In repo Settings > Pages > Build and deployment > Source, choose "GitHub Actions". Push to `main` to trigger deploy. Live site: [https://ostafford.github.io/Vantura_v3/](https://ostafford.github.io/Vantura_v3/).
 
 **Custom domain at root:** Set `base: '/'` in `vite.config.ts` if deploying to a custom domain at root.
 
-**Local preview:** `npm run preview` (uses base `/Vanture_v3/` from vite.config). To preview at site root: `npm run preview -- --base /`.
+**Local preview:** `npm run preview` (uses base `/Vantura_v3/` from vite.config). To preview at site root: `npm run preview -- --base /`.
 
 ## Documentation
 

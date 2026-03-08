@@ -11,7 +11,7 @@
 
 If you believe you have found a security vulnerability, please report it responsibly:
 
-- **Preferred:** [Open a private security advisory](https://github.com/ostafford/Vanture_v3/security/advisories/new) on GitHub.
+- **Preferred:** [Open a private security advisory](https://github.com/ostafford/Vantura_v3/security/advisories/new) on GitHub.
 - Alternatively, open a private issue or contact the maintainer directly if you have a secure channel.
 
 Do not open a public issue for security-sensitive findings.
