@@ -19,10 +19,10 @@ export type DashboardSectionId = (typeof DASHBOARD_SECTION_IDS)[number]
 
 export const DEFAULT_DASHBOARD_SECTION_ORDER: DashboardSectionId[] = [
   'month_summary',
-  'savers',
-  'goals',
   'insights',
+  'savers',
   'trackers',
+  'goals',
   'upcoming',
 ]
 

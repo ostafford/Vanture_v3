@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { Row, Col, Modal, Button, Form } from 'react-bootstrap'
 import { useStore } from 'zustand'
 import {
@@ -37,6 +37,28 @@ import { useEffect } from 'react'
 
 const SPENDABLE_ALERT_KEY = 'spendable_alert_below_cents'
 const SPENDABLE_ALERT_PCT_PAY_KEY = 'spendable_alert_below_pct_pay'
+
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
+
+const TOUR_DATA_ATTRS: Partial<Record<DashboardSectionId, string>> = {
+  savers: 'savers',
+  insights: 'insights',
+  trackers: 'trackers',
+  upcoming: 'upcoming',
+}
 
 export function Dashboard() {
   useStore(syncStore, (s) => s.lastSyncCompletedAt)
@@ -89,6 +111,11 @@ export function Dashboard() {
     (payAmountCents != null
       ? ` After payday (before new spending): about $${formatMoney(spendableCents)} + $${formatMoney(payAmountCents)} = $${formatMoney(spendableCents + payAmountCents)}.`
       : '')
+
+  const headerDate = useMemo(() => {
+    const now = new Date()
+    return `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`
+  }, [])
 
   const openThresholdModal = useCallback(() => {
     const raw = getAppSetting(SPENDABLE_ALERT_KEY)
@@ -189,141 +216,46 @@ export function Dashboard() {
     setDragOverId(null)
   }, [])
 
-  const renderSection = useCallback(
-    (id: DashboardSectionId) => {
-      const isDragOver = dragOverId === id
-      const sectionProps = {
-        'data-section-id': id,
-        draggable: true,
-        onDragStart: (e: React.DragEvent) => handleSectionDragStart(e, id),
-        onDragOver: (e: React.DragEvent) => handleSectionDragOver(e, id),
-        onDragLeave: handleSectionDragLeave,
-        onDrop: (e: React.DragEvent) => handleSectionDrop(e, id),
-        onDragEnd: handleSectionDragEnd,
-        className: 'dashboard-section-draggable',
-        style: {
-          outline: isDragOver ? '2px dashed var(--vantura-primary)' : undefined,
-          borderRadius: 4,
-        } as React.CSSProperties,
-      }
-      const dragHandle = (
-        <span
-          className="dashboard-drag-handle text-muted"
-          aria-label="Drag to reorder section"
-        >
-          <i className="mdi mdi-drag-vertical" aria-hidden />
-        </span>
-      )
-      switch (id) {
-        case 'month_summary':
-          return (
-            <div key={id} {...sectionProps}>
-              <div className="d-flex gap-2 align-items-start">
-                {dragHandle}
-                <div className="flex-grow-1 min-w-0">
-                  <MonthSummarySection />
-                </div>
-              </div>
-            </div>
-          )
-        case 'savers':
-          return (
-            <div key={id} {...sectionProps} data-tour="savers">
-              <div className="d-flex gap-2 align-items-start">
-                {dragHandle}
-                <div className="flex-grow-1 min-w-0">
-                  <SaversSection />
-                </div>
-              </div>
-            </div>
-          )
-        case 'goals':
-          return (
-            <div key={id} {...sectionProps}>
-              <div className="d-flex gap-2 align-items-start">
-                {dragHandle}
-                <div className="flex-grow-1 min-w-0">
-                  <GoalsSection />
-                </div>
-              </div>
-            </div>
-          )
-        case 'insights':
-          return (
-            <div key={id} {...sectionProps} data-tour="insights">
-              <div className="d-flex gap-2 align-items-start">
-                {dragHandle}
-                <div className="flex-grow-1 min-w-0">
-                  <InsightsSection />
-                </div>
-              </div>
-            </div>
-          )
-        case 'trackers':
-          return (
-            <div key={id} {...sectionProps} data-tour="trackers">
-              <div className="d-flex gap-2 align-items-start">
-                {dragHandle}
-                <div className="flex-grow-1 min-w-0">
-                  <TrackersSection />
-                </div>
-              </div>
-            </div>
-          )
-        case 'upcoming':
-          return (
-            <div key={id} {...sectionProps} data-tour="upcoming">
-              <div className="d-flex gap-2 align-items-start">
-                {dragHandle}
-                <div className="flex-grow-1 min-w-0">
-                  <UpcomingSection
-                    onUpcomingChange={() => setDataVersion((v) => v + 1)}
-                  />
-                </div>
-              </div>
-            </div>
-          )
-        default:
-          return null
-      }
-    },
-    [
-      dragOverId,
-      handleSectionDragStart,
-      handleSectionDragOver,
-      handleSectionDragLeave,
-      handleSectionDrop,
-      handleSectionDragEnd,
-    ]
-  )
+  const getSectionComponent = useCallback((id: DashboardSectionId) => {
+    switch (id) {
+      case 'month_summary':
+        return <MonthSummarySection />
+      case 'savers':
+        return <SaversSection />
+      case 'goals':
+        return <GoalsSection />
+      case 'insights':
+        return <InsightsSection />
+      case 'trackers':
+        return <TrackersSection />
+      case 'upcoming':
+        return (
+          <UpcomingSection
+            onUpcomingChange={() => setDataVersion((v) => v + 1)}
+          />
+        )
+      default:
+        return null
+    }
+  }, [])
 
   return (
     <div>
       <div className="page-header">
-        <h3 className="page-title">
-          <span className="page-title-icon bg-gradient-primary text-white mr-2">
-            <i className="mdi mdi-home" aria-hidden />
-          </span>
-          Dashboard
-        </h3>
-        <nav aria-label="breadcrumb">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item active" aria-current="page">
-              Dashboard
-            </li>
-          </ol>
-        </nav>
+        <h3 className="page-title dashboard-title">Dashboard</h3>
+        <span className="text-muted" style={{ fontSize: '0.875rem' }}>
+          {headerDate}
+        </span>
       </div>
-      <Row className="grid-margin" data-tour="balance-cards">
-        <Col md={4} className="stretch-card grid-margin">
+      <Row className="g-3 mb-4" data-tour="balance-cards">
+        <Col md={4} className="stretch-card">
           <StatCard
             title="Available"
             value={getAvailableBalance()}
             gradient="success"
-            imgAlt="circle"
           />
         </Col>
-        <Col md={4} className="stretch-card grid-margin">
+        <Col md={4} className="stretch-card">
           <div
             role="button"
             tabIndex={0}
@@ -342,17 +274,15 @@ export function Dashboard() {
               value={spendableCents}
               subtitle={spendableSubtitle}
               gradient={spendableGradient}
-              imgAlt="circle"
               tooltip={spendableTooltip}
             />
           </div>
         </Col>
-        <Col md={4} className="stretch-card grid-margin">
+        <Col md={4} className="stretch-card">
           <StatCard
             title="Reserved"
             value={getReservedAmount()}
             gradient="danger"
-            imgAlt="circle"
           />
         </Col>
       </Row>
@@ -412,13 +342,46 @@ export function Dashboard() {
           </Button>
         </Modal.Footer>
       </Modal>
-      {sectionOrder.map((id) => (
-        <Row key={id} className="grid-margin">
-          <Col xs={12} className="grid-margin stretch-card">
-            {renderSection(id)}
-          </Col>
-        </Row>
-      ))}
+
+      <Row className="dashboard-grid">
+        {sectionOrder.map((id) => {
+          const isDragOver = dragOverId === id
+          const tourAttr = TOUR_DATA_ATTRS[id]
+          return (
+            <Col
+              key={id}
+              md={6}
+              className="dashboard-grid-cell"
+              data-section-id={id}
+              {...(tourAttr ? { 'data-tour': tourAttr } : {})}
+              draggable
+              onDragStart={(e: React.DragEvent) =>
+                handleSectionDragStart(e, id)
+              }
+              onDragOver={(e: React.DragEvent) => handleSectionDragOver(e, id)}
+              onDragLeave={handleSectionDragLeave}
+              onDrop={(e: React.DragEvent) => handleSectionDrop(e, id)}
+              onDragEnd={handleSectionDragEnd}
+              style={{
+                outline: isDragOver
+                  ? '2px dashed var(--vantura-primary)'
+                  : undefined,
+                borderRadius: 6,
+              }}
+            >
+              <div className="dashboard-grid-card-wrapper">
+                <span
+                  className="dashboard-drag-handle text-muted"
+                  aria-label="Drag to reorder section"
+                >
+                  <i className="mdi mdi-drag-vertical" aria-hidden />
+                </span>
+                {getSectionComponent(id)}
+              </div>
+            </Col>
+          )
+        })}
+      </Row>
     </div>
   )
 }

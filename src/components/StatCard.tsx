@@ -2,9 +2,7 @@ import type { ReactNode } from 'react'
 import { Card, OverlayTrigger, Tooltip } from 'react-bootstrap'
 import { formatMoney } from '@/lib/format'
 
-const circleImg = `${import.meta.env.BASE_URL}images/circle.svg`
-
-type GradientVariant = 'primary' | 'danger' | 'info' | 'success'
+type ColorVariant = 'primary' | 'danger' | 'info' | 'success'
 
 export interface StatCardProps {
   title: string
@@ -12,9 +10,9 @@ export interface StatCardProps {
   subtitle?: string
   /** When set, shown instead of $formatMoney(value). Use for non-currency values (e.g. counts). */
   displayValue?: ReactNode
-  /** Smaller variant: less padding, smaller typography, no circle decoration. */
+  /** Smaller variant: less padding, smaller typography, gradient background. */
   compact?: boolean
-  gradient: GradientVariant
+  gradient: ColorVariant
   imgAlt?: string
   tooltip?: string
 }
@@ -26,39 +24,40 @@ export function StatCard({
   displayValue,
   compact,
   gradient,
-  imgAlt,
   tooltip,
 }: StatCardProps) {
-  const titleContent = (
-    <>
-      {title}
-      {tooltip && (
-        <OverlayTrigger
-          placement="top"
-          overlay={<Tooltip id={`stat-${title}-tooltip`}>{tooltip}</Tooltip>}
-        >
-          <span
-            className="ms-1"
-            style={{ cursor: 'help', fontSize: compact ? '0.75rem' : '0.9rem' }}
-            role="img"
-            aria-label="Info"
-          >
-            <i className="mdi mdi-information-outline text-white" aria-hidden />
-          </span>
-        </OverlayTrigger>
-      )}
-    </>
-  )
-
   const valueContent =
     displayValue != null ? displayValue : `$${formatMoney(value)}`
 
   if (compact) {
+    const compactTitle = (
+      <>
+        {title}
+        {tooltip && (
+          <OverlayTrigger
+            placement="top"
+            overlay={<Tooltip id={`stat-${title}-tooltip`}>{tooltip}</Tooltip>}
+          >
+            <span
+              className="ms-1"
+              style={{ cursor: 'help', fontSize: '0.75rem' }}
+              role="img"
+              aria-label="Info"
+            >
+              <i
+                className="mdi mdi-information-outline text-white"
+                aria-hidden
+              />
+            </span>
+          </OverlayTrigger>
+        )}
+      </>
+    )
     return (
       <Card className={`bg-gradient-${gradient} text-white`}>
         <Card.Body className="py-1 px-2">
           <h6 className="font-weight-normal mb-0 small text-white text-center align-middle">
-            {titleContent}
+            {compactTitle}
           </h6>
           <h6 className="mb-0 text-white text-center align-middle">
             {valueContent}
@@ -72,20 +71,29 @@ export function StatCard({
   }
 
   return (
-    <Card className={`bg-gradient-${gradient} card-img-holder text-white`}>
-      <Card.Body>
-        <img src={circleImg} className="card-img-absolute" alt={imgAlt ?? ''} />
-        <h4 className="font-weight-normal mb-3 text-white text-center align-middle">
-          {titleContent}
-        </h4>
-        <h2 className="mb-2 text-white text-center align-middle">
-          {valueContent}
-        </h2>
-        {subtitle && (
-          <h6 className="card-text opacity-75 mb-0 text-center align-middle">
-            {subtitle}
-          </h6>
-        )}
+    <Card className={`stat-card-flat stat-card-flat--${gradient}`}>
+      <Card.Body className="stat-card-flat__body">
+        <div className="stat-card-flat__title">
+          {title}
+          {tooltip && (
+            <OverlayTrigger
+              placement="top"
+              overlay={
+                <Tooltip id={`stat-${title}-tooltip`}>{tooltip}</Tooltip>
+              }
+            >
+              <span
+                className="ms-1 stat-card-flat__info"
+                role="img"
+                aria-label="Info"
+              >
+                <i className="mdi mdi-information-outline" aria-hidden />
+              </span>
+            </OverlayTrigger>
+          )}
+        </div>
+        <div className="stat-card-flat__value">{valueContent}</div>
+        {subtitle && <div className="stat-card-flat__subtitle">{subtitle}</div>}
       </Card.Body>
     </Card>
   )

@@ -161,11 +161,11 @@ body {
   font-weight: 500;
 }
 .card .card-body {
-  padding: 2.5rem;
+  padding: 1.5rem;
 }
 @media (max-width: 767px) {
   .card .card-body {
-    padding: 2rem;
+    padding: 1.25rem;
   }
 }
 .card .card-title {
@@ -278,20 +278,64 @@ body {
   gap: 0;
 }
 
-/* Dashboard section drag-and-drop */
-.dashboard-section-draggable {
+/* Dashboard 2-column grid (Monarch-inspired) */
+.dashboard-grid {
+  --dashboard-gap: 1.5rem;
+  row-gap: var(--dashboard-gap);
+}
+.dashboard-grid-cell {
+  display: flex;
+  flex-direction: column;
   cursor: grab;
 }
-.dashboard-section-draggable:active {
+.dashboard-grid-cell:active {
   cursor: grabbing;
 }
+.dashboard-grid-card-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.dashboard-grid-card-wrapper > .card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.dashboard-grid-card-wrapper > .card > .card-body {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 520px;
+}
 .dashboard-drag-handle {
-  flex-shrink: 0;
-  padding-top: 0.5rem;
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
   cursor: grab;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.dashboard-grid-cell:hover .dashboard-drag-handle {
+  opacity: 1;
 }
 .dashboard-drag-handle .mdi {
   font-size: 1.25rem;
+}
+.dashboard-title {
+  font-weight: 600;
+}
+@media (max-width: 767px) {
+  .dashboard-grid {
+    --dashboard-gap: 1rem;
+  }
+  .dashboard-grid-card-wrapper > .card > .card-body {
+    max-height: none;
+  }
+  .dashboard-drag-handle {
+    opacity: 1;
+  }
 }
 
 /* Transactions: day separator and Held status */
@@ -430,6 +474,58 @@ body {
 .bg-gradient-danger {
   background: linear-gradient(to right, #ffbf96, #fe7096);
   color: white;
+}
+
+/* Flat stat card (Monarch-inspired) */
+.stat-card-flat {
+  border: 0;
+  border-left: 4px solid var(--vantura-primary);
+  border-radius: 6px;
+  background-color: var(--vantura-surface);
+  color: var(--vantura-text);
+  transition: box-shadow 0.2s ease;
+}
+.stat-card-flat:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.stat-card-flat--success {
+  border-left-color: var(--vantura-success);
+}
+.stat-card-flat--danger {
+  border-left-color: var(--vantura-danger);
+}
+.stat-card-flat--info {
+  border-left-color: var(--vantura-info);
+}
+.stat-card-flat--primary {
+  border-left-color: var(--vantura-primary);
+}
+.stat-card-flat__body {
+  padding: 1.25rem 1.5rem !important;
+}
+.stat-card-flat__title {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--vantura-text-secondary);
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.stat-card-flat__info {
+  cursor: help;
+  font-size: 0.85rem;
+  color: var(--vantura-text-secondary);
+}
+.stat-card-flat__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--vantura-text);
+  line-height: 1.2;
+}
+.stat-card-flat__subtitle {
+  font-size: 0.8rem;
+  color: var(--vantura-text-secondary);
+  margin-top: 0.25rem;
 }
 
 /* Phase 8: Purple React sidebar */
