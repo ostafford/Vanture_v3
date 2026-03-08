@@ -5,7 +5,7 @@
 
 import type { Database } from 'sql.js'
 
-const SCHEMA_VERSION = 7
+const SCHEMA_VERSION = 8
 
 const DDL_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS accounts (
@@ -274,6 +274,29 @@ export function runMigrations(database: Database): void {
     database.run(
       `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
       ['7']
+    )
+  }
+  if (version < 8) {
+    const cols = database.exec(`PRAGMA table_info(upcoming_charges)`)
+    const existing = new Set((cols[0]?.values ?? []).map((r) => String(r[1])))
+    if (!existing.has('reminder_days_before')) {
+      database.run(
+        `ALTER TABLE upcoming_charges ADD COLUMN reminder_days_before INTEGER`
+      )
+    }
+    if (!existing.has('is_subscription')) {
+      database.run(
+        `ALTER TABLE upcoming_charges ADD COLUMN is_subscription INTEGER DEFAULT 0`
+      )
+    }
+    if (!existing.has('cancel_by_date')) {
+      database.run(
+        `ALTER TABLE upcoming_charges ADD COLUMN cancel_by_date TEXT`
+      )
+    }
+    database.run(
+      `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
+      ['8']
     )
   }
 }
