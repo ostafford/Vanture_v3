@@ -2,8 +2,9 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Card } from 'react-bootstrap'
 import {
-  getInsightsForDateRange,
-  getCategoryBreakdownForDateRange,
+  getMonthComparison,
+  type MonthDelta,
+  type NarrativeInsight,
 } from '@/services/insights'
 import { formatMoney } from '@/lib/format'
 
@@ -32,14 +33,47 @@ const MONTH_NAMES = [
   'December',
 ]
 
+function DeltaBadge({
+  delta,
+  invert,
+}: {
+  delta: MonthDelta
+  invert?: boolean
+}) {
+  if (delta.direction === 'flat') return null
+  const isUp = delta.direction === 'up'
+  const positive = invert ? !isUp : isUp
+  const icon = isUp ? 'mdi-arrow-up' : 'mdi-arrow-down'
+  const cls = positive ? 'text-success' : 'text-danger'
+  const absDelta = Math.abs(delta.delta)
+  const isCount = Number.isInteger(delta.current) && absDelta < 10000
+  const label = isCount ? String(absDelta) : `$${formatMoney(absDelta)}`
+  return (
+    <span
+      className={`small ${cls} ms-1`}
+      aria-label={`${delta.direction} ${label}`}
+    >
+      <i className={`mdi ${icon}`} aria-hidden style={{ fontSize: '0.7rem' }} />{' '}
+      {label}
+    </span>
+  )
+}
+
+const NARRATIVE_ICONS: Record<NarrativeInsight['type'], string> = {
+  win: 'mdi-check-circle-outline',
+  challenge: 'mdi-alert-circle-outline',
+  opportunity: 'mdi-lightbulb-outline',
+}
+
+const NARRATIVE_COLORS: Record<NarrativeInsight['type'], string> = {
+  win: 'text-success',
+  challenge: 'text-danger',
+  opportunity: 'text-warning',
+}
+
 export function MonthSummarySection() {
   const { from, to } = useMemo(() => getCurrentMonthBounds(), [])
-  const insights = useMemo(() => getInsightsForDateRange(from, to), [from, to])
-  const categories = useMemo(
-    () => getCategoryBreakdownForDateRange(from, to),
-    [from, to]
-  )
-  const topCategory = categories.length > 0 ? categories[0] : null
+  const comparison = useMemo(() => getMonthComparison(from, to), [from, to])
   const monthLabel = MONTH_NAMES[new Date().getMonth()]
 
   return (
@@ -64,29 +98,55 @@ export function MonthSummarySection() {
           <div>
             <span className="small text-muted">Money in</span>
             <div className="fw-medium text-success">
-              ${formatMoney(insights.moneyIn)}
+              ${formatMoney(comparison.moneyIn.current)}
+              {comparison.hasPreviousData && (
+                <DeltaBadge delta={comparison.moneyIn} />
+              )}
             </div>
           </div>
           <div>
             <span className="small text-muted">Money out</span>
             <div className="fw-medium text-danger">
-              ${formatMoney(insights.moneyOut)}
+              ${formatMoney(comparison.moneyOut.current)}
+              {comparison.hasPreviousData && (
+                <DeltaBadge delta={comparison.moneyOut} invert />
+              )}
             </div>
           </div>
           <div>
             <span className="small text-muted">Charges</span>
-            <div className="fw-medium">{insights.charges}</div>
+            <div className="fw-medium">
+              {comparison.charges.current}
+              {comparison.hasPreviousData && (
+                <DeltaBadge delta={comparison.charges} invert />
+              )}
+            </div>
           </div>
-          {topCategory && (
+          {comparison.currentTopCategory && (
             <div>
               <span className="small text-muted">Top category</span>
               <div className="fw-medium">
-                {topCategory.category_name} ($
-                {formatMoney(topCategory.total)})
+                {comparison.currentTopCategory.category_name} ($
+                {formatMoney(comparison.currentTopCategory.total)})
               </div>
             </div>
           )}
         </div>
+
+        {comparison.hasPreviousData && comparison.narratives.length > 0 && (
+          <div className="mt-3 pt-2 border-top">
+            {comparison.narratives.map((n, i) => (
+              <div key={i} className="d-flex align-items-start gap-1 mb-1">
+                <i
+                  className={`mdi ${NARRATIVE_ICONS[n.type]} ${NARRATIVE_COLORS[n.type]}`}
+                  aria-hidden
+                  style={{ fontSize: '0.95rem', marginTop: 1 }}
+                />
+                <span className="small">{n.label}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </Card.Body>
     </Card>
   )

@@ -429,3 +429,162 @@ export function getInsightsForDateRange(
   )
   return { moneyIn, moneyOut, saverChanges, charges, payments }
 }
+
+// ---------------------------------------------------------------------------
+// Month-over-month comparison
+// ---------------------------------------------------------------------------
+
+export interface MonthDelta {
+  current: number
+  previous: number
+  delta: number
+  direction: 'up' | 'down' | 'flat'
+}
+
+export interface NarrativeInsight {
+  label: string
+  type: 'win' | 'challenge' | 'opportunity'
+}
+
+export interface MonthComparisonData {
+  moneyIn: MonthDelta
+  moneyOut: MonthDelta
+  charges: MonthDelta
+  currentTopCategory: CategoryBreakdownRow | null
+  previousTopCategory: CategoryBreakdownRow | null
+  narratives: NarrativeInsight[]
+  hasPreviousData: boolean
+}
+
+function makeDelta(current: number, previous: number): MonthDelta {
+  const delta = current - previous
+  const direction: MonthDelta['direction'] =
+    delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'
+  return { current, previous, delta, direction }
+}
+
+function getPreviousMonthBounds(year: number, month: number) {
+  let prevMonth = month - 1
+  let prevYear = year
+  if (prevMonth < 1) {
+    prevMonth = 12
+    prevYear -= 1
+  }
+  const from = `${prevYear}-${String(prevMonth).padStart(2, '0')}-01`
+  const lastDay = new Date(prevYear, prevMonth, 0).getDate()
+  const to = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+  return { from, to }
+}
+
+/**
+ * Compare current month metrics with the previous month and derive narrative
+ * insights (wins, challenges, opportunities).
+ */
+export function getMonthComparison(
+  currentFrom: string,
+  currentTo: string
+): MonthComparisonData {
+  const curInsights = getInsightsForDateRange(currentFrom, currentTo)
+  const curCategories = getCategoryBreakdownForDateRange(currentFrom, currentTo)
+
+  const year = parseInt(currentFrom.slice(0, 4), 10)
+  const month = parseInt(currentFrom.slice(5, 7), 10)
+  const prev = getPreviousMonthBounds(year, month)
+  const prevInsights = getInsightsForDateRange(prev.from, prev.to)
+  const prevCategories = getCategoryBreakdownForDateRange(prev.from, prev.to)
+
+  const hasPreviousData =
+    prevInsights.moneyIn !== 0 ||
+    prevInsights.moneyOut !== 0 ||
+    prevInsights.charges !== 0
+
+  const moneyIn = makeDelta(curInsights.moneyIn, prevInsights.moneyIn)
+  const moneyOut = makeDelta(curInsights.moneyOut, prevInsights.moneyOut)
+  const charges = makeDelta(curInsights.charges, prevInsights.charges)
+
+  const currentTopCategory = curCategories.length > 0 ? curCategories[0] : null
+  const previousTopCategory =
+    prevCategories.length > 0 ? prevCategories[0] : null
+
+  const narratives: NarrativeInsight[] = []
+
+  if (hasPreviousData) {
+    if (moneyIn.direction === 'up') {
+      narratives.push({
+        label: `Income is up $${fmtCentsDelta(moneyIn.delta)} vs last month`,
+        type: 'win',
+      })
+    }
+
+    if (moneyOut.direction === 'down') {
+      narratives.push({
+        label: `Spending is down $${fmtCentsDelta(Math.abs(moneyOut.delta))} vs last month`,
+        type: 'win',
+      })
+    } else if (moneyOut.direction === 'up') {
+      narratives.push({
+        label: `Spending is up $${fmtCentsDelta(moneyOut.delta)} vs last month`,
+        type: 'challenge',
+      })
+    }
+
+    if (charges.direction === 'up') {
+      narratives.push({
+        label: `${charges.delta} more charges than last month`,
+        type: 'challenge',
+      })
+    } else if (charges.direction === 'down') {
+      narratives.push({
+        label: `${Math.abs(charges.delta)} fewer charges than last month`,
+        type: 'win',
+      })
+    }
+
+    if (
+      currentTopCategory &&
+      previousTopCategory &&
+      currentTopCategory.category_id === previousTopCategory.category_id &&
+      currentTopCategory.total > previousTopCategory.total
+    ) {
+      narratives.push({
+        label: `${currentTopCategory.category_name} spending trending higher — review for savings`,
+        type: 'opportunity',
+      })
+    }
+
+    if (
+      currentTopCategory &&
+      previousTopCategory &&
+      currentTopCategory.category_id !== previousTopCategory.category_id
+    ) {
+      narratives.push({
+        label: `Top category shifted from ${previousTopCategory.category_name} to ${currentTopCategory.category_name}`,
+        type: 'opportunity',
+      })
+    }
+
+    if (moneyIn.direction === 'down') {
+      narratives.push({
+        label: `Income is down $${fmtCentsDelta(Math.abs(moneyIn.delta))} — look for ways to supplement`,
+        type: 'opportunity',
+      })
+    }
+  }
+
+  return {
+    moneyIn,
+    moneyOut,
+    charges,
+    currentTopCategory,
+    previousTopCategory,
+    narratives,
+    hasPreviousData,
+  }
+}
+
+function fmtCentsDelta(cents: number): string {
+  const abs = Math.abs(cents)
+  const dollars = Math.floor(abs / 100)
+  const remainder = abs % 100
+  return `${dollars}.${String(remainder).padStart(2, '0')}`
+}

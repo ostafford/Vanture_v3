@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react'
 import { Card, Row, Col, Form } from 'react-bootstrap'
 import {
-  getInsightsForDateRange,
+  getMonthComparison,
   getCategoryBreakdownForDateRange,
+  type MonthDelta,
+  type NarrativeInsight,
 } from '@/services/insights'
 import {
   getTrackersWithProgress,
@@ -35,13 +37,48 @@ function getMonthBounds(
   return { from, to }
 }
 
+function DeltaBadge({
+  delta,
+  invert,
+}: {
+  delta: MonthDelta
+  invert?: boolean
+}) {
+  if (delta.direction === 'flat') return null
+  const isUp = delta.direction === 'up'
+  const positive = invert ? !isUp : isUp
+  const icon = isUp ? 'mdi-arrow-up' : 'mdi-arrow-down'
+  const cls = positive ? 'text-success' : 'text-danger'
+  const absDelta = Math.abs(delta.delta)
+  const isCount = Number.isInteger(delta.current) && absDelta < 10000
+  const label = isCount ? String(absDelta) : `$${formatMoney(absDelta)}`
+  return (
+    <span className={`small ${cls} ms-1`}>
+      <i className={`mdi ${icon}`} aria-hidden style={{ fontSize: '0.7rem' }} />{' '}
+      {label}
+    </span>
+  )
+}
+
+const NARRATIVE_ICONS: Record<NarrativeInsight['type'], string> = {
+  win: 'mdi-check-circle-outline',
+  challenge: 'mdi-alert-circle-outline',
+  opportunity: 'mdi-lightbulb-outline',
+}
+
+const NARRATIVE_COLORS: Record<NarrativeInsight['type'], string> = {
+  win: 'text-success',
+  challenge: 'text-danger',
+  opportunity: 'text-warning',
+}
+
 export function AnalyticsMonthlyReview() {
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
 
   const { from, to } = useMemo(() => getMonthBounds(year, month), [year, month])
-  const insights = useMemo(() => getInsightsForDateRange(from, to), [from, to])
+  const comparison = useMemo(() => getMonthComparison(from, to), [from, to])
   const categories = useMemo(
     () => getCategoryBreakdownForDateRange(from, to),
     [from, to]
@@ -112,26 +149,58 @@ export function AnalyticsMonthlyReview() {
             <Col xs={6} md={3}>
               <div className="small text-muted">Money in</div>
               <div className="fw-semibold text-success">
-                ${formatMoney(insights.moneyIn)}
+                ${formatMoney(comparison.moneyIn.current)}
+                {comparison.hasPreviousData && (
+                  <DeltaBadge delta={comparison.moneyIn} />
+                )}
               </div>
             </Col>
             <Col xs={6} md={3}>
               <div className="small text-muted">Money out</div>
               <div className="fw-semibold text-danger">
-                ${formatMoney(insights.moneyOut)}
-              </div>
-            </Col>
-            <Col xs={6} md={3}>
-              <div className="small text-muted">Saver changes</div>
-              <div className="fw-semibold">
-                ${formatMoney(insights.saverChanges)}
+                ${formatMoney(comparison.moneyOut.current)}
+                {comparison.hasPreviousData && (
+                  <DeltaBadge delta={comparison.moneyOut} invert />
+                )}
               </div>
             </Col>
             <Col xs={6} md={3}>
               <div className="small text-muted">Charges (count)</div>
-              <div className="fw-semibold">{insights.charges}</div>
+              <div className="fw-semibold">
+                {comparison.charges.current}
+                {comparison.hasPreviousData && (
+                  <DeltaBadge delta={comparison.charges} invert />
+                )}
+              </div>
             </Col>
+            {comparison.currentTopCategory && (
+              <Col xs={6} md={3}>
+                <div className="small text-muted">Top category</div>
+                <div className="fw-semibold">
+                  {comparison.currentTopCategory.category_name} ($
+                  {formatMoney(comparison.currentTopCategory.total)})
+                </div>
+              </Col>
+            )}
           </Row>
+
+          {comparison.hasPreviousData && comparison.narratives.length > 0 && (
+            <div className="mt-3 pt-2 border-top">
+              <div className="small text-muted mb-2">
+                vs {MONTHS[(month - 2 + 12) % 12]}
+              </div>
+              {comparison.narratives.map((n, i) => (
+                <div key={i} className="d-flex align-items-start gap-1 mb-1">
+                  <i
+                    className={`mdi ${NARRATIVE_ICONS[n.type]} ${NARRATIVE_COLORS[n.type]}`}
+                    aria-hidden
+                    style={{ fontSize: '0.95rem', marginTop: 1 }}
+                  />
+                  <span className="small">{n.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </Card.Body>
       </Card>
 

@@ -177,6 +177,30 @@ function setupSavers(accounts: UpAccount[]): void {
       [acc.id, a.displayName ?? 'Saver', null, balance, now, now]
     )
   }
+  reconcileRemovedSavers(savers.map((s) => s.id))
+}
+
+/**
+ * Remove local savers (and their balance snapshots) that no longer exist in the
+ * Up API response. Called after upserting active savers so the card never shows
+ * stale / deleted saver accounts.
+ */
+function reconcileRemovedSavers(activeIds: string[]): void {
+  const db = getDb()
+  if (!db) return
+  if (activeIds.length === 0) {
+    db.run(`DELETE FROM saver_balance_snapshots`)
+    db.run(`DELETE FROM savers`)
+    schedulePersist()
+    return
+  }
+  const placeholders = activeIds.map(() => '?').join(',')
+  db.run(
+    `DELETE FROM saver_balance_snapshots WHERE saver_id NOT IN (${placeholders})`,
+    activeIds
+  )
+  db.run(`DELETE FROM savers WHERE id NOT IN (${placeholders})`, activeIds)
+  schedulePersist()
 }
 
 function updateSavers(accounts: UpAccount[]): void {
