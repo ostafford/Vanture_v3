@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react'
-import { Button, Card, Form } from 'react-bootstrap'
+import { Alert, Button, Card, Form } from 'react-bootstrap'
 import { useStore } from 'zustand'
 import { getAppSetting } from '@/db'
 import { sessionStore } from '@/stores/sessionStore'
@@ -52,12 +52,8 @@ export function Unlock() {
       const key = await deriveKeyFromPassphrase(passphrase, salt)
       const token = await decryptToken(encrypted, key)
       setUnlocked(token)
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Invalid passphrase or corrupted data.'
-      )
+    } catch {
+      setError('Incorrect passphrase. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -96,17 +92,25 @@ export function Unlock() {
                 name="passphrase"
                 type="password"
                 value={passphrase}
-                onChange={(e) => setPassphrase(e.target.value)}
+                onChange={(e) => {
+                  setPassphrase(e.target.value)
+                  setError(null)
+                }}
                 placeholder="Enter passphrase"
                 autoComplete="current-password"
                 disabled={loading}
+                isInvalid={!!error}
                 autoFocus
               />
             </Form.Group>
             {error && (
-              <div className="text-danger small mb-2" role="alert">
+              <Alert
+                variant="danger"
+                className="py-2 mb-2 text-center"
+                role="alert"
+              >
                 {error}
-              </div>
+              </Alert>
             )}
             <div className="text-center">
               <Button

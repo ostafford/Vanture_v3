@@ -212,6 +212,13 @@ body {
   border-color: var(--vantura-border);
   color: var(--vantura-text);
 }
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--vantura-surface);
+  border-color: var(--vantura-primary);
+  color: var(--vantura-text);
+  box-shadow: 0 0 0 0.2rem rgba(182, 109, 255, 0.25);
+}
 .bg-surface {
   background-color: var(--vantura-surface);
   border-color: var(--vantura-border);
@@ -1063,7 +1070,8 @@ body {
 }
 .auth-full-bg .card,
 .auth-full-bg .auth-card {
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--vantura-surface);
   border: 0;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  color: var(--vantura-text);
 }
