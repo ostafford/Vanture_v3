@@ -13,11 +13,11 @@ const MARGIN_RIGHT = 24
 const TOOLTIP_OFFSET = 10
 const TOOLTIP_PADDING = 8
 const DEFAULT_LINE_COLORS = [
-  'var(--vantura-accent, #7367f0)',
-  '#28c76f',
-  '#ea5455',
-  '#ff9f43',
-  '#00cfe8',
+  'var(--vantura-chart-series-1)',
+  'var(--vantura-chart-series-2)',
+  'var(--vantura-chart-series-3)',
+  'var(--vantura-chart-series-4)',
+  'var(--vantura-chart-series-5)',
 ]
 
 export interface SaverSeries {

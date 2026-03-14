@@ -89,6 +89,36 @@ export function SaversBarChart({
       .attr('width', dimensions.width)
       .attr('height', dimensions.height)
 
+    const defs = svg.append('defs')
+    chartData.forEach((row, i) => {
+      const grad = defs
+        .append('linearGradient')
+        .attr('id', `savers-bar-saved-grad-${i}`)
+      if (isMobile) {
+        grad
+          .attr('x1', '0%')
+          .attr('y1', '0%')
+          .attr('x2', '0%')
+          .attr('y2', '100%')
+      } else {
+        grad
+          .attr('x1', '0%')
+          .attr('y1', '0%')
+          .attr('x2', '100%')
+          .attr('y2', '0%')
+      }
+      grad
+        .append('stop')
+        .attr('offset', '0%')
+        .attr('stop-color', row.currentFill)
+        .attr('stop-opacity', 0.85)
+      grad
+        .append('stop')
+        .attr('offset', '100%')
+        .attr('stop-color', row.currentFill)
+        .attr('stop-opacity', 1)
+    })
+
     const g = svg
       .append('g')
       .attr('transform', `translate(${left},${MARGIN_TOP})`)
@@ -159,14 +189,16 @@ export function SaversBarChart({
     const drawBars = (
       segment: StackPoint[],
       segmentClass: string,
-      fill: string | ((d: StackPoint) => string),
+      fill: string | ((d: StackPoint, i: number) => string),
       stroke: string | ((d: StackPoint) => string),
       rxRight: number
     ) => {
-      const getFill = typeof fill === 'function' ? fill : () => fill
+      const getFill =
+        typeof fill === 'function' ? fill : (_d: StackPoint, _i: number) => fill
       const getStroke = typeof stroke === 'function' ? stroke : () => stroke
       if (isMobile) {
-        g.selectAll<SVGRectElement, StackPoint>(`.${segmentClass}`)
+        let sel = g
+          .selectAll<SVGRectElement, StackPoint>(`.${segmentClass}`)
           .data(segment)
           .join('rect')
           .attr('class', segmentClass)
@@ -181,11 +213,18 @@ export function SaversBarChart({
             'height',
             (d: StackPoint) => valueScaleVert(d[0]) - valueScaleVert(d[1])
           )
-          .attr('fill', (d: StackPoint) => getFill(d))
+          .attr('fill', (d: StackPoint, i: number) => getFill(d, i))
           .attr('stroke', (d: StackPoint) => getStroke(d))
           .attr('stroke-width', 1)
           .attr('rx', rxRight)
           .attr('ry', rxRight)
+        if (segmentClass === 'bar-saved') {
+          sel = sel.style(
+            'opacity',
+            'var(--vantura-chart-bar-opacity, 0.75)'
+          ) as d3.Selection<SVGRectElement, StackPoint, SVGGElement, unknown>
+        }
+        sel
           .style('cursor', onBarClick ? 'pointer' : 'default')
           .on(
             'mouseover',
@@ -202,7 +241,8 @@ export function SaversBarChart({
             onBarClick?.(d.data)
           })
       } else {
-        g.selectAll<SVGRectElement, StackPoint>(`.${segmentClass}`)
+        let sel = g
+          .selectAll<SVGRectElement, StackPoint>(`.${segmentClass}`)
           .data(segment)
           .join('rect')
           .attr('class', segmentClass)
@@ -214,11 +254,18 @@ export function SaversBarChart({
           )
           .attr('width', (d: StackPoint) => valueScale(d[1]) - valueScale(d[0]))
           .attr('height', barSize)
-          .attr('fill', (d: StackPoint) => getFill(d))
+          .attr('fill', (d: StackPoint, i: number) => getFill(d, i))
           .attr('stroke', (d: StackPoint) => getStroke(d))
           .attr('stroke-width', 1)
           .attr('rx', rxRight)
           .attr('ry', rxRight)
+        if (segmentClass === 'bar-saved') {
+          sel = sel.style(
+            'opacity',
+            'var(--vantura-chart-bar-opacity, 0.75)'
+          ) as d3.Selection<SVGRectElement, StackPoint, SVGGElement, unknown>
+        }
+        sel
           .style('cursor', onBarClick ? 'pointer' : 'default')
           .on(
             'mouseover',
@@ -271,7 +318,7 @@ export function SaversBarChart({
       drawBars(
         savedStack,
         'bar-saved',
-        (d) => d.data.currentFill,
+        (_d, i) => `url(#savers-bar-saved-grad-${i})`,
         (d) => d.data.currentFill,
         4
       )
@@ -315,7 +362,7 @@ export function SaversBarChart({
       drawBars(
         savedStack,
         'bar-saved',
-        (d) => d.data.currentFill,
+        (_d, i) => `url(#savers-bar-saved-grad-${i})`,
         (d) => d.data.currentFill,
         4
       )

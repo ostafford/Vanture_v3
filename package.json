@@ -49,9 +49,12 @@
     "vitest": "^2.1.0"
   },
   "lint-staged": {
-    "src/**/*.{ts,tsx,css}": [
+    "src/**/*.{ts,tsx}": [
       "prettier --write",
       "eslint --fix"
+    ],
+    "src/**/*.css": [
+      "prettier --write"
     ]
   }
 }

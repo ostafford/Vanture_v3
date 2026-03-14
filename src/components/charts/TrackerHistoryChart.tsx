@@ -9,8 +9,8 @@ import {
 
 const BORDER_COLOR = 'var(--vantura-border, #ebedf2)'
 const BUDGET_COLOR = 'var(--vantura-border, #ebedf2)'
-const SPENT_COLOR = 'var(--vantura-accent, #7367f0)'
-const SPENT_OVER_COLOR = 'var(--vantura-danger, #ea5455)'
+const SPENT_COLOR = 'var(--vantura-primary)'
+const SPENT_OVER_COLOR = 'var(--vantura-danger)'
 const MARGIN_TOP = 8
 const MARGIN_RIGHT = 24
 const TOOLTIP_OFFSET = 10

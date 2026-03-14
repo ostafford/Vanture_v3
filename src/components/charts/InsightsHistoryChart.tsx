@@ -8,8 +8,8 @@ import {
 } from '@/lib/chartLabelSpace'
 
 const BORDER_COLOR = 'var(--vantura-border, #ebedf2)'
-const MONEY_IN_COLOR = '#28c76f'
-const MONEY_OUT_COLOR = 'var(--vantura-danger, #ea5455)'
+const MONEY_IN_COLOR = 'var(--vantura-chart-money-in)'
+const MONEY_OUT_COLOR = 'var(--vantura-chart-money-out)'
 const MARGIN_TOP = 8
 const MARGIN_RIGHT = 24
 const TOOLTIP_OFFSET = 10

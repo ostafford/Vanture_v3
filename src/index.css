@@ -26,6 +26,8 @@
   --vantura-bg-elevated: #ffffff;
   /* Phase 11: Chart translucent fills — Purple React style */
   --vantura-chart-opacity: 0.3;
+  /* Chart bar base opacity (soft, not solid) */
+  --vantura-chart-bar-opacity: 0.75;
   /* Theme-aware striped table */
   --vantura-table-striped-bg: rgba(0, 0, 0, 0.03);
   /* Theme-aware table hover */
@@ -67,6 +69,29 @@
     var(--vantura-surface) 0%,
     var(--vantura-content-bg) 100%
   );
+  /* Default card background — soft gradient, theme-aware */
+  --vantura-card-bg: linear-gradient(
+    135deg,
+    var(--vantura-surface) 0%,
+    var(--vantura-content-bg) 100%
+  );
+  /* Progress bar warning gradient (light) */
+  --vantura-gradient-warning: linear-gradient(to right, #fed89a, #e08620);
+  /* Chart colors — theme-aware (light) */
+  --vantura-chart-money-in: #1bcfb4;
+  --vantura-chart-money-out: #fe7c96;
+  --vantura-chart-category-1: #b66dff;
+  --vantura-chart-category-2: #1bcfb4;
+  --vantura-chart-category-3: #fe7c96;
+  --vantura-chart-category-4: #f2a654;
+  --vantura-chart-category-5: #198ae3;
+  --vantura-chart-category-6: #ff9f43;
+  --vantura-chart-series-1: #b66dff;
+  --vantura-chart-series-2: #1bcfb4;
+  --vantura-chart-series-3: #fe7c96;
+  --vantura-chart-series-4: #f2a654;
+  --vantura-chart-series-5: #198ae3;
+  --vantura-chart-series-6: #ff9f43;
 }
 
 [data-theme='dark'] {
@@ -90,6 +115,8 @@
   --vantura-sidebar-hover-bg: rgba(255, 255, 255, 0.08);
   --vantura-navbar-bg: #18151e;
   --vantura-bg-elevated: #282037;
+  /* Chart bar base opacity (soft, not solid) */
+  --vantura-chart-bar-opacity: 0.75;
   /* Theme-aware striped table */
   --vantura-table-striped-bg: rgba(255, 255, 255, 0.05);
   /* Theme-aware table hover — stronger so hover is clear in dark mode */
@@ -131,6 +158,29 @@
     var(--vantura-surface) 0%,
     var(--vantura-content-bg) 100%
   );
+  /* Default card background — soft gradient, theme-aware */
+  --vantura-card-bg: linear-gradient(
+    135deg,
+    var(--vantura-surface) 0%,
+    var(--vantura-content-bg) 100%
+  );
+  /* Progress bar warning gradient (dark) */
+  --vantura-gradient-warning: linear-gradient(to right, #b8860b, #8b6914);
+  /* Chart colors — theme-aware (dark) */
+  --vantura-chart-money-in: #2a9d8a;
+  --vantura-chart-money-out: #e8456a;
+  --vantura-chart-category-1: #da8cff;
+  --vantura-chart-category-2: #2a9d8a;
+  --vantura-chart-category-3: #e8456a;
+  --vantura-chart-category-4: #e08620;
+  --vantura-chart-category-5: #5eb8ff;
+  --vantura-chart-category-6: #f2a654;
+  --vantura-chart-series-1: #da8cff;
+  --vantura-chart-series-2: #2a9d8a;
+  --vantura-chart-series-3: #e8456a;
+  --vantura-chart-series-4: #e08620;
+  --vantura-chart-series-5: #5eb8ff;
+  --vantura-chart-series-6: #f2a654;
 }
 
 /* Phase 12: Accent color overrides — user choice from Settings */
@@ -222,7 +272,7 @@ body {
 /* Phase 10: Cards use theme surface so dark mode has dark card background */
 .card {
   border: 0;
-  background-color: var(--vantura-surface);
+  background: var(--vantura-card-bg);
   color: var(--vantura-text);
 }
 .card .card-header {
@@ -1077,7 +1127,10 @@ body {
   }
 }
 
-/* Phase 8: Purple React progress bar gradient */
+/* Phase 8: Purple React progress bar — theme-aware track and gradient fills */
+.progress {
+  background-color: var(--vantura-content-bg);
+}
 .progress .bg-primary {
   background: var(--vantura-primary-gradient) !important;
 }
@@ -1102,16 +1155,10 @@ body {
   transition: width 0.35s ease-out;
 }
 .progress .bg-success {
-  background: linear-gradient(to right, #84d9d2, #07cdae) !important;
+  background: var(--vantura-gradient-success) !important;
 }
-/* Tracker progress bar threshold colors: warning (51-80%), danger (81%+), striped overspent (100%+) */
-.progress .bg-warning {
-  background-color: var(--vantura-warning) !important;
-}
-.progress .bg-danger {
-  background-color: var(--vantura-danger) !important;
-}
-.progress .progress-bar-striped.bg-danger {
+.progress .progress-bar-striped.bg-success {
+  background: var(--vantura-gradient-success);
   background-image: linear-gradient(
     45deg,
     rgba(255, 255, 255, 0.25) 25%,
@@ -1123,7 +1170,47 @@ body {
     transparent
   );
   background-size: 1rem 1rem;
-  background-color: var(--vantura-danger) !important;
+}
+.progress .progress-bar-striped.progress-bar-animated.bg-success {
+  animation: progress-bar-stripes 1s linear infinite;
+}
+/* Tracker progress bar threshold colors: warning (51-80%), danger (81%+), striped overspent (100%+) */
+.progress .bg-warning {
+  background: var(--vantura-gradient-warning) !important;
+}
+.progress .progress-bar-striped.bg-warning {
+  background: var(--vantura-gradient-warning);
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.25) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.25) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 1rem 1rem;
+}
+.progress .progress-bar-striped.progress-bar-animated.bg-warning {
+  animation: progress-bar-stripes 1s linear infinite;
+}
+.progress .bg-danger {
+  background: var(--vantura-gradient-danger) !important;
+}
+.progress .progress-bar-striped.bg-danger {
+  background: var(--vantura-gradient-danger);
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.25) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.25) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 1rem 1rem;
 }
 .progress .progress-bar-striped.progress-bar-animated.bg-danger {
   animation: progress-bar-stripes 1s linear infinite;

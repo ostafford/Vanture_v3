@@ -13,6 +13,7 @@ import {
 import { formatMoney } from '@/lib/format'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
+import { getProgressVariant } from '@/lib/progressVariant'
 
 const TIME_RANGES = [
   { value: '3M', label: 'Last 3 months', daysBack: 90 },
@@ -117,7 +118,7 @@ export function AnalyticsSaverDetail() {
                   <div className="text-muted small">Progress</div>
                   <ProgressBar
                     now={progress}
-                    variant={progress >= 100 ? 'success' : 'primary'}
+                    variant={getProgressVariant(progress)}
                     style={{ height: 8, marginTop: 6 }}
                   />
                   <div className="small text-muted mt-1">

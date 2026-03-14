@@ -23,6 +23,7 @@ import {
   formatDollars,
 } from '@/lib/format'
 import { accentStore } from '@/stores/accentStore'
+import { themeStore } from '@/stores/themeStore'
 import { ACCENT_PALETTES } from '@/lib/accentPalettes'
 import {
   getInsightsCategoryColors,
@@ -57,6 +58,7 @@ export function InsightsSection() {
   const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY)
 
   const accent = useStore(accentStore, (s) => s.accent)
+  useStore(themeStore, (s) => s.theme)
   const weekRange = getWeekRange(weekOffset)
   const { startStr, endStr } = weekRange
   const insights = getWeeklyInsights(weekRange)
@@ -70,6 +72,16 @@ export function InsightsSection() {
   const chartPalette = ACCENT_PALETTES[accent].chartPalette
   const categoryColors = getInsightsCategoryColors()
 
+  function getThemeChartCategoryColor(index: number): string {
+    if (typeof document === 'undefined')
+      return chartPalette[index % chartPalette.length]
+    const varName = `--vantura-chart-category-${(index % 6) + 1}`
+    const value = getComputedStyle(document.documentElement)
+      .getPropertyValue(varName)
+      .trim()
+    return value || chartPalette[index % chartPalette.length]
+  }
+
   const chartData: InsightsChartDatum[] = categories.map((c, index) => {
     const totalDollars = Number.isFinite(c.total / 100) ? c.total / 100 : 0
     const colorKey = normalizeCategoryIdForColor(c.category_id)
@@ -77,10 +89,8 @@ export function InsightsSection() {
       category_id: c.category_id ?? '',
       name: c.category_name,
       totalDollars,
-      fill:
-        categoryColors[colorKey] ?? chartPalette[index % chartPalette.length],
-      stroke:
-        categoryColors[colorKey] ?? chartPalette[index % chartPalette.length],
+      fill: categoryColors[colorKey] ?? getThemeChartCategoryColor(index),
+      stroke: categoryColors[colorKey] ?? getThemeChartCategoryColor(index),
     }
   })
 

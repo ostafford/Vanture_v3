@@ -50,7 +50,7 @@ const FREQUENCY_ORDER: TrackerResetFrequency[] = [
 ]
 
 function getTrackerProgressStyle(progress: number): {
-  variant: 'primary' | 'warning' | 'danger'
+  variant: 'primary' | 'warning' | 'danger' | 'success'
   striped: boolean
   animated: boolean
 } {
@@ -63,7 +63,7 @@ function getTrackerProgressStyle(progress: number): {
   if (progress > 50) {
     return { variant: 'warning', striped: false, animated: false }
   }
-  return { variant: 'primary', striped: false, animated: false }
+  return { variant: 'success', striped: false, animated: false }
 }
 
 export function TrackersSection() {

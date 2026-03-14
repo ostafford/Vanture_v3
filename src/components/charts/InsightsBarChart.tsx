@@ -88,6 +88,8 @@ export function InsightsBarChart({
       .attr('width', dimensions.width)
       .attr('height', dimensions.height)
 
+    const defs = svg.append('defs')
+
     const g = svg
       .append('g')
       .attr('transform', `translate(${left},${MARGIN_TOP})`)
@@ -146,6 +148,28 @@ export function InsightsBarChart({
     const formatTickLabel = (key: string) => nameByKey[key] ?? key
 
     if (isMobile) {
+      chartData.forEach((d, index) => {
+        const grad = defs
+          .append('linearGradient')
+          .attr('id', `insights-bar-grad-${index}`)
+          .attr('x1', '0%')
+          .attr('y1', '0%')
+          .attr('x2', '0%')
+          .attr('y2', '100%')
+
+        grad
+          .append('stop')
+          .attr('offset', '0%')
+          .attr('stop-color', d.fill)
+          .attr('stop-opacity', 0.85)
+
+        grad
+          .append('stop')
+          .attr('offset', '100%')
+          .attr('stop-color', d.fill)
+          .attr('stop-opacity', 1)
+      })
+
       const xAxis = d3
         .axisBottom(categoryScale)
         .tickFormat(formatTickLabel)
@@ -190,11 +214,14 @@ export function InsightsBarChart({
           (d: InsightsChartDatum) =>
             innerHeight - valueScaleVert(d.totalDollars)
         )
-        .attr('fill', (d: InsightsChartDatum) => d.fill)
+        .attr('fill', (_d: InsightsChartDatum, index: number) => {
+          return `url(#insights-bar-grad-${index})`
+        })
         .attr('stroke', (d: InsightsChartDatum) => d.stroke)
         .attr('stroke-width', 1)
         .attr('rx', 4)
         .attr('ry', 4)
+        .style('opacity', 'var(--vantura-chart-bar-opacity, 0.75)')
         .style('cursor', onBarClick ? 'pointer' : 'default')
         .on(
           'mouseover',
@@ -215,6 +242,28 @@ export function InsightsBarChart({
           onBarClick?.(d)
         })
     } else {
+      chartData.forEach((d, index) => {
+        const grad = defs
+          .append('linearGradient')
+          .attr('id', `insights-bar-grad-${index}`)
+          .attr('x1', '0%')
+          .attr('y1', '0%')
+          .attr('x2', '100%')
+          .attr('y2', '0%')
+
+        grad
+          .append('stop')
+          .attr('offset', '0%')
+          .attr('stop-color', d.fill)
+          .attr('stop-opacity', 0.85)
+
+        grad
+          .append('stop')
+          .attr('offset', '100%')
+          .attr('stop-color', d.fill)
+          .attr('stop-opacity', 1)
+      })
+
       const xAxis = d3
         .axisBottom(valueScale)
         .tickFormat((d: d3.NumberValue) => `$${formatDollars(Number(d))}`)
@@ -256,11 +305,14 @@ export function InsightsBarChart({
         )
         .attr('width', (d: InsightsChartDatum) => valueScale(d.totalDollars))
         .attr('height', barSize)
-        .attr('fill', (d: InsightsChartDatum) => d.fill)
+        .attr('fill', (_d: InsightsChartDatum, index: number) => {
+          return `url(#insights-bar-grad-${index})`
+        })
         .attr('stroke', (d: InsightsChartDatum) => d.stroke)
         .attr('stroke-width', 1)
         .attr('rx', 4)
         .attr('ry', 4)
+        .style('opacity', 'var(--vantura-chart-bar-opacity, 0.75)')
         .style('cursor', onBarClick ? 'pointer' : 'default')
         .on(
           'mouseover',

@@ -20,6 +20,7 @@ import {
 import { formatMoney } from '@/lib/format'
 import { toast } from '@/stores/toastStore'
 import { HelpPopover } from '@/components/HelpPopover'
+import { getProgressVariant } from '@/lib/progressVariant'
 
 const GOAL_ICONS = [
   { value: null, label: 'None' },
@@ -193,7 +194,7 @@ export function GoalsSection() {
                   </div>
                   <ProgressBar
                     now={Math.min(100, g.progress)}
-                    variant={g.progress >= 100 ? 'success' : 'primary'}
+                    variant={getProgressVariant(g.progress)}
                     style={{ height: 8 }}
                     aria-label={`${g.name} progress: ${Math.round(g.progress)}%`}
                   />
