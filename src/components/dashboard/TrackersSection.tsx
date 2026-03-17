@@ -222,14 +222,14 @@ export function TrackersSection({
                     placement="top"
                     overlay={
                       <Tooltip id="trackers-analytics-header-tooltip">
-                        Analytics coming soon
+                        Open analytics
                       </Tooltip>
                     }
                   >
                     <Link
                       to="/analytics"
                       className="btn btn-outline-secondary btn-sm"
-                      aria-label="Analytics coming soon"
+                      aria-label="Open analytics"
                     >
                       <i className="mdi mdi-chart-box" aria-hidden />
                     </Link>

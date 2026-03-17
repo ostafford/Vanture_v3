@@ -93,4 +93,4 @@ npm run dev
 
 ## Documentation
 
-Internal architecture and phase docs (Arch_Docs) are not in the public repo. Design and recommendation docs may be in `docs/`. For user- and developer-visible changes, see [CHANGELOG.md](CHANGELOG.md).
+Internal architecture and phase docs live in `Arch_Docs/` (design, database schema, calculation logic, development phases, and checklists). Additional design and recommendation docs may be in `docs/`. For user- and developer-visible changes, see [CHANGELOG.md](CHANGELOG.md).
