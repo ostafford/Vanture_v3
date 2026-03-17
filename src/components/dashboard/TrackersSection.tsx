@@ -30,6 +30,7 @@ import { HelpPopover } from '@/components/HelpPopover'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
 import { ACCENT_PALETTES, type AccentId } from '@/lib/accentPalettes'
+import type React from 'react'
 
 const BADGE_COLOR_SWATCHES = (Object.keys(ACCENT_PALETTES) as AccentId[]).map(
   (id) => ACCENT_PALETTES[id].primary
@@ -66,7 +67,11 @@ function getTrackerProgressStyle(progress: number): {
   return { variant: 'success', striped: false, animated: false }
 }
 
-export function TrackersSection() {
+export function TrackersSection({
+  dragHandleProps,
+}: {
+  dragHandleProps?: React.HTMLAttributes<HTMLSpanElement>
+}) {
   const [, setRefresh] = useState(0)
   const [showModal, setShowModal] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -190,7 +195,10 @@ export function TrackersSection() {
             <>
               <div className="d-flex align-items-center justify-content-between">
                 <div className="d-flex align-items-center">
-                  <span className="page-title-icon bg-gradient-primary text-white mr-2">
+                  <span
+                    className="page-title-icon bg-gradient-primary text-white mr-2"
+                    {...dragHandleProps}
+                  >
                     <i className="mdi mdi-chart-line" aria-hidden />
                   </span>
                   <div className="d-flex flex-column">
@@ -284,7 +292,10 @@ export function TrackersSection() {
             <>
               <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <div className="d-flex align-items-center">
-                  <span className="page-title-icon bg-gradient-primary text-white mr-2">
+                  <span
+                    className="page-title-icon bg-gradient-primary text-white mr-2"
+                    {...dragHandleProps}
+                  >
                     <i className="mdi mdi-chart-line" aria-hidden />
                   </span>
                   <div className="d-flex flex-column">
@@ -390,8 +401,8 @@ export function TrackersSection() {
             </p>
           ) : (
             <div
-              style={{ maxHeight: '50vh', overflowY: 'auto' }}
               className="d-flex flex-column gap-3"
+              style={{ paddingBottom: '0.75rem' }}
             >
               {[...trackers]
                 .sort(

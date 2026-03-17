@@ -553,12 +553,6 @@ body {
   flex-direction: column;
   min-height: 0;
 }
-.dashboard-grid-cell .dashboard-drag-handle {
-  cursor: grab;
-}
-.dashboard-grid-cell:active .dashboard-drag-handle {
-  cursor: grabbing;
-}
 .dashboard-grid-card-wrapper {
   position: relative;
   flex: 1;
@@ -576,21 +570,6 @@ body {
   overflow-y: auto;
   max-height: 520px;
 }
-.dashboard-drag-handle {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  z-index: 2;
-  padding: 0.25rem;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-.dashboard-grid-cell:hover .dashboard-drag-handle {
-  opacity: 1;
-}
-.dashboard-drag-handle .mdi {
-  font-size: 1.25rem;
-}
 .dashboard-title {
   font-weight: 600;
 }
@@ -601,9 +580,6 @@ body {
   }
   .dashboard-grid-card-wrapper > .card > .card-body {
     max-height: 520px;
-  }
-  .dashboard-drag-handle {
-    opacity: 1;
   }
 }
 
@@ -669,6 +645,12 @@ body {
   color: white;
   margin-right: 0.5rem;
   box-shadow: 0 3px 8.3px 0.7px rgba(163, 93, 255, 0.35);
+}
+.page-title-icon[draggable='true'] {
+  cursor: grab;
+}
+.page-title-icon[draggable='true']:active {
+  cursor: grabbing;
 }
 
 /* Phase 8: Purple React breadcrumb */

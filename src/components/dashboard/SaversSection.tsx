@@ -16,6 +16,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
 import { SaversBarChart } from '@/components/charts/SaversBarChart'
 import type { SaversChartRow } from '@/types/charts'
+import type React from 'react'
 
 const SAVER_ICONS = [
   null,
@@ -32,7 +33,11 @@ const SAVER_ICONS = [
   '\uD83C\uDF34',
 ]
 
-export function SaversSection() {
+export function SaversSection({
+  dragHandleProps,
+}: {
+  dragHandleProps?: React.HTMLAttributes<HTMLSpanElement>
+}) {
   const [, setRefresh] = useState(0)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [goalAmount, setGoalAmount] = useState('')
@@ -140,7 +145,10 @@ export function SaversSection() {
       <Card>
         <Card.Header className="d-flex justify-content-between align-items-center section-header">
           <div className="d-flex align-items-center">
-            <span className="page-title-icon bg-gradient-primary text-white mr-2">
+            <span
+              className="page-title-icon bg-gradient-primary text-white mr-2"
+              {...dragHandleProps}
+            >
               <i className="mdi mdi-piggy-bank" aria-hidden />
             </span>
             <span>Savers</span>

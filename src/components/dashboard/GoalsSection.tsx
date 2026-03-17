@@ -21,6 +21,7 @@ import { formatMoney } from '@/lib/format'
 import { toast } from '@/stores/toastStore'
 import { HelpPopover } from '@/components/HelpPopover'
 import { getProgressVariant } from '@/lib/progressVariant'
+import type React from 'react'
 
 const GOAL_ICONS = [
   { value: null, label: 'None' },
@@ -36,7 +37,11 @@ const GOAL_ICONS = [
   { value: '\uD83C\uDFCB\uFE0F', label: 'Fitness' },
 ]
 
-export function GoalsSection() {
+export function GoalsSection({
+  dragHandleProps,
+}: {
+  dragHandleProps?: React.HTMLAttributes<HTMLSpanElement>
+}) {
   const [, setRefresh] = useState(0)
   const [showModal, setShowModal] = useState(false)
   const [editingGoal, setEditingGoal] = useState<GoalWithProgress | null>(null)
@@ -128,7 +133,10 @@ export function GoalsSection() {
       <Card>
         <Card.Header className="d-flex justify-content-between align-items-center section-header">
           <div className="d-flex align-items-center gap-2">
-            <span className="page-title-icon bg-gradient-primary text-white mr-2">
+            <span
+              className="page-title-icon bg-gradient-primary text-white mr-2"
+              {...dragHandleProps}
+            >
               <i className="mdi mdi-flag-checkered" aria-hidden />
             </span>
             <span>Goals</span>

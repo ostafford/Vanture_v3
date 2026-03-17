@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
+import type React from 'react'
 import { Row, Col, Modal, Button, Form } from 'react-bootstrap'
 import { useStore } from 'zustand'
 import {
@@ -216,32 +217,47 @@ export function Dashboard() {
     setDragOverId(null)
   }, [])
 
-  const getSectionComponent = useCallback((id: DashboardSectionId) => {
-    switch (id) {
-      case 'month_summary':
-        return <MonthSummarySection />
-      case 'savers':
-        return <SaversSection />
-      case 'goals':
-        return <GoalsSection />
-      case 'insights':
-        return <InsightsSection />
-      case 'trackers':
-        return <TrackersSection />
-      case 'upcoming':
-        return (
-          <UpcomingSection
-            onUpcomingChange={() => setDataVersion((v) => v + 1)}
-          />
-        )
-      default:
-        return null
-    }
-  }, [])
+  const getSectionComponent = useCallback(
+    (
+      id: DashboardSectionId,
+      dragHandleProps: React.HTMLAttributes<HTMLSpanElement>
+    ) => {
+      switch (id) {
+        case 'month_summary':
+          return <MonthSummarySection dragHandleProps={dragHandleProps} />
+        case 'savers':
+          return <SaversSection dragHandleProps={dragHandleProps} />
+        case 'goals':
+          return <GoalsSection dragHandleProps={dragHandleProps} />
+        case 'insights':
+          return <InsightsSection dragHandleProps={dragHandleProps} />
+        case 'trackers':
+          return <TrackersSection dragHandleProps={dragHandleProps} />
+        case 'upcoming':
+          return (
+            <UpcomingSection
+              dragHandleProps={dragHandleProps}
+              onUpcomingChange={() => setDataVersion((v) => v + 1)}
+            />
+          )
+        default:
+          return null
+      }
+    },
+    []
+  )
 
   function renderSectionCell(id: DashboardSectionId) {
     const isDragOver = dragOverId === id
     const tourAttr = TOUR_DATA_ATTRS[id]
+    const dragHandleProps: React.HTMLAttributes<HTMLSpanElement> = {
+      draggable: true,
+      onDragStart: (e: React.DragEvent<HTMLSpanElement>) =>
+        handleSectionDragStart(e, id),
+      title: 'Drag to reorder section',
+      'aria-label': 'Drag to reorder section',
+      style: { cursor: 'grab' },
+    }
     return (
       <div
         key={id}
@@ -258,15 +274,7 @@ export function Dashboard() {
         }}
       >
         <div className="dashboard-grid-card-wrapper">
-          <span
-            className="dashboard-drag-handle text-muted"
-            aria-label="Drag to reorder section"
-            draggable
-            onDragStart={(e: React.DragEvent) => handleSectionDragStart(e, id)}
-          >
-            <i className="mdi mdi-drag-vertical" aria-hidden />
-          </span>
-          {getSectionComponent(id)}
+          {getSectionComponent(id, dragHandleProps)}
         </div>
       </div>
     )

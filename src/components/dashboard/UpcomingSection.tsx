@@ -25,6 +25,7 @@ import { toast } from '@/stores/toastStore'
 import { HelpPopover } from '@/components/HelpPopover'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
+import type React from 'react'
 
 const FREQUENCIES = [
   'WEEKLY',
@@ -152,9 +153,13 @@ function UpcomingCalendar({
 
 export interface UpcomingSectionProps {
   onUpcomingChange?: () => void
+  dragHandleProps?: React.HTMLAttributes<HTMLSpanElement>
 }
 
-export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
+export function UpcomingSection({
+  onUpcomingChange,
+  dragHandleProps,
+}: UpcomingSectionProps) {
   const [, setRefresh] = useState(0)
   const [showModal, setShowModal] = useState(false)
   const [editingCharge, setEditingCharge] = useState<UpcomingChargeRow | null>(
@@ -336,7 +341,10 @@ export function UpcomingSection({ onUpcomingChange }: UpcomingSectionProps) {
       <Card>
         <Card.Header className="d-flex justify-content-between align-items-center section-header">
           <div className="d-flex flex-wrap align-items-center gap-2">
-            <span className="page-title-icon bg-gradient-primary text-white mr-2">
+            <span
+              className="page-title-icon bg-gradient-primary text-white mr-2"
+              {...dragHandleProps}
+            >
               <i className="mdi mdi-calendar-clock" aria-hidden />
             </span>
             <span>Upcoming transactions</span>

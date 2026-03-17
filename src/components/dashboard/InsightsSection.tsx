@@ -37,6 +37,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
 import { InsightsBarChart } from '@/components/charts/InsightsBarChart'
 import type { InsightsChartDatum } from '@/types/charts'
+import type React from 'react'
 
 /**
  * Weekly Insights card: Money In (income), Money Out (spending), Savers (saver movement),
@@ -49,7 +50,11 @@ type EditingCategory = {
   totalDollars: number
 }
 
-export function InsightsSection() {
+export function InsightsSection({
+  dragHandleProps,
+}: {
+  dragHandleProps?: React.HTMLAttributes<HTMLSpanElement>
+}) {
   const [, setRefresh] = useState(0)
   const [weekOffset, setWeekOffset] = useState(0)
   const [editingCategory, setEditingCategory] =
@@ -134,7 +139,10 @@ export function InsightsSection() {
           {isMobile ? (
             <>
               <div className="d-flex align-items-center">
-                <span className="page-title-icon bg-gradient-primary text-white mr-2">
+                <span
+                  className="page-title-icon bg-gradient-primary text-white mr-2"
+                  {...dragHandleProps}
+                >
                   <i className="mdi mdi-chart-bar" aria-hidden />
                 </span>
                 <div className="d-flex flex-column">
@@ -191,7 +199,10 @@ export function InsightsSection() {
           ) : (
             <>
               <div className="d-flex align-items-center">
-                <span className="page-title-icon bg-gradient-primary text-white mr-2">
+                <span
+                  className="page-title-icon bg-gradient-primary text-white mr-2"
+                  {...dragHandleProps}
+                >
                   <i className="mdi mdi-chart-bar" aria-hidden />
                 </span>
                 <div className="d-flex flex-column">

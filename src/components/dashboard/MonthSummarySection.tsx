@@ -12,6 +12,7 @@ import {
   type NarrativeInsight,
 } from '@/services/insights'
 import { formatMoney } from '@/lib/format'
+import type React from 'react'
 
 function getMonthBoundsForOffset(offset: number): {
   from: string
@@ -87,7 +88,11 @@ const NARRATIVE_COLORS: Record<NarrativeInsight['type'], string> = {
   opportunity: 'text-warning',
 }
 
-export function MonthSummarySection() {
+export function MonthSummarySection({
+  dragHandleProps,
+}: {
+  dragHandleProps?: React.HTMLAttributes<HTMLSpanElement>
+}) {
   const [monthOffset, setMonthOffset] = useState(0)
 
   const { from, to, year, month } = useMemo(
@@ -102,7 +107,10 @@ export function MonthSummarySection() {
     <Card>
       <Card.Header className="d-flex justify-content-between align-items-center section-header">
         <div className="d-flex align-items-center">
-          <span className="page-title-icon bg-gradient-primary text-white mr-2">
+          <span
+            className="page-title-icon bg-gradient-primary text-white mr-2"
+            {...dragHandleProps}
+          >
             <i className="mdi mdi-calendar-month" aria-hidden />
           </span>
           <div className="d-flex flex-column">
