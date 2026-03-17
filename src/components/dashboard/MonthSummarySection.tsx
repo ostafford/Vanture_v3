@@ -10,8 +10,11 @@ import {
   getMonthComparison,
   type MonthDelta,
   type NarrativeInsight,
+  getMonthDayByDaySeries,
 } from '@/services/insights'
 import { formatMoney } from '@/lib/format'
+import type { MonthMetric } from '@/lib/monthSpendingSeries'
+import { MonthSpendingComparisonChart } from '@/components/charts/MonthSpendingComparisonChart'
 import type React from 'react'
 
 function getMonthBoundsForOffset(offset: number): {
@@ -94,12 +97,17 @@ export function MonthSummarySection({
   dragHandleProps?: React.HTMLAttributes<HTMLSpanElement>
 }) {
   const [monthOffset, setMonthOffset] = useState(0)
+  const [metric, setMetric] = useState<MonthMetric>('spending')
 
   const { from, to, year, month } = useMemo(
     () => getMonthBoundsForOffset(monthOffset),
     [monthOffset]
   )
   const comparison = useMemo(() => getMonthComparison(from, to), [from, to])
+  const monthSeries = useMemo(
+    () => getMonthDayByDaySeries(from, to),
+    [from, to]
+  )
   const monthLabel = MONTH_NAMES[month - 1]
   const showYear = year !== new Date().getFullYear()
 
@@ -209,6 +217,101 @@ export function MonthSummarySection({
             ))}
           </div>
         )}
+
+        <div className="mt-3 pt-3 border-top">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <div className="small fw-semibold">
+              Spending this month vs last month
+            </div>
+            <div className="d-flex align-items-center gap-3">
+              <div className="d-none d-md-flex align-items-center gap-2 small text-muted">
+                <div className="d-flex align-items-center gap-1">
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      width: 10,
+                      height: 2,
+                      background:
+                        'var(--vantura-chart-previous, var(--bs-gray-600, #6c757d))',
+                    }}
+                    aria-hidden
+                  />
+                  <span>Last month</span>
+                </div>
+                <div className="d-flex align-items-center gap-1">
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      width: 10,
+                      height: 2,
+                      background:
+                        'var(--vantura-chart-accent, var(--bs-primary, #ff9f43))',
+                    }}
+                    aria-hidden
+                  />
+                  <span>This month</span>
+                </div>
+                <div className="d-flex align-items-center gap-1">
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      width: 10,
+                      height: 0,
+                      borderBottom:
+                        '1px dashed var(--vantura-chart-average, #f2994a)',
+                    }}
+                    aria-hidden
+                  />
+                  <span>Average</span>
+                </div>
+              </div>
+              <div
+                className="btn-group btn-group-sm"
+                role="group"
+                aria-label="Select metric for month comparison chart"
+              >
+                <button
+                  type="button"
+                  className={`btn btn-outline-secondary ${
+                    metric === 'spending' ? 'active' : ''
+                  }`}
+                  onClick={() => setMetric('spending')}
+                  aria-pressed={metric === 'spending'}
+                >
+                  Spending
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-outline-secondary ${
+                    metric === 'income' ? 'active' : ''
+                  }`}
+                  onClick={() => setMetric('income')}
+                  aria-pressed={metric === 'income'}
+                >
+                  Income
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-outline-secondary ${
+                    metric === 'net' ? 'active' : ''
+                  }`}
+                  onClick={() => setMetric('net')}
+                  aria-pressed={metric === 'net'}
+                >
+                  Net
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <MonthSpendingComparisonChart
+            series={monthSeries.series}
+            metric={metric}
+            height={230}
+            showAverage
+            aria-label="This month vs last month daily cumulative comparison"
+          />
+        </div>
       </Card.Body>
     </Card>
   )

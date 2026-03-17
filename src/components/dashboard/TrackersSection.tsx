@@ -6,7 +6,6 @@ import {
   ProgressBar,
   Modal,
   Form,
-  Badge,
   Collapse,
   Alert,
   OverlayTrigger,
@@ -483,7 +482,7 @@ export function TrackersSection({
                             </OverlayTrigger>
                             {t.badge_color && t.badge_color.trim() ? (
                               <span
-                                className="badge"
+                                className="badge badge-frequency-custom"
                                 style={{
                                   backgroundColor: t.badge_color.trim(),
                                   color: 'white',
@@ -492,7 +491,9 @@ export function TrackersSection({
                                 {frequencyLabel}
                               </span>
                             ) : (
-                              <Badge bg="secondary">{frequencyLabel}</Badge>
+                              <span className="badge badge-frequency-default">
+                                {frequencyLabel}
+                              </span>
                             )}
                             <OverlayTrigger
                               placement="top"
@@ -502,7 +503,9 @@ export function TrackersSection({
                                 </Tooltip>
                               }
                             >
-                              <Badge bg="info">{t.daysLeft} days</Badge>
+                              <span className="badge badge-meta">
+                                {t.daysLeft} days
+                              </span>
                             </OverlayTrigger>
                           </div>
                         </div>

@@ -314,20 +314,10 @@ export function UpcomingSection({
         <td>
           {c.name}
           {c.is_subscription === 1 && (
-            <span
-              className="badge bg-secondary ms-1"
-              style={{ fontSize: '0.7rem' }}
-            >
-              Sub
-            </span>
+            <span className="badge badge-subscription ms-1">Sub</span>
           )}
           {dueLabel && (
-            <span
-              className="badge bg-warning text-dark ms-1"
-              style={{ fontSize: '0.7rem' }}
-            >
-              {dueLabel}
-            </span>
+            <span className="badge badge-reminder ms-1">{dueLabel}</span>
           )}
         </td>
         <td>{c.frequency}</td>
@@ -468,18 +458,12 @@ export function UpcomingSection({
                             <div className="fw-medium">
                               {c.name}
                               {c.is_subscription === 1 && (
-                                <span
-                                  className="badge bg-secondary ms-1"
-                                  style={{ fontSize: '0.65rem' }}
-                                >
+                                <span className="badge badge-subscription ms-1">
                                   Sub
                                 </span>
                               )}
                               {reminderLabel(c) && (
-                                <span
-                                  className="badge bg-warning text-dark ms-1"
-                                  style={{ fontSize: '0.65rem' }}
-                                >
+                                <span className="badge badge-reminder ms-1">
                                   {reminderLabel(c)}
                                 </span>
                               )}
@@ -528,18 +512,12 @@ export function UpcomingSection({
                             <div className="fw-medium">
                               {c.name}
                               {c.is_subscription === 1 && (
-                                <span
-                                  className="badge bg-secondary ms-1"
-                                  style={{ fontSize: '0.65rem' }}
-                                >
+                                <span className="badge badge-subscription ms-1">
                                   Sub
                                 </span>
                               )}
                               {reminderLabel(c) && (
-                                <span
-                                  className="badge bg-warning text-dark ms-1"
-                                  style={{ fontSize: '0.65rem' }}
-                                >
+                                <span className="badge badge-reminder ms-1">
                                   {reminderLabel(c)}
                                 </span>
                               )}

@@ -24,6 +24,11 @@
  */
 
 import { getDb } from '@/db'
+import {
+  buildMonthSpendingSeries,
+  type MonthSpendingSeries,
+  type MonthDailyInput,
+} from '@/lib/monthSpendingSeries'
 
 export interface WeekRange {
   start: Date
@@ -476,6 +481,17 @@ function getPreviousMonthBounds(year: number, month: number) {
   return { from, to }
 }
 
+function getMonthLength(year: number, month: number): number {
+  return new Date(year, month, 0).getDate()
+}
+
+function parseYearMonth(dateFrom: string): { year: number; month: number } {
+  return {
+    year: parseInt(dateFrom.slice(0, 4), 10),
+    month: parseInt(dateFrom.slice(5, 7), 10),
+  }
+}
+
 /**
  * Compare current month metrics with the previous month and derive narrative
  * insights (wins, challenges, opportunities).
@@ -580,6 +596,113 @@ export function getMonthComparison(
     narratives,
     hasPreviousData,
   }
+}
+
+// ---------------------------------------------------------------------------
+// Month day-by-day series (current vs previous month)
+// ---------------------------------------------------------------------------
+
+function getDailyMoneyInOutForRange(
+  dateFrom: string,
+  dateTo: string
+): MonthDailyInput | null {
+  const db = getDb()
+  if (!db) return null
+
+  const endStr = dateTo.length <= 10 ? dateTo + 'T23:59:59.999Z' : dateTo
+
+  const stmt = db.prepare(
+    `SELECT strftime('%d', COALESCE(created_at, settled_at)) AS day,
+       COALESCE(SUM(CASE WHEN amount > 0 AND transfer_account_id IS NULL THEN amount ELSE 0 END), 0) AS money_in,
+       COALESCE(SUM(CASE WHEN amount < 0 AND transfer_account_id IS NULL THEN ABS(amount) ELSE 0 END), 0) AS money_out
+     FROM transactions
+     WHERE COALESCE(created_at, settled_at) >= ? AND COALESCE(created_at, settled_at) <= ?
+     GROUP BY day
+     ORDER BY day`
+  )
+  stmt.bind([dateFrom, endStr])
+
+  const byDay: Record<number, { moneyInCents: number; moneyOutCents: number }> =
+    {}
+  let maxDay = 0
+  while (stmt.step()) {
+    const row = stmt.get() as [string, number, number]
+    const dayNum = parseInt(row[0], 10)
+    if (!Number.isFinite(dayNum) || dayNum <= 0) continue
+    byDay[dayNum] = {
+      moneyInCents: row[1] ?? 0,
+      moneyOutCents: row[2] ?? 0,
+    }
+    if (dayNum > maxDay) maxDay = dayNum
+  }
+  stmt.free()
+
+  if (maxDay === 0) return null
+
+  const { year, month } = parseYearMonth(dateFrom)
+  const daysInMonth = getMonthLength(year, month)
+
+  const input: MonthDailyInput = {
+    daysInMonth,
+    byDay,
+  }
+  return input
+}
+
+export interface MonthSeriesResult {
+  series: MonthSpendingSeries
+}
+
+/**
+ * Day-by-day cumulative series for the selected month vs its previous month,
+ * using the same Money In/Out definitions as other insight helpers.
+ */
+export function getMonthDayByDaySeries(
+  currentFrom: string,
+  currentTo: string
+): MonthSeriesResult {
+  const { year, month } = parseYearMonth(currentFrom)
+  const currentDays = getMonthLength(year, month)
+
+  const prev = getPreviousMonthBounds(year, month)
+
+  const currentInput = getDailyMoneyInOutForRange(currentFrom, currentTo)
+  const previousInput = getDailyMoneyInOutForRange(prev.from, prev.to)
+
+  const series = buildMonthSpendingSeries(currentInput, previousInput)
+
+  // Ensure maxDay at least spans the actual month length, even if there is
+  // no data for later days yet.
+  const maxDay = Math.max(series.maxDay, currentDays)
+  if (maxDay !== series.maxDay) {
+    // Extend points array with trailing days that have null values.
+    const existing = new Map(series.points.map((p) => [p.day, p]))
+    const points = []
+    for (let day = 1; day <= maxDay; day += 1) {
+      const found = existing.get(day)
+      if (found) {
+        points.push(found)
+      } else {
+        points.push({
+          day,
+          currentSpending: null,
+          previousSpending: null,
+          currentIncome: null,
+          previousIncome: null,
+          currentNet: null,
+          previousNet: null,
+        })
+      }
+    }
+    return {
+      series: {
+        points,
+        maxDay,
+      },
+    }
+  }
+
+  return { series }
 }
 
 function fmtCentsDelta(cents: number): string {
