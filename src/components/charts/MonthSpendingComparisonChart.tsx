@@ -11,6 +11,11 @@ const BORDER_COLOR = 'var(--vantura-border, #ebedf2)'
 const MARGIN_TOP = 12
 const MARGIN_BOTTOM = 24
 const MARGIN_RIGHT = 24
+const SUCCESS_COLOR = 'var(--vantura-success, #1bcfb4)'
+const DANGER_COLOR = 'var(--vantura-danger, #fe7c96)'
+const SUCCESS_FILL =
+  'color-mix(in srgb, var(--vantura-success) 18%, transparent)'
+const DANGER_FILL = 'color-mix(in srgb, var(--vantura-danger) 18%, transparent)'
 
 export interface MonthSpendingComparisonChartProps {
   series: MonthSpendingSeries | null
@@ -48,6 +53,51 @@ function getMetricValues(
   }
 
   return { currentValues, previousValues }
+}
+
+function computeMtd(points: MonthSpendingSeriesPoint[], metric: MonthMetric) {
+  const currentKey =
+    metric === 'spending'
+      ? 'currentSpending'
+      : metric === 'income'
+        ? 'currentIncome'
+        : 'currentNet'
+  const previousKey =
+    metric === 'spending'
+      ? 'previousSpending'
+      : metric === 'income'
+        ? 'previousIncome'
+        : 'previousNet'
+
+  let currentMtd: number | null = null
+  let previousMtd: number | null = null
+
+  for (const p of points) {
+    const c = p[currentKey] as number | null
+    const prev = p[previousKey] as number | null
+    if (c != null) currentMtd = c
+    if (prev != null) previousMtd = prev
+  }
+
+  return { currentMtd, previousMtd }
+}
+
+export function getMonthComparisonSemanticStrokes(
+  points: MonthSpendingSeriesPoint[],
+  metric: MonthMetric
+): { currentStroke: string; previousStroke: string } | null {
+  const { currentMtd, previousMtd } = computeMtd(points, metric)
+  if (currentMtd == null || previousMtd == null) return null
+
+  const isGood =
+    metric === 'spending'
+      ? currentMtd <= previousMtd
+      : currentMtd >= previousMtd
+
+  return {
+    currentStroke: isGood ? SUCCESS_COLOR : DANGER_COLOR,
+    previousStroke: isGood ? DANGER_COLOR : SUCCESS_COLOR,
+  }
 }
 
 function computeAverage(values: (number | null)[]): number | null {
@@ -136,6 +186,19 @@ export function MonthSpendingComparisonChart({
     d3.select(container).selectAll('*').remove()
 
     const { points, yDomain, avg } = prepared
+    const semanticStrokes = getMonthComparisonSemanticStrokes(points, metric)
+    const currentStroke =
+      semanticStrokes?.currentStroke ??
+      'var(--vantura-chart-accent, var(--bs-primary, #ff9f43))'
+    const previousStroke =
+      semanticStrokes?.previousStroke ??
+      'var(--vantura-chart-previous, var(--bs-gray-600, #6c757d))'
+    const currentFill =
+      semanticStrokes != null
+        ? semanticStrokes.currentStroke === SUCCESS_COLOR
+          ? SUCCESS_FILL
+          : DANGER_FILL
+        : 'var(--vantura-chart-accent-soft, rgba(255, 159, 67, 0.15))'
 
     const marginLeft = 60
     const innerWidth = width - marginLeft - MARGIN_RIGHT
@@ -244,21 +307,22 @@ export function MonthSpendingComparisonChart({
 
     g.append('path')
       .datum(points)
-      .attr(
-        'fill',
-        'var(--vantura-chart-accent-soft, rgba(255, 159, 67, 0.15))'
-      )
-      .attr('stroke', 'var(--vantura-chart-accent, var(--bs-primary, #ff9f43))')
-      .attr('stroke-width', 2)
+      .attr('fill', currentFill)
+      .attr('stroke', 'none')
       .attr('d', area)
       .attr('opacity', 0.9)
 
     g.append('path')
       .datum(points)
-      .attr(
-        'stroke',
-        'var(--vantura-chart-previous, var(--bs-gray-600, #6c757d))'
-      )
+      .attr('stroke', currentStroke)
+      .attr('stroke-width', 2)
+      .attr('fill', 'none')
+      .attr('d', currentLine)
+      .attr('opacity', 0.9)
+
+    g.append('path')
+      .datum(points)
+      .attr('stroke', previousStroke)
       .attr('stroke-width', 2)
       .attr('fill', 'none')
       .attr('d', previousLine)

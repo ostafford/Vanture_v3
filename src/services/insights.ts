@@ -666,8 +666,19 @@ export function getMonthDayByDaySeries(
 
   const prev = getPreviousMonthBounds(year, month)
 
-  const currentInput = getDailyMoneyInOutForRange(currentFrom, currentTo)
+  const currentInputRaw = getDailyMoneyInOutForRange(currentFrom, currentTo)
   const previousInput = getDailyMoneyInOutForRange(prev.from, prev.to)
+
+  const now = new Date()
+  const isCurrentMonth =
+    year === now.getFullYear() && month === now.getMonth() + 1
+  const currentInput =
+    currentInputRaw && isCurrentMonth
+      ? {
+          ...currentInputRaw,
+          daysInMonth: Math.min(currentInputRaw.daysInMonth, now.getDate()),
+        }
+      : currentInputRaw
 
   const series = buildMonthSpendingSeries(currentInput, previousInput)
 
