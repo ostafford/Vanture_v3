@@ -102,6 +102,8 @@
   --vantura-badge-frequency-fg: #e08620;
   --vantura-badge-meta-bg: rgba(25, 138, 227, 0.12);
   --vantura-badge-meta-fg: #047edf;
+  --vantura-badge-frequency-text: var(--vantura-badge-frequency-fg);
+  --vantura-badge-meta-text: var(--vantura-badge-meta-fg);
 }
 
 [data-theme='dark'] {
@@ -201,6 +203,16 @@
   --vantura-badge-frequency-fg: #f2a654;
   --vantura-badge-meta-bg: rgba(94, 184, 255, 0.22);
   --vantura-badge-meta-fg: #5eb8ff;
+  --vantura-badge-frequency-text: color-mix(
+    in srgb,
+    #ffffff 80%,
+    var(--vantura-badge-frequency-fg) 20%
+  );
+  --vantura-badge-meta-text: color-mix(
+    in srgb,
+    #ffffff 80%,
+    var(--vantura-badge-meta-fg) 20%
+  );
 }
 
 /* Form check / switch — clear on/off in dark mode */
@@ -356,7 +368,58 @@ body {
   color: var(--vantura-text);
 }
 
-/* Settings accordion — card-like appearance, theme-aware */
+/* Settings — macOS-style sidebar + panel */
+.settings-layout {
+  margin-bottom: 0;
+}
+.settings-layout-row {
+  align-items: stretch;
+}
+.settings-nav-column {
+  background: var(--vantura-surface);
+}
+.settings-nav .list-group-item {
+  background: transparent;
+  color: var(--vantura-text);
+  border-color: var(--vantura-border);
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.75rem 1.25rem;
+}
+.settings-nav .list-group-item:hover {
+  background: var(--vantura-table-hover-bg);
+  color: var(--vantura-text);
+}
+.settings-nav .list-group-item.active {
+  background: var(--vantura-table-hover-bg);
+  color: var(--vantura-text);
+  border-color: var(--vantura-border);
+}
+.settings-nav .list-group-item:focus-visible {
+  outline: 2px solid var(--vantura-primary);
+  outline-offset: -2px;
+}
+.settings-panel-column {
+  background: var(--vantura-card-bg);
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+.settings-panel {
+  background: var(--vantura-card-bg);
+  color: var(--vantura-text);
+  padding: 1.5rem;
+  min-height: 100%;
+}
+@media (max-width: 767px) {
+  .settings-panel {
+    padding: 1.25rem;
+  }
+}
+.settings-panel-appearance .settings-panel {
+  background: var(--vantura-appearance-card-bg);
+}
+
+/* Settings accordion — card-like appearance, theme-aware (legacy; accordion removed) */
 .settings-accordion.accordion {
   --bs-accordion-bg: transparent;
   --bs-accordion-border-color: var(--vantura-border);
@@ -1055,7 +1118,7 @@ body {
     color-mix(in srgb, var(--vantura-badge-frequency-bg) 80%, transparent) 0%,
     color-mix(in srgb, var(--vantura-badge-frequency-bg) 40%, transparent) 100%
   );
-  color: color-mix(in srgb, #ffffff 80%, var(--vantura-badge-frequency-fg) 20%);
+  color: var(--vantura-badge-frequency-text);
   border: 1px solid
     color-mix(in srgb, var(--vantura-badge-frequency-fg) 22%, transparent);
 }
@@ -1068,7 +1131,7 @@ body {
     color-mix(in srgb, var(--vantura-badge-meta-bg) 80%, transparent) 0%,
     color-mix(in srgb, var(--vantura-badge-meta-bg) 40%, transparent) 100%
   );
-  color: color-mix(in srgb, #ffffff 80%, var(--vantura-badge-meta-fg) 20%);
+  color: var(--vantura-badge-meta-text);
   border: 1px solid
     color-mix(in srgb, var(--vantura-badge-meta-fg) 22%, transparent);
 }

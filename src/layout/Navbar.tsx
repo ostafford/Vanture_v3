@@ -37,7 +37,6 @@ export function Navbar({
   const setSidebarMobileOpen = useStore(uiStore, (s) => s.setSidebarMobileOpen)
   const [lastSync, setLastSync] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
-  const [syncError, setSyncError] = useState<string | null>(null)
   const isDemoMode = getAppSetting('demo_mode') === '1'
 
   function handleNavToggle() {
@@ -60,7 +59,6 @@ export function Navbar({
       return
     }
     setSyncing(true)
-    setSyncError(null)
     syncStore.getState().setSyncing(true)
     try {
       await performSync(token, () => {})
@@ -74,7 +72,6 @@ export function Navbar({
           : err instanceof Error
             ? err.message
             : 'Sync failed. Please try again.'
-      setSyncError(message)
       toast.error(message)
     } finally {
       setSyncing(false)
@@ -148,11 +145,6 @@ export function Navbar({
                 </>
               )}
             </Button>
-            {syncError && (
-              <span className="text-danger small" role="alert">
-                {syncError}
-              </span>
-            )}
           </div>
           <div className="d-none d-md-block navbar-sync-label">
             Last synced: {formatLastSync(lastSync)}
