@@ -73,11 +73,21 @@ export function startDashboardTour(onCompleted?: () => void): void {
       },
     },
     {
+      element: '[data-tour="need_vs_want"]',
+      popover: {
+        title: 'Need vs Want',
+        description:
+          'Needs summarizes upcoming bills. Wants are savings targets with a planner that estimates timelines using spendable, trackers, alerts, and pay settings.',
+        side: 'top' as const,
+        align: 'center' as const,
+      },
+    },
+    {
       element: '[data-tour="sidebar-nav"]',
       popover: {
         title: 'Navigation',
         description:
-          'Dashboard, Transactions (filter and search), Settings (sync, payday, theme), and Help (user guide).',
+          'Dashboard, Analytics (trends and reports), Transactions (filter and search), Settings (sync, payday, theme), and Help (user guide).',
         side: 'right' as const,
         align: 'start' as const,
       },

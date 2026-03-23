@@ -5,7 +5,7 @@
 
 import type { Database } from 'sql.js'
 
-const SCHEMA_VERSION = 8
+const SCHEMA_VERSION = 9
 
 const DDL_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS accounts (
@@ -135,6 +135,8 @@ const DDL_STATEMENTS = [
     target_date TEXT,
     icon TEXT,
     completed_at TEXT,
+    priority_rank INTEGER,
+    allocation_percent INTEGER,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`,
@@ -297,6 +299,22 @@ export function runMigrations(database: Database): void {
     database.run(
       `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
       ['8']
+    )
+  }
+  if (version < 9) {
+    const goalCols = database.exec(`PRAGMA table_info(goals)`)
+    const goalExisting = new Set(
+      (goalCols[0]?.values ?? []).map((r) => String(r[1]))
+    )
+    if (!goalExisting.has('priority_rank')) {
+      database.run(`ALTER TABLE goals ADD COLUMN priority_rank INTEGER`)
+    }
+    if (!goalExisting.has('allocation_percent')) {
+      database.run(`ALTER TABLE goals ADD COLUMN allocation_percent INTEGER`)
+    }
+    database.run(
+      `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
+      ['9']
     )
   }
 }

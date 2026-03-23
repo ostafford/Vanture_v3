@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useStore } from 'zustand'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useParams,
+} from 'react-router-dom'
 import { initDb, getAppSetting } from '@/db'
 import { advanceNextPaydayIfNeeded, recalculateTrackers } from '@/services/sync'
 import { themeStore } from '@/stores/themeStore'
@@ -20,8 +26,14 @@ import { AnalyticsReports } from '@/pages/analytics/AnalyticsReports'
 import { AnalyticsNetWorth } from '@/pages/analytics/AnalyticsNetWorth'
 import { AnalyticsMonthlyReview } from '@/pages/analytics/AnalyticsMonthlyReview'
 import { AnalyticsSaverDetail } from '@/pages/analytics/AnalyticsSaverDetail'
-import { AnalyticsGoals } from '@/pages/analytics/AnalyticsGoals'
+import { AnalyticsWants } from '@/pages/analytics/AnalyticsWants'
 import { AnalyticsGoalDetail } from '@/pages/analytics/AnalyticsGoalDetail'
+
+function LegacyGoalsToWantsRedirect() {
+  const { goalId } = useParams<{ goalId: string }>()
+  if (!goalId) return <Navigate to="/analytics/wants" replace />
+  return <Navigate to={`/analytics/wants/${goalId}`} replace />
+}
 import { Settings } from '@/pages/Settings'
 import { Help } from '@/pages/Help'
 import { Unlock } from '@/pages/Unlock'
@@ -214,8 +226,16 @@ function AppContent() {
                 path="savers/:saverId"
                 element={<AnalyticsSaverDetail />}
               />
-              <Route path="goals" element={<AnalyticsGoals />} />
-              <Route path="goals/:goalId" element={<AnalyticsGoalDetail />} />
+              <Route path="wants" element={<AnalyticsWants />} />
+              <Route path="wants/:wantId" element={<AnalyticsGoalDetail />} />
+              <Route
+                path="goals"
+                element={<Navigate to="/analytics/wants" replace />}
+              />
+              <Route
+                path="goals/:goalId"
+                element={<LegacyGoalsToWantsRedirect />}
+              />
               <Route path="insights" element={<AnalyticsInsights />} />
               <Route path="reports" element={<AnalyticsReports />} />
               <Route path="net-worth" element={<AnalyticsNetWorth />} />

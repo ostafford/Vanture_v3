@@ -16,7 +16,7 @@ import { InsightsSection } from '@/components/dashboard/InsightsSection'
 import { TrackersSection } from '@/components/dashboard/TrackersSection'
 import { UpcomingSection } from '@/components/dashboard/UpcomingSection'
 import { MonthSummarySection } from '@/components/dashboard/MonthSummarySection'
-import { GoalsSection } from '@/components/dashboard/GoalsSection'
+import { NeedVsWantSection } from '@/components/dashboard/NeedVsWantSection'
 import { StatCard } from '@/components/StatCard'
 import {
   shouldShowDashboardTour,
@@ -59,6 +59,7 @@ const TOUR_DATA_ATTRS: Partial<Record<DashboardSectionId, string>> = {
   insights: 'insights',
   trackers: 'trackers',
   upcoming: 'upcoming',
+  need_vs_want: 'need_vs_want',
 }
 
 export function Dashboard() {
@@ -227,8 +228,8 @@ export function Dashboard() {
           return <MonthSummarySection dragHandleProps={dragHandleProps} />
         case 'savers':
           return <SaversSection dragHandleProps={dragHandleProps} />
-        case 'goals':
-          return <GoalsSection dragHandleProps={dragHandleProps} />
+        case 'need_vs_want':
+          return <NeedVsWantSection dragHandleProps={dragHandleProps} />
         case 'insights':
           return <InsightsSection dragHandleProps={dragHandleProps} />
         case 'trackers':
@@ -261,6 +262,7 @@ export function Dashboard() {
     return (
       <div
         key={id}
+        id={`dashboard-section-${id}`}
         className="dashboard-grid-cell"
         data-section-id={id}
         {...(tourAttr ? { 'data-tour': tourAttr } : {})}

@@ -26,11 +26,11 @@ function getDateFrom(daysBack: number): string | undefined {
 }
 
 export function AnalyticsGoalDetail() {
-  const { goalId } = useParams<{ goalId: string }>()
+  const { wantId } = useParams<{ wantId: string }>()
   const [timeRange, setTimeRange] = useState<string>('all')
   const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY)
 
-  const goalIdNum = goalId ? parseInt(goalId, 10) : NaN
+  const goalIdNum = wantId ? parseInt(wantId, 10) : NaN
   const goals = getGoals()
   const goal = goals.find((g) => g.id === goalIdNum)
 
@@ -52,9 +52,9 @@ export function AnalyticsGoalDetail() {
     return (
       <Card className="grid-margin">
         <Card.Body>
-          <p className="text-muted mb-3">Goal not found.</p>
-          <Link to="/analytics/goals" className="btn btn-outline-secondary">
-            Back to Goals
+          <p className="text-muted mb-3">Want not found.</p>
+          <Link to="/analytics/wants" className="btn btn-outline-secondary">
+            Back to Wants
           </Link>
         </Card.Body>
       </Card>
@@ -67,10 +67,10 @@ export function AnalyticsGoalDetail() {
     <div className="grid-margin">
       <div className="mb-3">
         <Link
-          to="/analytics/goals"
+          to="/analytics/wants"
           className="text-decoration-none small text-muted"
         >
-          <i className="mdi mdi-chevron-left" aria-hidden /> Back to Goals
+          <i className="mdi mdi-chevron-left" aria-hidden /> Back to Wants
         </Link>
       </div>
 
@@ -159,7 +159,7 @@ export function AnalyticsGoalDetail() {
           {chartData.length === 0 ? (
             <p className="text-muted mb-0">
               No snapshot data yet. Snapshots are recorded when you create or
-              update a goal's current amount.
+              update a want&apos;s current amount.
             </p>
           ) : (
             <div style={{ width: '100%', height: isMobile ? 220 : 280 }}>

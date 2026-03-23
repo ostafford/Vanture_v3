@@ -160,7 +160,7 @@ export function AnalyticsIndex() {
         </Col>
         <Col xs={12} md={6} lg={3}>
           <Link
-            to="/analytics/goals"
+            to="/analytics/wants"
             className="text-decoration-none"
             style={{ color: 'inherit' }}
           >
@@ -171,19 +171,18 @@ export function AnalyticsIndex() {
                   style={{ width: 36, height: 36, minWidth: 36 }}
                 >
                   <i
-                    className="mdi mdi-flag-checkered"
+                    className="mdi mdi-scale-balance"
                     style={{ fontSize: '1.25rem' }}
                     aria-hidden
                   />
                 </span>
                 <div>
-                  <h6 className="mb-1 fw-semibold">Goals</h6>
+                  <h6 className="mb-1 fw-semibold">Wants</h6>
                   <p className="mb-0 text-muted small">
-                    Track progress toward your financial goals and see growth
-                    over time.
+                    Track progress toward your wants and see growth over time.
                   </p>
                   <span className="small text-primary mt-1 d-inline-block">
-                    View goals{' '}
+                    View wants{' '}
                     <i className="mdi mdi-chevron-right" aria-hidden />
                   </span>
                 </div>

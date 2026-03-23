@@ -12,7 +12,7 @@ export type DashboardSectionSize = 'full' | 'compact'
 export const DASHBOARD_SECTION_IDS = [
   'month_summary',
   'savers',
-  'goals',
+  'need_vs_want',
   'insights',
   'trackers',
   'upcoming',
@@ -25,9 +25,20 @@ export const DEFAULT_DASHBOARD_SECTION_ORDER: DashboardSectionId[] = [
   'insights',
   'savers',
   'trackers',
-  'goals',
+  'need_vs_want',
   'upcoming',
 ]
+
+function migrateLegacySectionId(id: unknown): DashboardSectionId | null {
+  if (id === 'goals') return 'need_vs_want'
+  if (
+    typeof id === 'string' &&
+    DASHBOARD_SECTION_IDS.includes(id as DashboardSectionId)
+  ) {
+    return id as DashboardSectionId
+  }
+  return null
+}
 
 export function getDashboardSectionOrder(): DashboardSectionId[] {
   try {
@@ -36,9 +47,9 @@ export function getDashboardSectionOrder(): DashboardSectionId[] {
       return [...DEFAULT_DASHBOARD_SECTION_ORDER]
     const parsed = JSON.parse(raw) as unknown
     if (!Array.isArray(parsed)) return [...DEFAULT_DASHBOARD_SECTION_ORDER]
-    const valid = parsed.filter((id): id is DashboardSectionId =>
-      DASHBOARD_SECTION_IDS.includes(id as DashboardSectionId)
-    )
+    const valid = parsed
+      .map((id) => migrateLegacySectionId(id))
+      .filter((id): id is DashboardSectionId => id != null)
     const seen = new Set<string>()
     const deduped = valid.filter((id) => {
       if (seen.has(id)) return false
@@ -59,7 +70,7 @@ export function setDashboardSectionOrder(order: DashboardSectionId[]): void {
 export const DASHBOARD_SECTION_LABELS: Record<DashboardSectionId, string> = {
   month_summary: 'This month',
   savers: 'Savers',
-  goals: 'Goals',
+  need_vs_want: 'Need vs Want',
   insights: 'Weekly insights',
   trackers: 'Trackers',
   upcoming: 'Upcoming transactions',
@@ -74,9 +85,13 @@ export function getDashboardSectionSizes(): Record<
     if (!raw || typeof raw !== 'string') return defaultSectionSizes()
     const parsed = JSON.parse(raw) as unknown
     if (!parsed || typeof parsed !== 'object') return defaultSectionSizes()
+    const p = parsed as Record<string, string>
     const result = { ...defaultSectionSizes() }
     for (const id of DASHBOARD_SECTION_IDS) {
-      const v = (parsed as Record<string, string>)[id]
+      let v = p[id]
+      if (v == null && id === 'need_vs_want' && p.goals != null) {
+        v = p.goals
+      }
       if (v === 'full' || v === 'compact') result[id] = v
     }
     return result

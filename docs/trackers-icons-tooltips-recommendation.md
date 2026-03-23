@@ -1,5 +1,7 @@
 # Trackers header: Icons + tooltips recommendation (detailed plan)
 
+**Status:** Implemented (see [CHANGELOG.md](../CHANGELOG.md) [0.0.2] — 2025-03-03). Period navigation lives in [`src/components/dashboard/TrackersSection.tsx`](../src/components/dashboard/TrackersSection.tsx). The sections below document the original rationale and behaviour before the change.
+
 ## Overview
 
 Use **chevron icons** (e.g. ‹ › or ← →) for Previous/Next at **all viewport widths**, with **tooltips** ("Previous period", "Next period") for meaning. This removes the 900px label swap, keeps one consistent layout rule, and matches patterns used in calendar, banking, and dashboard apps.

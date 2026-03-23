@@ -1546,7 +1546,7 @@ export function Settings() {
                         <Form.Check
                           type="checkbox"
                           id="import-opt-goals"
-                          label="Goals"
+                          label="Wants"
                           checked={importOptions.goals}
                           onChange={(e) =>
                             setImportOptions((o) => ({
@@ -1554,10 +1554,10 @@ export function Settings() {
                               goals: e.target.checked,
                             }))
                           }
-                          aria-label="Import goals"
+                          aria-label="Import wants"
                         />
                         <div className="small text-muted ms-4 mt-1">
-                          {(importPreview.goals ?? []).length} goal(s) in file
+                          {(importPreview.goals ?? []).length} want(s) in file
                         </div>
                       </div>
                     </div>

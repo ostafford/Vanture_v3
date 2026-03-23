@@ -37,6 +37,7 @@ export const SETTINGS_WHITELIST: readonly string[] = [
   'insights_category_colors',
   'dashboard_tour_completed',
   'dashboard_section_order',
+  'want_split_mode',
   'categorization_rules',
 ] as const
 
@@ -94,6 +95,8 @@ export interface GoalExportRow {
   target_date: string | null
   icon: string | null
   completed_at: string | null
+  priority_rank?: number | null
+  allocation_percent?: number | null
 }
 
 export interface ExportFileWrapper {
@@ -214,7 +217,7 @@ function collectGoals(): GoalExportRow[] {
   if (!db) return []
   const stmt = db.prepare(
     `SELECT name, target_amount, current_amount, monthly_contribution,
-            target_date, icon, completed_at
+            target_date, icon, completed_at, priority_rank, allocation_percent
      FROM goals ORDER BY id`
   )
   const rows: GoalExportRow[] = []
@@ -227,6 +230,8 @@ function collectGoals(): GoalExportRow[] {
       string | null,
       string | null,
       string | null,
+      number | null,
+      number | null,
     ]
     rows.push({
       name: r[0],
@@ -236,6 +241,8 @@ function collectGoals(): GoalExportRow[] {
       target_date: r[4],
       icon: r[5],
       completed_at: r[6],
+      priority_rank: r[7],
+      allocation_percent: r[8],
     })
   }
   stmt.free()
@@ -603,9 +610,13 @@ export function replaceGoals(goals: GoalExportRow[]): void {
       typeof g.completed_at === 'string' && g.completed_at
         ? g.completed_at
         : null
+    const priorityRank =
+      typeof g.priority_rank === 'number' ? g.priority_rank : null
+    const allocationPercent =
+      typeof g.allocation_percent === 'number' ? g.allocation_percent : null
     db.run(
-      `INSERT INTO goals (name, target_amount, current_amount, monthly_contribution, target_date, icon, completed_at, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO goals (name, target_amount, current_amount, monthly_contribution, target_date, icon, completed_at, priority_rank, allocation_percent, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         g.name,
         g.target_amount,
@@ -614,6 +625,8 @@ export function replaceGoals(goals: GoalExportRow[]): void {
         targetDate,
         icon,
         completedAt,
+        priorityRank,
+        allocationPercent,
         now,
         now,
       ]

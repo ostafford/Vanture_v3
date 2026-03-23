@@ -14,6 +14,10 @@ export interface GoalRow {
   target_date: string | null
   icon: string | null
   completed_at: string | null
+  /** Lower sorts first when splitting savings by priority. */
+  priority_rank: number | null
+  /** 0–100 when using percent split across wants. */
+  allocation_percent: number | null
   created_at: string
   updated_at: string
 }
@@ -28,7 +32,8 @@ export function getGoals(): GoalWithProgress[] {
   if (!db) return []
   const stmt = db.prepare(
     `SELECT id, name, target_amount, current_amount, monthly_contribution,
-            target_date, icon, completed_at, created_at, updated_at
+            target_date, icon, completed_at, priority_rank, allocation_percent,
+            created_at, updated_at
      FROM goals ORDER BY completed_at IS NOT NULL, name`
   )
   const list: GoalWithProgress[] = []
@@ -42,6 +47,8 @@ export function getGoals(): GoalWithProgress[] {
       string | null,
       string | null,
       string | null,
+      number | null,
+      number | null,
       string,
       string,
     ]
@@ -58,8 +65,10 @@ export function getGoals(): GoalWithProgress[] {
       target_date: row[5],
       icon: row[6],
       completed_at: row[7],
-      created_at: row[8],
-      updated_at: row[9],
+      priority_rank: row[8],
+      allocation_percent: row[9],
+      created_at: row[10],
+      updated_at: row[11],
       progress,
       remaining,
     })
@@ -73,15 +82,27 @@ export function createGoal(
   targetAmount: number,
   monthlyContribution: number | null,
   targetDate: string | null,
-  icon: string | null
+  icon: string | null,
+  priorityRank: number | null = null,
+  allocationPercent: number | null = null
 ): number {
   const db = getDb()
   if (!db) throw new Error('Database not ready')
   const now = new Date().toISOString()
   db.run(
-    `INSERT INTO goals (name, target_amount, current_amount, monthly_contribution, target_date, icon, created_at, updated_at)
-     VALUES (?, ?, 0, ?, ?, ?, ?, ?)`,
-    [name, targetAmount, monthlyContribution, targetDate, icon, now, now]
+    `INSERT INTO goals (name, target_amount, current_amount, monthly_contribution, target_date, icon, priority_rank, allocation_percent, created_at, updated_at)
+     VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      name,
+      targetAmount,
+      monthlyContribution,
+      targetDate,
+      icon,
+      priorityRank,
+      allocationPercent,
+      now,
+      now,
+    ]
   )
   const result = db.exec('SELECT last_insert_rowid()')
   const id = (result[0]?.values?.[0]?.[0] as number) ?? 0
@@ -97,13 +118,15 @@ export function updateGoal(
   currentAmount: number,
   monthlyContribution: number | null,
   targetDate: string | null,
-  icon: string | null
+  icon: string | null,
+  priorityRank: number | null = null,
+  allocationPercent: number | null = null
 ): void {
   const db = getDb()
   if (!db) throw new Error('Database not ready')
   const now = new Date().toISOString()
   db.run(
-    `UPDATE goals SET name = ?, target_amount = ?, current_amount = ?, monthly_contribution = ?, target_date = ?, icon = ?, updated_at = ? WHERE id = ?`,
+    `UPDATE goals SET name = ?, target_amount = ?, current_amount = ?, monthly_contribution = ?, target_date = ?, icon = ?, priority_rank = ?, allocation_percent = ?, updated_at = ? WHERE id = ?`,
     [
       name,
       targetAmount,
@@ -111,6 +134,8 @@ export function updateGoal(
       monthlyContribution,
       targetDate,
       icon,
+      priorityRank,
+      allocationPercent,
       now,
       id,
     ]

@@ -29,10 +29,11 @@ User- and developer-visible changes are listed in [CHANGELOG.md](CHANGELOG.md). 
 
 ### Phase 3: Core Features — Implemented
 
-- **Dashboard (3-column):** Savers (left), Weekly insights (center), Trackers (right); Upcoming transactions below. Balance card (Available, Spendable with prorated reserved amount). Navbar: Sync, Last synced, Lock, Theme.
+- **Dashboard (2-column grid):** Balance cards (Available, Spendable with prorated reserved amount). Reorderable sections—**This month** (month-on-month summary), **Savers**, **Need vs Want** (needs from upcoming charges; **Wants** as savings targets with a planner), **Weekly insights**, **Trackers**, **Upcoming charges**—with drag-and-drop on the Dashboard or from Settings (Dashboard sections). Navbar: Sync, Last synced, Lock, Theme. See `src/pages/Dashboard.tsx`, `src/lib/dashboardSections.ts`.
 - **Spendable balance:** Available minus reserved for upcoming charges (prorated by next payday; monthly/quarterly/yearly). See `src/services/balance.ts`, `src/components/BalanceCard.tsx`.
 - **Trackers:** Create/edit with name, budget, reset frequency (Weekly/Fortnightly/Monthly/Payday), multi-category, optional badge color. Progress bar, days left, transactions in period. See `src/services/trackers.ts`, `src/components/dashboard/TrackersSection.tsx`.
 - **Savers:** Saver accounts, balance vs goal, progress bars, goal amount, target date, monthly transfer. Click a bar or use Edit goals for custom bar colour. See `src/services/savers.ts`, `src/components/dashboard/SaversSection.tsx`.
+- **Need vs Want:** Summarises upcoming **needs** from bills; **Wants** are standalone savings targets with optional priority or allocation and a planner (Spendable, trackers, alerts, pay settings). The UI is labelled **Beta v1** while feedback is incorporated. See `src/components/dashboard/NeedVsWantSection.tsx`, `src/services/wantPlanner.ts`, `src/services/goals.ts`.
 - **Weekly insights:** Money In, Money Out, Saver changes, Charges count, Payments; category breakdown. Click a category bar to set a custom colour (applies to that category in all weeks). See `src/services/insights.ts`, `src/components/dashboard/InsightsSection.tsx`.
 - **Upcoming charges:** Manual entry (name, amount, frequency, next charge date, category, Include in Spendable). Grouped by Next pay / Later. See `src/services/upcoming.ts`, `src/components/dashboard/UpcomingSection.tsx`.
 
@@ -43,7 +44,7 @@ User- and developer-visible changes are listed in [CHANGELOG.md](CHANGELOG.md). 
 ### Phase 5: Polish — Complete
 
 - **Responsive (13"-27" desktop; mobile/portrait ≤768px):** Max-width 1400px; sidebar auto-collapses below 1280px; below 768px sidebar is an overlay drawer and content is full width. Vertical bar charts and card-based lists on mobile for better portrait use. Desktop horizontal bar charts (Insights, Savers) use D3-based components with estimated axis label space for a compact left axis (`src/components/charts/InsightsBarChart.tsx`, `src/components/charts/SaversBarChart.tsx`, `src/lib/chartLabelSpace.ts`). Error boundary; DB/persist error handling; loading states. Paginated transactions (50 per page). PWA (service worker, manifest, installable). See `src/layout/Layout.tsx`, `src/components/ErrorBoundary.tsx`, `vite.config.ts`.
-- **Help page (user guide at `/help`) and optional dashboard tour (first-time and re-runnable from Settings).**
+- **Help page (user guide at `/help`) and optional dashboard tour (first-time and re-runnable from Settings):** tour covers balance cards, Savers, Trackers, Weekly insights, Upcoming charges, Need vs Want, navigation (including Analytics), and Lock. See `src/lib/dashboardTour.ts`.
 
 ### Phase 6: Deployment — Implemented
 
@@ -52,7 +53,7 @@ User- and developer-visible changes are listed in [CHANGELOG.md](CHANGELOG.md). 
 ### Phase 7: Settings — Implemented
 
 - **Settings page:** Re-sync (button, Last synced, error state); theme and accent colour options; "Show dashboard tour again" button; Clear all data (confirmation; deletes database, reloads to Onboarding). See `src/pages/Settings.tsx`, `src/db/index.ts`.
-- **Profile export/import:** Export settings, trackers, and upcoming charges to an encrypted file; import on another device. No transactions, API tokens, or bank data are ever exported. File is encrypted with a passphrase you choose. See Settings > Data section.
+- **Profile export/import:** Export whitelisted settings (theme, payday, spendable alerts, dashboard layout, want split mode, categorization rules, chart colours), trackers, upcoming charges, and **wants** (standalone savings targets) to an encrypted file; import on another device. No transactions, API tokens, or bank data are ever exported. File is encrypted with a passphrase you choose. See Settings > Data section and `src/services/profileExport.ts`.
 
 ## Security
 
@@ -75,7 +76,7 @@ npm run dev
 
 **First run:** Onboarding guides you through passphrase creation, API token, payday schedule, and initial sync. After that, you see the Unlock screen on each app open until you enter your passphrase.
 
-**Demo / sample data:** On the first onboarding step you can choose "Try with sample data" to use the app without an Up Bank token. Demo data is generated once at onboarding; trackers and weekly insights include current and previous periods/weeks so you can try period navigation and comparisons. In demo mode the Unlock screen offers "Open demo" (no passphrase required) and a "DEMO" badge appears in the navbar and sidebar.
+**Demo / sample data:** On the first onboarding step you can choose "Try with sample data" to use the app without an Up Bank token. Demo data is generated once at onboarding: transactions, trackers, savers, upcoming charges, sample **wants** with history for Analytics, and net worth snapshots. Trackers and weekly insights include current and previous periods/weeks so you can try period navigation and comparisons. In demo mode the Unlock screen offers "Open demo" (no passphrase required) and a "DEMO" badge appears in the navbar and sidebar.
 
 **Troubleshooting:**
 
@@ -93,4 +94,4 @@ npm run dev
 
 ## Documentation
 
-Internal architecture and phase docs live in `Arch_Docs/` (design, database schema, calculation logic, development phases, and checklists). Additional design and recommendation docs may be in `docs/`. For user- and developer-visible changes, see [CHANGELOG.md](CHANGELOG.md).
+Design notes and recommendations may appear under `docs/`. For user- and developer-visible changes, see [CHANGELOG.md](CHANGELOG.md). Implementation details live in the source tree (e.g. `src/db/schema.ts`, `src/services/`).

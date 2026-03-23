@@ -12,7 +12,7 @@ const HELP_SECTION_KEYS = [
   'spendable-balance',
   'trackers',
   'savers',
-  'goals',
+  'need-vs-want',
   'upcoming-charges',
   'analytics',
   'transactions',
@@ -28,7 +28,7 @@ const HELP_SECTION_LABELS: Record<string, string> = {
   'spendable-balance': 'Spendable balance',
   trackers: 'Trackers',
   savers: 'Savers',
-  goals: 'Goals',
+  'need-vs-want': 'Need vs Want',
   'upcoming-charges': 'Upcoming charges',
   analytics: 'Analytics',
   transactions: 'Transactions',
@@ -128,10 +128,11 @@ export function Help() {
                 <>
                   <p className="mb-2">
                     The sidebar gives you access to: <strong>Dashboard</strong>{' '}
-                    (balance cards, This month, Savers, Goals, Weekly insights,
-                    Trackers, Upcoming charges), <strong>Analytics</strong> (net
-                    worth, reports, trackers, savers, goals, insights, monthly
-                    review), <strong>Transactions</strong> (filter and search),{' '}
+                    (balance cards, This month, Savers, Need vs Want, Weekly
+                    insights, Trackers, Upcoming charges),{' '}
+                    <strong>Analytics</strong> (net worth, reports, trackers,
+                    savers, wants, insights, monthly review),{' '}
+                    <strong>Transactions</strong> (filter and search),{' '}
                     <strong>Settings</strong>, and <strong>Help</strong> (this
                     user guide).
                   </p>
@@ -162,7 +163,7 @@ export function Help() {
                   </p>
                   <p className="mb-2">
                     On the Dashboard, the (i) icon next to some section titles
-                    (Trackers, Goals, Upcoming charges) opens a short
+                    (Trackers, Need vs Want, Upcoming charges) opens a short
                     explanation for that section.
                   </p>
                   <p className="mb-0">
@@ -182,9 +183,9 @@ export function Help() {
                   The Dashboard shows balance cards (Available and Spendable),
                   then sections you can reorder: <strong>This month</strong>{' '}
                   (month-on-month comparison and narrative insights), Savers,
-                  Goals, Weekly insights, Trackers, and Upcoming charges. You
-                  can change the order in Settings (Dashboard sections) or by
-                  dragging section headers on the Dashboard.
+                  Need vs Want, Weekly insights, Trackers, and Upcoming charges.
+                  You can change the order in Settings (Dashboard sections) or
+                  by dragging section headers on the Dashboard.
                 </p>
               )}
 
@@ -233,15 +234,24 @@ export function Help() {
                 </p>
               )}
 
-              {activeSection === 'goals' && (
-                <p className="mb-2">
-                  Goals are standalone financial goals (separate from Up Bank
-                  savers). You set a target amount and optional monthly
-                  contribution and target date, then track your current amount.
-                  Progress is shown on the Dashboard; you can mark goals
-                  complete when achieved. Under Analytics → Goals you can view
-                  progress and growth over time.
-                </p>
+              {activeSection === 'need-vs-want' && (
+                <>
+                  <p className="mb-2">
+                    <strong>Needs</strong> are summarized from your Upcoming
+                    charges (recurring bills and subscriptions that reduce
+                    Spendable). <strong>Wants</strong> are items you are saving
+                    toward: set a target and saved amount, optional priority or
+                    allocation percent when splitting savings across multiple
+                    wants. The planner estimates timelines using Spendable,
+                    tracker budgets, your spendable alert floor, pay settings,
+                    and recent weekly spending. Under Analytics → Wants you can
+                    view progress over time.
+                  </p>
+                  <p className="mb-2 text-muted small">
+                    This area is labelled Beta v1: layout and behaviour may
+                    change as feedback is incorporated.
+                  </p>
+                </>
               )}
 
               {activeSection === 'upcoming-charges' && (
@@ -271,7 +281,7 @@ export function Help() {
                   range and an optional income-to-spending flow (Sankey).{' '}
                   <strong>Trackers</strong> and <strong>Savers</strong>{' '}
                   analytics show trends, budget vs spend, and balance over time.{' '}
-                  <strong>Goals</strong> analytics show progress and growth.{' '}
+                  <strong>Wants</strong> analytics show progress and growth.{' '}
                   <strong>Weekly insights</strong> compare money in vs out by
                   week and category spending. <strong>Monthly review</strong>{' '}
                   gives money in/out, top categories, and tracker spend for any
@@ -307,9 +317,9 @@ export function Help() {
                     <strong>Dashboard tour:</strong> A guided tour runs
                     automatically the first time you visit the Dashboard. It
                     walks through balance cards, Savers, Trackers, Weekly
-                    insights, Upcoming charges, Navigation, and Lock. You can
-                    run it again from Settings → Help (&quot;Show dashboard tour
-                    again&quot;).
+                    insights, Upcoming charges, Need vs Want, Navigation, and
+                    Lock. You can run it again from Settings → Help (&quot;Show
+                    dashboard tour again&quot;).
                   </p>
                   <p className="mb-2">
                     <strong>Dashboard sections:</strong> You can change the
@@ -328,7 +338,7 @@ export function Help() {
                     your settings to an encrypted file (passphrase-protected)
                     and import on another device to restore your setup. Export
                     includes appearance, payday, trackers, upcoming charges, and
-                    goals—not transactions or API tokens.
+                    wants—not transactions or API tokens.
                   </p>
                   <p className="mb-2">
                     <strong>Notifications:</strong> If your browser supports it,

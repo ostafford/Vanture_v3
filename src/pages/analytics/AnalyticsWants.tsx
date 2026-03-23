@@ -3,7 +3,7 @@ import { Card, Row, Col, ProgressBar } from 'react-bootstrap'
 import { getGoals } from '@/services/goals'
 import { formatMoney } from '@/lib/format'
 
-export function AnalyticsGoals() {
+export function AnalyticsWants() {
   const goals = getGoals()
   const active = goals.filter((g) => !g.completed_at)
   const completed = goals.filter((g) => g.completed_at)
@@ -12,16 +12,25 @@ export function AnalyticsGoals() {
     <div className="grid-margin">
       <Card className="mb-4">
         <Card.Header>
-          <Card.Title className="mb-0">Goals</Card.Title>
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            <Card.Title className="mb-0">Wants</Card.Title>
+            <span
+              className="badge text-bg-secondary"
+              title="This section is in beta and may change"
+              aria-label="This section is in beta and may change"
+            >
+              Beta v1
+            </span>
+          </div>
           <Card.Text as="div" className="small text-muted mt-1">
-            Track progress toward your financial goals over time.
+            Track progress toward your wants over time.
           </Card.Text>
         </Card.Header>
         <Card.Body>
           {goals.length === 0 ? (
             <p className="text-muted mb-0">
-              No goals yet. Create goals from the Dashboard to start tracking
-              progress.
+              No wants yet. Add wants from the Dashboard Need vs Want card to
+              track progress.
             </p>
           ) : (
             <>
@@ -32,7 +41,7 @@ export function AnalyticsGoals() {
                     return (
                       <Col xs={12} md={6} key={g.id}>
                         <Link
-                          to={`/analytics/goals/${g.id}`}
+                          to={`/analytics/wants/${g.id}`}
                           className="text-decoration-none"
                           style={{ color: 'inherit' }}
                         >
@@ -91,7 +100,7 @@ export function AnalyticsGoals() {
                     {completed.map((g) => (
                       <Col xs={12} md={6} key={g.id}>
                         <Link
-                          to={`/analytics/goals/${g.id}`}
+                          to={`/analytics/wants/${g.id}`}
                           className="text-decoration-none"
                           style={{ color: 'inherit' }}
                         >

@@ -115,6 +115,7 @@ export function seedDemoData(): void {
   setAppSetting('last_sync', NOW)
   setAppSetting('onboarding_complete', '1')
   setAppSetting('demo_mode', '1')
+  setAppSetting('want_split_mode', 'priority')
   setAppSetting(
     'categorization_rules',
     JSON.stringify([
@@ -692,8 +693,8 @@ export function seedDemoData(): void {
   ).toISOString()
 
   run(
-    `INSERT INTO goals (name, target_amount, current_amount, monthly_contribution, target_date, icon, completed_at, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO goals (name, target_amount, current_amount, monthly_contribution, target_date, icon, completed_at, priority_rank, allocation_percent, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       'Emergency Fund',
       1000000,
@@ -702,6 +703,8 @@ export function seedDemoData(): void {
       daysAheadStr(365),
       '\uD83D\uDEE1\uFE0F',
       null,
+      1,
+      40,
       goalCreatedAt1,
       NOW,
     ]
@@ -710,8 +713,8 @@ export function seedDemoData(): void {
   const goal1Id = (goal1Result[0]?.values?.[0]?.[0] as number) ?? 1
 
   run(
-    `INSERT INTO goals (name, target_amount, current_amount, monthly_contribution, target_date, icon, completed_at, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO goals (name, target_amount, current_amount, monthly_contribution, target_date, icon, completed_at, priority_rank, allocation_percent, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       'New Laptop',
       250000,
@@ -720,6 +723,8 @@ export function seedDemoData(): void {
       daysAheadStr(60),
       '\uD83D\uDCBB',
       null,
+      2,
+      35,
       goalCreatedAt2,
       NOW,
     ]
@@ -728,8 +733,8 @@ export function seedDemoData(): void {
   const goal2Id = (goal2Result[0]?.values?.[0]?.[0] as number) ?? 2
 
   run(
-    `INSERT INTO goals (name, target_amount, current_amount, monthly_contribution, target_date, icon, completed_at, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO goals (name, target_amount, current_amount, monthly_contribution, target_date, icon, completed_at, priority_rank, allocation_percent, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       'Car Deposit',
       2500000,
@@ -738,6 +743,8 @@ export function seedDemoData(): void {
       daysAheadStr(1095),
       '\uD83D\uDE97',
       null,
+      3,
+      25,
       goalCreatedAt3,
       NOW,
     ]
@@ -746,8 +753,8 @@ export function seedDemoData(): void {
   const goal3Id = (goal3Result[0]?.values?.[0]?.[0] as number) ?? 3
 
   run(
-    `INSERT INTO goals (name, target_amount, current_amount, monthly_contribution, target_date, icon, completed_at, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO goals (name, target_amount, current_amount, monthly_contribution, target_date, icon, completed_at, priority_rank, allocation_percent, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       'Weekend Getaway',
       80000,
@@ -756,6 +763,8 @@ export function seedDemoData(): void {
       daysAgoStr(30),
       '\u2708\uFE0F',
       new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      null,
+      null,
       goalCreatedAt4,
       NOW,
     ]
