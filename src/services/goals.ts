@@ -34,7 +34,12 @@ export function getGoals(): GoalWithProgress[] {
     `SELECT id, name, target_amount, current_amount, monthly_contribution,
             target_date, icon, completed_at, priority_rank, allocation_percent,
             created_at, updated_at
-     FROM goals ORDER BY completed_at IS NOT NULL, name`
+     FROM goals
+     ORDER BY
+       completed_at IS NOT NULL,
+       CASE WHEN completed_at IS NULL AND priority_rank IS NULL THEN 1 ELSE 0 END,
+       CASE WHEN completed_at IS NULL THEN COALESCE(priority_rank, 999999) ELSE 0 END,
+       name`
   )
   const list: GoalWithProgress[] = []
   while (stmt.step()) {
@@ -142,6 +147,33 @@ export function updateGoal(
   )
   schedulePersist()
   recordGoalSnapshot(id)
+}
+
+/**
+ * Persist active want order by assigning sequential priority ranks.
+ * First id in the list becomes top priority.
+ */
+export function reorderActiveGoals(goalIdsInOrder: number[]): void {
+  const db = getDb()
+  if (!db) throw new Error('Database not ready')
+  if (goalIdsInOrder.length === 0) return
+  const now = new Date().toISOString()
+  db.run('BEGIN')
+  try {
+    for (let i = 0; i < goalIdsInOrder.length; i++) {
+      db.run(
+        `UPDATE goals
+         SET priority_rank = ?, updated_at = ?
+         WHERE id = ? AND completed_at IS NULL`,
+        [i, now, goalIdsInOrder[i]]
+      )
+    }
+    db.run('COMMIT')
+    schedulePersist()
+  } catch (error) {
+    db.run('ROLLBACK')
+    throw error
+  }
 }
 
 export function deleteGoal(id: number): void {

@@ -27,7 +27,7 @@ import {
   setDashboardSectionOrder,
   type DashboardSectionId,
 } from '@/lib/dashboardSections'
-import { getDueSoonCharges } from '@/services/upcoming'
+import { daysUntilCharge, getDueSoonCharges } from '@/services/upcoming'
 import {
   getNotificationsEnabled,
   hasNotifiedToday,
@@ -73,6 +73,7 @@ export function Dashboard() {
   const [thresholdDollars, setThresholdDollars] = useState('')
   const [thresholdPctPay, setThresholdPctPay] = useState('')
 
+  const availableCents = getAvailableBalance()
   const spendableCents = getSpendableBalance()
   const payAmountCents = getPayAmountCents()
   const thresholdCentsRaw = getAppSetting(SPENDABLE_ALERT_KEY)
@@ -105,6 +106,10 @@ export function Dashboard() {
     nextPayday && nextPayday.trim() !== ''
       ? `$${formatMoney(reservedCents)} reserved until ${formatShortDate(nextPayday)}`
       : `$${formatMoney(reservedCents)} reserved for upcoming`
+  const availableProjectedSubtitle =
+    payAmountCents != null
+      ? `Projected post-payday: $${formatMoney(availableCents + payAmountCents)}`
+      : 'Projected post-payday unavailable (set pay amount in Settings)'
 
   const spendableTooltip =
     (isSpendableLow
@@ -118,6 +123,19 @@ export function Dashboard() {
     const now = new Date()
     return `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`
   }, [])
+  const dueSoon = useMemo(() => getDueSoonCharges(), [dataVersion])
+  const reservedSubtitle = useMemo(() => {
+    const nextDue = dueSoon[0]
+    if (!nextDue) return undefined
+    const days = daysUntilCharge(nextDue.next_charge_date)
+    const dayText = days === 0 ? 'today' : `${days} day${days === 1 ? '' : 's'}`
+    return (
+      <>
+        <i className="mdi mdi-bell-ring me-1" aria-hidden />
+        Due: {nextDue.name} (${formatMoney(nextDue.amount)}) - {dayText}
+      </>
+    )
+  }, [dueSoon])
 
   const openThresholdModal = useCallback(() => {
     const raw = getAppSetting(SPENDABLE_ALERT_KEY)
@@ -294,7 +312,8 @@ export function Dashboard() {
         <Col md={4} className="stretch-card">
           <StatCard
             title="Available"
-            value={getAvailableBalance()}
+            value={availableCents}
+            subtitle={availableProjectedSubtitle}
             gradient="success"
           />
         </Col>
@@ -325,6 +344,7 @@ export function Dashboard() {
           <StatCard
             title="Reserved"
             value={getReservedAmount()}
+            subtitle={reservedSubtitle}
             gradient="danger"
           />
         </Col>

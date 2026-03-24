@@ -3,11 +3,13 @@ import { Card, OverlayTrigger, Tooltip } from 'react-bootstrap'
 import { formatMoney } from '@/lib/format'
 
 type ColorVariant = 'primary' | 'danger' | 'info' | 'success'
+type SubtitleVariant = 'warning' | 'warningChip'
 
 export interface StatCardProps {
   title: string
   value: number
-  subtitle?: string
+  subtitle?: ReactNode
+  subtitleVariant?: SubtitleVariant
   /** When set, shown instead of $formatMoney(value). Use for non-currency values (e.g. counts). */
   displayValue?: ReactNode
   /** Smaller variant: less padding, smaller typography, gradient background. */
@@ -21,6 +23,7 @@ export function StatCard({
   title,
   value,
   subtitle,
+  subtitleVariant,
   displayValue,
   compact,
   gradient,
@@ -73,27 +76,35 @@ export function StatCard({
   return (
     <Card className={`stat-card-flat stat-card-flat--${gradient}`}>
       <Card.Body className="stat-card-flat__body">
-        <div className="stat-card-flat__title">
-          {title}
-          {tooltip && (
-            <OverlayTrigger
-              placement="top"
-              overlay={
-                <Tooltip id={`stat-${title}-tooltip`}>{tooltip}</Tooltip>
-              }
-            >
-              <span
-                className="ms-1 stat-card-flat__info"
-                role="img"
-                aria-label="Info"
+        <div className="stat-card-flat__header">
+          <div className="stat-card-flat__title">
+            {title}
+            {tooltip && (
+              <OverlayTrigger
+                placement="top"
+                overlay={
+                  <Tooltip id={`stat-${title}-tooltip`}>{tooltip}</Tooltip>
+                }
               >
-                <i className="mdi mdi-information-outline" aria-hidden />
-              </span>
-            </OverlayTrigger>
+                <span
+                  className="ms-1 stat-card-flat__info"
+                  role="img"
+                  aria-label="Info"
+                >
+                  <i className="mdi mdi-information-outline" aria-hidden />
+                </span>
+              </OverlayTrigger>
+            )}
+          </div>
+          {subtitle && (
+            <div
+              className={`stat-card-flat__subtitle${subtitleVariant ? ` stat-card-flat__subtitle--${subtitleVariant}` : ''}`}
+            >
+              {subtitle}
+            </div>
           )}
         </div>
         <div className="stat-card-flat__value">{valueContent}</div>
-        {subtitle && <div className="stat-card-flat__subtitle">{subtitle}</div>}
       </Card.Body>
     </Card>
   )

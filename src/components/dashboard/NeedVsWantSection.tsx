@@ -21,6 +21,7 @@ import {
   deleteGoal,
   markGoalComplete,
   reopenGoal,
+  reorderActiveGoals,
   type GoalWithProgress,
 } from '@/services/goals'
 import { formatMoney } from '@/lib/format'
@@ -41,20 +42,6 @@ import {
 } from '@/services/wantPlanner'
 import type React from 'react'
 
-const WANT_ICONS = [
-  { value: null, label: 'None' },
-  { value: '\uD83C\uDFE0', label: 'House' },
-  { value: '\uD83D\uDE97', label: 'Car' },
-  { value: '\u2708\uFE0F', label: 'Travel' },
-  { value: '\uD83C\uDF93', label: 'Education' },
-  { value: '\uD83D\uDCB0', label: 'Savings' },
-  { value: '\uD83C\uDFA8', label: 'Hobby' },
-  { value: '\uD83C\uDF89', label: 'Event' },
-  { value: '\uD83D\uDEE1\uFE0F', label: 'Emergency' },
-  { value: '\uD83D\uDCBB', label: 'Tech' },
-  { value: '\uD83C\uDFCB\uFE0F', label: 'Fitness' },
-]
-
 function toneTextClass(tone: WantScheduleTone): string {
   if (tone === 'success') return 'text-success'
   if (tone === 'warning') return 'text-warning'
@@ -69,21 +56,42 @@ function getBadgeToneClass(tone: WantScheduleTone): string {
   return 'text-bg-secondary'
 }
 
+function formatDueDateShort(dateValue: string | null): string | null {
+  if (!dateValue) return null
+  const raw = String(dateValue).trim()
+  if (!raw) return null
+  const parts = raw.split('-')
+  if (parts.length === 3) {
+    const yy = parts[0].slice(-2)
+    return `${parts[2]}/${parts[1]}/${yy}`
+  }
+  const parsed = new Date(`${raw}T12:00:00Z`)
+  if (Number.isNaN(parsed.getTime())) return null
+  const dd = String(parsed.getUTCDate()).padStart(2, '0')
+  const mm = String(parsed.getUTCMonth() + 1).padStart(2, '0')
+  const yy = String(parsed.getUTCFullYear()).slice(-2)
+  return `${dd}/${mm}/${yy}`
+}
+
+function getNextPaydayToneClass(daysUntil: number | null): string {
+  if (daysUntil == null) return 'text-muted'
+  if (daysUntil <= 10) return 'text-success'
+  if (daysUntil <= 20) return 'text-warning'
+  return 'text-danger'
+}
+
 function getTrackerStyleProgress(progress: number): {
   variant: 'danger' | 'warning' | 'success'
   striped: boolean
   animated: boolean
 } {
-  if (progress >= 100) {
-    return { variant: 'danger', striped: true, animated: true }
-  }
   if (progress >= 81) {
-    return { variant: 'danger', striped: false, animated: false }
+    return { variant: 'success', striped: false, animated: false }
   }
   if (progress > 50) {
     return { variant: 'warning', striped: false, animated: false }
   }
-  return { variant: 'success', striped: false, animated: false }
+  return { variant: 'danger', striped: false, animated: false }
 }
 
 function getPaceStatusBadgeLabel(
@@ -117,14 +125,14 @@ export function NeedVsWantSection({
   const [currentAmount, setCurrentAmount] = useState('')
   const [monthlyContribution, setMonthlyContribution] = useState('')
   const [targetDate, setTargetDate] = useState('')
-  const [icon, setIcon] = useState<string | null>(null)
-  const [priorityRank, setPriorityRank] = useState('')
   const [allocationPercent, setAllocationPercent] = useState('')
   const [showCompleted, setShowCompleted] = useState(false)
   const [splitMode, setSplitMode] = useState<WantSplitMode>(() =>
     getWantSplitMode()
   )
   const [showAssumptions, setShowAssumptions] = useState(false)
+  const [dragSourceId, setDragSourceId] = useState<number | null>(null)
+  const [dragOverId, setDragOverId] = useState<number | null>(null)
 
   const goals = getGoals()
   const active = goals.filter((g) => !g.completed_at)
@@ -180,8 +188,6 @@ export function NeedVsWantSection({
     setCurrentAmount('')
     setMonthlyContribution('')
     setTargetDate('')
-    setIcon(null)
-    setPriorityRank('')
     setAllocationPercent('')
     setShowModal(true)
   }
@@ -195,8 +201,6 @@ export function NeedVsWantSection({
       g.monthly_contribution != null ? String(g.monthly_contribution / 100) : ''
     )
     setTargetDate(g.target_date ?? '')
-    setIcon(g.icon)
-    setPriorityRank(g.priority_rank != null ? String(g.priority_rank) : '')
     setAllocationPercent(
       g.allocation_percent != null ? String(g.allocation_percent) : ''
     )
@@ -211,17 +215,9 @@ export function NeedVsWantSection({
       ? Math.round(parseFloat(monthlyContribution) * 100)
       : null
     const dateVal = targetDate.trim() || null
-    const pr =
-      priorityRank.trim() === ''
-        ? null
-        : Math.max(0, parseInt(priorityRank, 10))
     const apRaw = allocationPercent.trim()
     const ap =
       apRaw === '' ? null : Math.min(100, Math.max(0, parseInt(apRaw, 10)))
-    if (pr != null && Number.isNaN(pr)) {
-      toast.error('Priority must be a number.')
-      return
-    }
     if (ap != null && Number.isNaN(ap)) {
       toast.error('Allocation % must be a number.')
       return
@@ -235,13 +231,21 @@ export function NeedVsWantSection({
         currentCents,
         monthlyCents,
         dateVal,
-        icon,
-        pr,
+        null,
+        null,
         ap
       )
       toast.success('Want updated.')
     } else {
-      createGoal(name.trim(), targetCents, monthlyCents, dateVal, icon, pr, ap)
+      createGoal(
+        name.trim(),
+        targetCents,
+        monthlyCents,
+        dateVal,
+        null,
+        null,
+        ap
+      )
       toast.success('Want created.')
     }
     setShowModal(false)
@@ -266,6 +270,44 @@ export function NeedVsWantSection({
   function handleReopen(g: GoalWithProgress) {
     reopenGoal(g.id)
     bumpRefresh()
+  }
+
+  function handleWantDragStart(e: React.DragEvent<HTMLDivElement>, id: number) {
+    e.dataTransfer.setData('text/plain', String(id))
+    e.dataTransfer.effectAllowed = 'move'
+    setDragSourceId(id)
+  }
+
+  function handleWantDragOver(e: React.DragEvent<HTMLDivElement>, id: number) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverId(id)
+  }
+
+  function handleWantDrop(
+    e: React.DragEvent<HTMLDivElement>,
+    targetId: number
+  ) {
+    e.preventDefault()
+    const sourceRaw = e.dataTransfer.getData('text/plain')
+    const sourceId = parseInt(sourceRaw, 10)
+    setDragOverId(null)
+    setDragSourceId(null)
+    if (Number.isNaN(sourceId) || sourceId === targetId) return
+    const ids = active.map((g) => g.id)
+    const from = ids.indexOf(sourceId)
+    const to = ids.indexOf(targetId)
+    if (from === -1 || to === -1) return
+    const next = [...ids]
+    next.splice(from, 1)
+    next.splice(to, 0, sourceId)
+    reorderActiveGoals(next)
+    bumpRefresh()
+  }
+
+  function handleWantDragEnd() {
+    setDragOverId(null)
+    setDragSourceId(null)
   }
 
   const payPeriodLabel =
@@ -327,18 +369,30 @@ export function NeedVsWantSection({
               <ul className="small mb-2 ps-3">
                 <li>
                   Reserved before payday:{' '}
-                  <strong>${formatMoney(needsSummary.reservedCents)}</strong>
+                  <strong className="text-danger">
+                    ${formatMoney(needsSummary.reservedCents)}
+                  </strong>
                 </li>
                 <li>
                   Due before next pay:{' '}
                   <strong>{needsSummary.countBeforeNextPay}</strong> (
-                  <strong>
+                  <strong className="text-danger">
                     ${formatMoney(needsSummary.sumBeforeNextPayCents)}
                   </strong>
                   )
                 </li>
                 {needsSummary.nextPayday && (
-                  <li>Next payday: {needsSummary.nextPayday}</li>
+                  <li>
+                    Next payday:{' '}
+                    <span
+                      className={getNextPaydayToneClass(
+                        needsSummary.daysUntilNextPayday
+                      )}
+                    >
+                      {formatDueDateShort(needsSummary.nextPayday) ??
+                        needsSummary.nextPayday}
+                    </span>
+                  </li>
                 )}
               </ul>
               <a
@@ -450,17 +504,42 @@ export function NeedVsWantSection({
                     : null
                 const progressStyle = getTrackerStyleProgress(g.progress)
                 return (
-                  <div key={g.id} className="mb-3">
+                  <div
+                    key={g.id}
+                    className="mb-3"
+                    draggable
+                    onDragStart={(e) => handleWantDragStart(e, g.id)}
+                    onDragEnd={handleWantDragEnd}
+                    onDragOver={(e) => handleWantDragOver(e, g.id)}
+                    onDrop={(e) => handleWantDrop(e, g.id)}
+                    style={{
+                      outline:
+                        dragOverId === g.id && dragSourceId !== g.id
+                          ? '2px dashed var(--vantura-primary)'
+                          : undefined,
+                      borderRadius: 6,
+                      cursor: dragSourceId === g.id ? 'grabbing' : 'grab',
+                    }}
+                    title="Drag to reorder want"
+                    aria-label={`Drag row to reorder want ${g.name}`}
+                  >
                     <div className="d-flex justify-content-between align-items-center mb-1">
                       <div className="d-flex align-items-center gap-2">
-                        {g.icon && <span>{g.icon}</span>}
                         <button
                           type="button"
-                          className="btn btn-link p-0 text-decoration-none fw-medium"
+                          className="btn btn-link p-0 text-decoration-none text-start"
                           onClick={() => openEdit(g)}
                           style={{ color: 'inherit' }}
+                          aria-label={`Edit want ${g.name}`}
                         >
-                          {g.name}
+                          <div className="d-flex flex-column align-items-start">
+                            <span className="fw-medium">{g.name}</span>
+                            {g.target_date && (
+                              <span className="small text-muted">
+                                Due: {formatDueDateShort(g.target_date)}
+                              </span>
+                            )}
+                          </div>
                         </button>
                       </div>
                       <div className="d-flex flex-column align-items-end gap-1">
@@ -519,7 +598,6 @@ export function NeedVsWantSection({
                     {g.monthly_contribution != null && (
                       <div className="small text-muted mt-1">
                         Manual: ${formatMoney(g.monthly_contribution)}/month
-                        {g.target_date && ` · Target: ${g.target_date}`}
                       </div>
                     )}
                   </div>
@@ -636,25 +714,6 @@ export function NeedVsWantSection({
             <Row>
               <Col sm={6}>
                 <Form.Group className="mb-2">
-                  <Form.Label htmlFor="want-priority">
-                    Priority (lower first)
-                  </Form.Label>
-                  <Form.Control
-                    id="want-priority"
-                    type="number"
-                    min="0"
-                    step="1"
-                    placeholder="e.g. 1"
-                    value={priorityRank}
-                    onChange={(e) => setPriorityRank(e.target.value)}
-                  />
-                  <Form.Text className="small">
-                    Used when split = Priority
-                  </Form.Text>
-                </Form.Group>
-              </Col>
-              <Col sm={6}>
-                <Form.Group className="mb-2">
                   <Form.Label htmlFor="want-pct">Allocation %</Form.Label>
                   <Form.Control
                     id="want-pct"
@@ -672,31 +731,6 @@ export function NeedVsWantSection({
                 </Form.Group>
               </Col>
             </Row>
-            <Form.Group className="mb-2">
-              <Form.Label>Icon</Form.Label>
-              <div className="d-flex flex-wrap gap-2">
-                {WANT_ICONS.map((opt) => (
-                  <button
-                    key={opt.label}
-                    type="button"
-                    className="btn btn-outline-secondary btn-sm"
-                    style={{
-                      minWidth: 40,
-                      borderColor:
-                        icon === opt.value
-                          ? 'var(--vantura-primary)'
-                          : undefined,
-                      borderWidth: icon === opt.value ? 2 : undefined,
-                    }}
-                    onClick={() => setIcon(opt.value)}
-                    aria-pressed={icon === opt.value}
-                    aria-label={opt.label}
-                  >
-                    {opt.value ?? 'None'}
-                  </button>
-                ))}
-              </div>
-            </Form.Group>
           </Form>
         </Modal.Body>
         <Modal.Footer>

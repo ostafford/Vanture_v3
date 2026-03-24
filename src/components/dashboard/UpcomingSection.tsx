@@ -15,7 +15,6 @@ import {
   deleteUpcomingCharge,
   getUpcomingChargesForMonth,
   daysUntilCharge,
-  getDueSoonCharges,
   type UpcomingChargeRow,
 } from '@/services/upcoming'
 import { getReservedAmount } from '@/services/balance'
@@ -181,7 +180,6 @@ export function UpcomingSection({
   })
 
   const { nextPay, later, nextPayday } = getUpcomingChargesGrouped()
-  const dueSoon = useMemo(() => getDueSoonCharges(), [])
   const calendarCharges = useMemo(
     () => getUpcomingChargesForMonth(calendarMonth.year, calendarMonth.month),
     [calendarMonth.year, calendarMonth.month]
@@ -380,25 +378,6 @@ export function UpcomingSection({
           </OverlayTrigger>
         </Card.Header>
         <Card.Body>
-          {dueSoon.length > 0 && (
-            <div
-              className="alert alert-warning py-2 px-3 mb-3 small"
-              role="status"
-            >
-              <i className="mdi mdi-bell-ring me-1" aria-hidden />
-              <strong>Due soon:</strong>{' '}
-              {dueSoon.map((c, i) => (
-                <span key={c.id}>
-                  {i > 0 && ', '}
-                  {c.name} (${formatMoney(c.amount)} –{' '}
-                  {daysUntilCharge(c.next_charge_date) === 0
-                    ? 'today'
-                    : `in ${daysUntilCharge(c.next_charge_date)} day${daysUntilCharge(c.next_charge_date) === 1 ? '' : 's'}`}
-                  )
-                </span>
-              ))}
-            </div>
-          )}
           {nextPayday && viewMode === 'list' && (
             <p className="small text-muted mb-2">
               Pay day – Due {formatShortDate(nextPayday)}

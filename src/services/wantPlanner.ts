@@ -83,6 +83,19 @@ export interface NeedsSummary {
   countBeforeNextPay: number
   sumBeforeNextPayCents: number
   nextPayday: string | null
+  daysUntilNextPayday: number | null
+}
+
+function daysUntilIsoDate(dateLike: string | null): number | null {
+  if (!dateLike || String(dateLike).trim() === '') return null
+  const today = new Date()
+  const now = new Date(
+    Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+  )
+  const target = new Date(String(dateLike).trim() + 'T12:00:00Z')
+  if (Number.isNaN(target.getTime())) return null
+  const delta = target.getTime() - now.getTime()
+  return Math.max(0, Math.ceil(delta / (24 * 60 * 60 * 1000)))
 }
 
 export function getNeedsSummary(): NeedsSummary {
@@ -97,6 +110,7 @@ export function getNeedsSummary(): NeedsSummary {
     countBeforeNextPay: nextPay.length,
     sumBeforeNextPayCents,
     nextPayday,
+    daysUntilNextPayday: daysUntilIsoDate(nextPayday),
   }
 }
 
