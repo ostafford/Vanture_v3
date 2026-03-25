@@ -851,9 +851,14 @@ body {
 }
 .stat-card-flat__header {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
+}
+.stat-card-flat__bottom-row {
+  display: flex;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 0.75rem;
+  margin-top: auto;
 }
 .stat-card-flat__title {
   font-size: 0.8rem;
@@ -876,7 +881,7 @@ body {
   color: var(--vantura-text);
   line-height: 1.2;
   text-align: right;
-  margin-top: 0.45rem;
+  margin-top: 0;
 }
 .stat-card-flat__subtitle {
   font-size: 0.8rem;
@@ -884,8 +889,7 @@ body {
   white-space: normal;
   overflow-wrap: anywhere;
   text-align: right;
-  margin-left: auto;
-  flex: 1;
+  align-self: flex-end;
 }
 .stat-card-flat__subtitle--warning {
   color: var(--vantura-warning);
@@ -1527,4 +1531,25 @@ body {
 .toast-fit-content {
   width: max-content;
   min-width: 10rem;
+}
+
+/* Month summary chart legend toggles: borderless/ghost buttons */
+.month-summary-legend-toggle.btn {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  padding: 0.25rem 0.35rem;
+}
+.month-summary-legend-toggle.btn:hover {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+.month-summary-legend-toggle.btn.active,
+.month-summary-legend-toggle.btn[aria-pressed='true'] {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+.month-summary-legend-toggle.btn:focus-visible {
+  outline: 2px solid var(--vantura-primary);
+  outline-offset: 2px;
 }

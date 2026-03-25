@@ -76,35 +76,38 @@ export function StatCard({
   return (
     <Card className={`stat-card-flat stat-card-flat--${gradient}`}>
       <Card.Body className="stat-card-flat__body">
-        <div className="stat-card-flat__header">
-          <div className="stat-card-flat__title">
-            {title}
-            {tooltip && (
-              <OverlayTrigger
-                placement="top"
-                overlay={
-                  <Tooltip id={`stat-${title}-tooltip`}>{tooltip}</Tooltip>
-                }
-              >
-                <span
-                  className="ms-1 stat-card-flat__info"
-                  role="img"
-                  aria-label="Info"
-                >
-                  <i className="mdi mdi-information-outline" aria-hidden />
-                </span>
-              </OverlayTrigger>
-            )}
+        {subtitle && (
+          <div
+            className={`stat-card-flat__subtitle${subtitleVariant ? ` stat-card-flat__subtitle--${subtitleVariant}` : ''}`}
+          >
+            {subtitle}
           </div>
-          {subtitle && (
-            <div
-              className={`stat-card-flat__subtitle${subtitleVariant ? ` stat-card-flat__subtitle--${subtitleVariant}` : ''}`}
-            >
-              {subtitle}
+        )}
+
+        <div className="stat-card-flat__bottom-row">
+          <div className="stat-card-flat__header">
+            <div className="stat-card-flat__title">
+              {title}
+              {tooltip && (
+                <OverlayTrigger
+                  placement="top"
+                  overlay={
+                    <Tooltip id={`stat-${title}-tooltip`}>{tooltip}</Tooltip>
+                  }
+                >
+                  <span
+                    className="ms-1 stat-card-flat__info"
+                    role="img"
+                    aria-label="Info"
+                  >
+                    <i className="mdi mdi-information-outline" aria-hidden />
+                  </span>
+                </OverlayTrigger>
+              )}
             </div>
-          )}
+          </div>
+          <div className="stat-card-flat__value">{valueContent}</div>
         </div>
-        <div className="stat-card-flat__value">{valueContent}</div>
       </Card.Body>
     </Card>
   )

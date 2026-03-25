@@ -5,7 +5,7 @@ import type {
   MonthSpendingSeriesPoint,
   MonthMetric,
 } from '@/lib/monthSpendingSeries'
-import { formatDollars } from '@/lib/format'
+import { formatDollars, formatMoney } from '@/lib/format'
 
 const BORDER_COLOR = 'var(--vantura-border, #ebedf2)'
 const MARGIN_TOP = 12
@@ -16,12 +16,16 @@ const DANGER_COLOR = 'var(--vantura-danger, #fe7c96)'
 const SUCCESS_FILL =
   'color-mix(in srgb, var(--vantura-success) 18%, transparent)'
 const DANGER_FILL = 'color-mix(in srgb, var(--vantura-danger) 18%, transparent)'
+const TOOLTIP_OFFSET = 10
+const TOOLTIP_PADDING = 8
 
 export interface MonthSpendingComparisonChartProps {
   series: MonthSpendingSeries | null
   metric: MonthMetric
   height?: number
   showAverage?: boolean
+  showCurrent?: boolean
+  showPrevious?: boolean
   className?: string
   style?: React.CSSProperties
   'aria-label'?: string
@@ -118,6 +122,8 @@ export function MonthSpendingComparisonChart({
   metric,
   height = 220,
   showAverage = false,
+  showCurrent = true,
+  showPrevious = true,
   className,
   style,
   'aria-label': ariaLabel,
@@ -133,14 +139,22 @@ export function MonthSpendingComparisonChart({
       metric
     )
 
-    const allValues = [...currentValues, ...previousValues].filter(
-      (v): v is number => v != null
-    )
+    const avg = showAverage ? computeAverage(currentValues) : null
+
+    const allValues: number[] = []
+    if (showCurrent) {
+      for (const v of currentValues) if (v != null) allValues.push(v)
+    }
+    if (showPrevious) {
+      for (const v of previousValues) if (v != null) allValues.push(v)
+    }
+    if (avg != null) allValues.push(avg)
+
     if (allValues.length === 0) {
       return {
         points: series.points,
         yDomain: [0, 1],
-        avg: null,
+        avg,
       }
     }
 
@@ -159,14 +173,12 @@ export function MonthSpendingComparisonChart({
     const yMin = domainMin - padding
     const yMax = maxVal + padding
 
-    const avg = showAverage ? computeAverage(currentValues) : null
-
     return {
       points: series.points,
       yDomain: [yMin, yMax] as [number, number],
       avg,
     }
-  }, [series, metric, showAverage])
+  }, [series, metric, showAverage, showCurrent, showPrevious])
 
   useEffect(() => {
     const el = containerRef.current
@@ -295,50 +307,210 @@ export function MonthSpendingComparisonChart({
         .attr('stroke-dasharray', '4 4')
     }
 
-    const area = d3
-      .area<MonthSpendingSeriesPoint>()
-      .defined(currentLine.defined())
-      .x((d) => xScale(d.day))
-      .y0(innerHeight)
-      .y1((d) => {
-        const { currentValues } = getMetricValues([d], metric)
-        return yScale(currentValues[0] ?? 0)
-      })
+    // Conditionally render visible series
+    if (showCurrent) {
+      const area = d3
+        .area<MonthSpendingSeriesPoint>()
+        .defined(currentLine.defined())
+        .x((d) => xScale(d.day))
+        .y0(innerHeight)
+        .y1((d) => {
+          const { currentValues } = getMetricValues([d], metric)
+          return yScale(currentValues[0] ?? 0)
+        })
 
-    g.append('path')
-      .datum(points)
-      .attr('fill', currentFill)
-      .attr('stroke', 'none')
-      .attr('d', area)
-      .attr('opacity', 0.9)
+      g.append('path')
+        .datum(points)
+        .attr('fill', currentFill)
+        .attr('stroke', 'none')
+        .attr('d', area)
+        .attr('opacity', 0.9)
 
-    g.append('path')
-      .datum(points)
-      .attr('stroke', currentStroke)
-      .attr('stroke-width', 2)
-      .attr('fill', 'none')
-      .attr('d', currentLine)
-      .attr('opacity', 0.9)
+      g.append('path')
+        .datum(points)
+        .attr('stroke', currentStroke)
+        .attr('stroke-width', 2)
+        .attr('fill', 'none')
+        .attr('d', currentLine)
+        .attr('opacity', 0.9)
+    }
 
-    g.append('path')
-      .datum(points)
-      .attr('stroke', previousStroke)
-      .attr('stroke-width', 2)
-      .attr('fill', 'none')
-      .attr('d', previousLine)
-      .attr('opacity', 0.9)
+    if (showPrevious) {
+      g.append('path')
+        .datum(points)
+        .attr('stroke', previousStroke)
+        .attr('stroke-width', 2)
+        .attr('fill', 'none')
+        .attr('d', previousLine)
+        .attr('opacity', 0.9)
+    }
+
+    // Hover tooltip + markers (matches behavior used in other D3 charts)
+    const tooltipEl = tooltipRef.current
+    const currentKey =
+      metric === 'spending'
+        ? 'currentSpending'
+        : metric === 'income'
+          ? 'currentIncome'
+          : 'currentNet'
+    const previousKey =
+      metric === 'spending'
+        ? 'previousSpending'
+        : metric === 'income'
+          ? 'previousIncome'
+          : 'previousNet'
+
+    const hoverGuide = g
+      .append('line')
+      .attr('x1', 0)
+      .attr('x2', 0)
+      .attr('y1', 0)
+      .attr('y2', innerHeight)
+      .attr('stroke', BORDER_COLOR)
+      .attr('stroke-width', 1)
+      .attr('opacity', 0.4)
+      .style('display', 'none')
+
+    const hoverCurrentDot = g
+      .append('circle')
+      .attr('r', 4)
+      .attr('fill', currentStroke)
+      .style('display', 'none')
+
+    const hoverPreviousDot = g
+      .append('circle')
+      .attr('r', 4)
+      .attr('fill', previousStroke)
+      .style('display', 'none')
+
+    const hoverAverageDot = g
+      .append('circle')
+      .attr('r', 4)
+      .attr('fill', 'var(--vantura-chart-average, #f2994a)')
+      .style('display', 'none')
+
+    const showTooltip = (
+      point: MonthSpendingSeriesPoint,
+      event: MouseEvent
+    ) => {
+      if (!tooltipEl || !container.parentElement) return
+
+      const lines: string[] = []
+      if (showPrevious) {
+        const v = point[previousKey] as number | null
+        const formatted = v == null ? 'No data' : `$${formatMoney(v)}`
+        lines.push(`Last month: ${formatted}`)
+      }
+      if (showCurrent) {
+        const v = point[currentKey] as number | null
+        const formatted = v == null ? 'No data' : `$${formatMoney(v)}`
+        lines.push(`This month: ${formatted}`)
+      }
+      if (avg != null) {
+        lines.push(`Average: $${formatMoney(avg)}`)
+      }
+
+      if (lines.length === 0) {
+        tooltipEl.innerHTML = `<strong>Day ${point.day}</strong><br/>No series selected`
+        tooltipEl.style.display = 'block'
+        // Positioning still matters; we'll reuse existing placement logic below.
+      } else {
+        tooltipEl.innerHTML = `<strong>Day ${point.day}</strong><br/>${lines.join(
+          '<br/>'
+        )}`
+        tooltipEl.style.display = 'block'
+      }
+
+      const wr = container.parentElement.getBoundingClientRect()
+      const tw = tooltipEl.offsetWidth || 160
+      const th = tooltipEl.offsetHeight || 50
+
+      let leftPx = event.clientX - wr.left + TOOLTIP_OFFSET
+      let topPx = event.clientY - wr.top + TOOLTIP_OFFSET
+      leftPx = Math.max(
+        TOOLTIP_PADDING,
+        Math.min(wr.width - tw - TOOLTIP_PADDING, leftPx)
+      )
+      topPx = Math.max(
+        TOOLTIP_PADDING,
+        Math.min(wr.height - th - TOOLTIP_PADDING, topPx)
+      )
+      tooltipEl.style.left = `${leftPx}px`
+      tooltipEl.style.top = `${topPx}px`
+    }
 
     const hideTooltip = () => {
-      if (tooltipRef.current) {
-        tooltipRef.current.style.display = 'none'
-      }
+      if (tooltipEl) tooltipEl.style.display = 'none'
+      hoverGuide.style('display', 'none')
+      hoverCurrentDot.style('display', 'none')
+      hoverPreviousDot.style('display', 'none')
+      hoverAverageDot.style('display', 'none')
     }
+
+    g.append('rect')
+      .attr('x', 0)
+      .attr('y', 0)
+      .attr('width', innerWidth)
+      .attr('height', innerHeight)
+      .attr('fill', 'transparent')
+      .style('pointer-events', 'all')
+      .on('mousemove', function (event: MouseEvent) {
+        const [mx] = d3.pointer(event, this)
+        const rawDay = xScale.invert(mx)
+        const day = Math.max(1, Math.min(points.length, Math.round(rawDay)))
+        const point = points[day - 1]
+
+        const x = xScale(point.day)
+        hoverGuide.attr('x1', x).attr('x2', x).style('display', 'block')
+
+        if (showCurrent) {
+          const v = point[currentKey] as number | null
+          if (v != null) {
+            hoverCurrentDot
+              .attr('cx', x)
+              .attr('cy', yScale(v))
+              .style('display', 'block')
+          } else {
+            hoverCurrentDot.style('display', 'none')
+          }
+        } else {
+          hoverCurrentDot.style('display', 'none')
+        }
+
+        if (showPrevious) {
+          const v = point[previousKey] as number | null
+          if (v != null) {
+            hoverPreviousDot
+              .attr('cx', x)
+              .attr('cy', yScale(v))
+              .style('display', 'block')
+          } else {
+            hoverPreviousDot.style('display', 'none')
+          }
+        } else {
+          hoverPreviousDot.style('display', 'none')
+        }
+
+        if (avg != null) {
+          hoverAverageDot
+            .attr('cx', x)
+            .attr('cy', yScale(avg))
+            .style('display', 'block')
+        } else {
+          hoverAverageDot.style('display', 'none')
+        }
+
+        showTooltip(point, event)
+      })
+      .on('mouseleave', function () {
+        hideTooltip()
+      })
 
     return () => {
       hideTooltip()
       d3.select(container).selectAll('*').remove()
     }
-  }, [prepared, metric, width, height])
+  }, [prepared, metric, width, height, showCurrent, showPrevious])
 
   if (!series || series.points.length === 0) {
     return (

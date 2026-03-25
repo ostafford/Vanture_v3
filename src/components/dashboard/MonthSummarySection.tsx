@@ -101,6 +101,9 @@ export function MonthSummarySection({
 }) {
   const [monthOffset, setMonthOffset] = useState(0)
   const [metric, setMetric] = useState<MonthMetric>('spending')
+  const [showPrevious, setShowPrevious] = useState(true)
+  const [showCurrent, setShowCurrent] = useState(true)
+  const [showAverageLine, setShowAverageLine] = useState(true)
 
   const { from, to, year, month } = useMemo(
     () => getMonthBoundsForOffset(monthOffset),
@@ -291,37 +294,64 @@ export function MonthSummarySection({
             series={monthSeries.series}
             metric={metric}
             height={230}
-            showAverage
+            showAverage={showAverageLine}
+            showCurrent={showCurrent}
+            showPrevious={showPrevious}
             aria-label="This month vs last month daily cumulative comparison"
           />
 
           <div className="d-flex justify-content-center mt-2">
             <div className="d-flex flex-wrap justify-content-center align-items-center gap-4 small text-muted">
-              <div className="d-flex align-items-center gap-2">
+              <button
+                type="button"
+                className={`btn btn-outline-secondary btn-sm month-summary-legend-toggle d-flex align-items-center gap-2 ${
+                  showPrevious ? 'active' : ''
+                }`}
+                onClick={() => setShowPrevious((v) => !v)}
+                aria-pressed={showPrevious}
+              >
                 <span
                   style={{
                     display: 'inline-block',
                     width: 10,
                     height: 2,
                     background: lastMonthStroke,
+                    opacity: showPrevious ? 1 : 0.35,
                   }}
                   aria-hidden
                 />
                 <span>Last month</span>
-              </div>
-              <div className="d-flex align-items-center gap-2">
+              </button>
+
+              <button
+                type="button"
+                className={`btn btn-outline-secondary btn-sm month-summary-legend-toggle d-flex align-items-center gap-2 ${
+                  showCurrent ? 'active' : ''
+                }`}
+                onClick={() => setShowCurrent((v) => !v)}
+                aria-pressed={showCurrent}
+              >
                 <span
                   style={{
                     display: 'inline-block',
                     width: 10,
                     height: 2,
                     background: thisMonthStroke,
+                    opacity: showCurrent ? 1 : 0.35,
                   }}
                   aria-hidden
                 />
                 <span>This month</span>
-              </div>
-              <div className="d-flex align-items-center gap-2">
+              </button>
+
+              <button
+                type="button"
+                className={`btn btn-outline-secondary btn-sm month-summary-legend-toggle d-flex align-items-center gap-2 ${
+                  showAverageLine ? 'active' : ''
+                }`}
+                onClick={() => setShowAverageLine((v) => !v)}
+                aria-pressed={showAverageLine}
+              >
                 <span
                   style={{
                     display: 'inline-block',
@@ -329,11 +359,12 @@ export function MonthSummarySection({
                     height: 0,
                     borderBottom:
                       '1px dashed var(--vantura-chart-average, #f2994a)',
+                    opacity: showAverageLine ? 1 : 0.35,
                   }}
                   aria-hidden
                 />
                 <span>Average</span>
-              </div>
+              </button>
             </div>
           </div>
         </div>
