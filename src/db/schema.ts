@@ -5,7 +5,7 @@
 
 import type { Database } from 'sql.js'
 
-const SCHEMA_VERSION = 9
+const SCHEMA_VERSION = 11
 
 const DDL_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS accounts (
@@ -118,6 +118,7 @@ const DDL_STATEMENTS = [
     transaction_id TEXT PRIMARY KEY,
     user_notes TEXT,
     user_category_override TEXT,
+    is_income INTEGER DEFAULT 0,
     FOREIGN KEY (transaction_id) REFERENCES transactions(id)
   )`,
   `CREATE TABLE IF NOT EXISTS net_worth_type_snapshots (
@@ -152,6 +153,15 @@ const DDL_STATEMENTS = [
     current_amount INTEGER NOT NULL,
     target_amount INTEGER NOT NULL,
     PRIMARY KEY (goal_id, snapshot_date)
+  )`,
+  `CREATE TABLE IF NOT EXISTS future_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    amount_cents INTEGER NOT NULL,
+    frequency TEXT NOT NULL DEFAULT 'MONTHLY',
+    target_date TEXT,
+    notes TEXT,
+    created_at TEXT NOT NULL
   )`,
 ]
 
@@ -315,6 +325,36 @@ export function runMigrations(database: Database): void {
     database.run(
       `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
       ['9']
+    )
+  }
+  if (version < 10) {
+    const cols = database.exec(`PRAGMA table_info(transaction_user_data)`)
+    const existing = new Set((cols[0]?.values ?? []).map((r) => String(r[1])))
+    if (!existing.has('is_income')) {
+      database.run(
+        `ALTER TABLE transaction_user_data ADD COLUMN is_income INTEGER DEFAULT 0`
+      )
+    }
+    database.run(
+      `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
+      ['10']
+    )
+  }
+  if (version < 11) {
+    database.run(
+      `CREATE TABLE IF NOT EXISTS future_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        amount_cents INTEGER NOT NULL,
+        frequency TEXT NOT NULL DEFAULT 'MONTHLY',
+        target_date TEXT,
+        notes TEXT,
+        created_at TEXT NOT NULL
+      )`
+    )
+    database.run(
+      `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
+      ['11']
     )
   }
 }

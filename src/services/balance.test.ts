@@ -115,4 +115,56 @@ describe('calculateReservedAmount', () => {
     expect(reserved).toBeGreaterThan(0)
     expect(reserved).toBeLessThanOrEqual(3000)
   })
+
+  it('includes recurring charges using projected next occurrence date', () => {
+    expect(
+      calculateReservedAmount(
+        [
+          {
+            next_charge_date: '2025-01-25',
+            frequency: 'MONTHLY',
+            amount: 3000,
+            is_reserved: 1,
+          },
+        ],
+        '2025-03-01',
+        'MONTHLY'
+      )
+    ).toBe(3000)
+  })
+
+  it('includes due-today charges in reserved total', () => {
+    expect(
+      calculateReservedAmount(
+        [
+          {
+            next_charge_date: '2025-02-23',
+            frequency: 'ONCE',
+            amount: 1000,
+            is_reserved: 1,
+          },
+        ],
+        '2025-03-01',
+        'MONTHLY'
+      )
+    ).toBe(1000)
+  })
+
+  it('excludes charges when cancel_by_date blocks projected occurrence', () => {
+    expect(
+      calculateReservedAmount(
+        [
+          {
+            next_charge_date: '2025-02-20',
+            frequency: 'WEEKLY',
+            amount: 1500,
+            is_reserved: 1,
+            cancel_by_date: '2025-02-22',
+          },
+        ],
+        '2025-03-01',
+        'MONTHLY'
+      )
+    ).toBe(0)
+  })
 })

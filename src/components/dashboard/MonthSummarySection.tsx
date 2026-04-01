@@ -14,10 +14,8 @@ import {
 } from '@/services/insights'
 import { formatMoney } from '@/lib/format'
 import type { MonthMetric } from '@/lib/monthSpendingSeries'
-import {
-  getMonthComparisonSemanticStrokes,
-  MonthSpendingComparisonChart,
-} from '@/components/charts/MonthSpendingComparisonChart'
+import { MonthSpendingComparisonChart } from '@/components/charts/MonthSpendingComparisonChart'
+import { getMonthComparisonSemanticStrokes } from '@/components/charts/monthComparisonSemanticStrokes'
 import type React from 'react'
 
 function getMonthBoundsForOffset(offset: number): {

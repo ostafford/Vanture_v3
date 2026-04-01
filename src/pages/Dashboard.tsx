@@ -63,7 +63,7 @@ const TOUR_DATA_ATTRS: Partial<Record<DashboardSectionId, string>> = {
 }
 
 export function Dashboard() {
-  useStore(syncStore, (s) => s.lastSyncCompletedAt)
+  const lastSyncCompletedAt = useStore(syncStore, (s) => s.lastSyncCompletedAt)
   const [dataVersion, setDataVersion] = useState(0)
   const [sectionOrder, setSectionOrder] = useState<DashboardSectionId[]>(() =>
     getDashboardSectionOrder()
@@ -123,7 +123,9 @@ export function Dashboard() {
     const now = new Date()
     return `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`
   }, [])
-  const dueSoon = useMemo(() => getDueSoonCharges(), [dataVersion])
+  void dataVersion
+  void lastSyncCompletedAt
+  const dueSoon = getDueSoonCharges()
   const reservedSubtitle = useMemo(() => {
     const nextDue = dueSoon[0]
     if (!nextDue) return undefined

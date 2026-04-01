@@ -75,9 +75,9 @@ export function startDashboardTour(onCompleted?: () => void): void {
     {
       element: '[data-tour="need_vs_want"]',
       popover: {
-        title: 'Need vs Want',
+        title: 'Plan summary',
         description:
-          'Needs summarizes upcoming bills. Wants are savings targets with a planner that estimates timelines using spendable, trackers, alerts, and pay settings.',
+          'Quick view of suggested savings toward wants and your need estimate. Open the full Plan page from the sidebar or "View breakdown" for assumptions, split options, and your want list.',
         side: 'top' as const,
         align: 'center' as const,
       },
@@ -87,7 +87,7 @@ export function startDashboardTour(onCompleted?: () => void): void {
       popover: {
         title: 'Navigation',
         description:
-          'Dashboard, Analytics (trends and reports), Transactions (filter and search), Settings (sync, payday, theme), and Help (user guide).',
+          'Dashboard, Plan (needs vs wants workspace), Analytics (trends and reports), Transactions (filter and search), Settings (sync, payday, theme), and Help (user guide).',
         side: 'right' as const,
         align: 'start' as const,
       },

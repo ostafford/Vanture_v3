@@ -21,16 +21,20 @@ export function AnalyticsWants() {
             >
               Beta v1
             </span>
+            <Link to="/plan" className="btn btn-outline-primary btn-sm ms-auto">
+              Open Plan
+            </Link>
           </div>
           <Card.Text as="div" className="small text-muted mt-1">
-            Track progress toward your wants over time.
+            Track progress toward your wants over time. Add or edit wants on the{' '}
+            <Link to="/plan">Plan</Link> page.
           </Card.Text>
         </Card.Header>
         <Card.Body>
           {goals.length === 0 ? (
             <p className="text-muted mb-0">
-              No wants yet. Add wants from the Dashboard Need vs Want card to
-              track progress.
+              No wants yet. Add wants on the <Link to="/plan">Plan</Link> page
+              to track progress here.
             </p>
           ) : (
             <>

@@ -143,6 +143,22 @@ export interface WantPlannerSnapshot {
   assumptionLines: string[]
 }
 
+/** Which input dominates `needEstimateCents` (= max of the two). */
+export type NeedEstimateDriver = 'upcoming' | 'behavioral' | 'tie'
+
+export function getNeedEstimateDriver(
+  snapshot: Pick<
+    WantPlannerSnapshot,
+    'upcomingNeedsBeforeNextPayCents' | 'behavioralNeedCents'
+  >
+): NeedEstimateDriver {
+  const u = snapshot.upcomingNeedsBeforeNextPayCents
+  const b = snapshot.behavioralNeedCents
+  if (u > b) return 'upcoming'
+  if (b > u) return 'behavioral'
+  return 'tie'
+}
+
 function daysUntilDate(nextDate: string | null): number | null {
   if (nextDate == null || String(nextDate).trim() === '') return null
   const today = new Date()

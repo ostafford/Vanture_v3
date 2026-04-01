@@ -28,7 +28,7 @@ const HELP_SECTION_LABELS: Record<string, string> = {
   'spendable-balance': 'Spendable balance',
   trackers: 'Trackers',
   savers: 'Savers',
-  'need-vs-want': 'Need vs Want',
+  'need-vs-want': 'Plan',
   'upcoming-charges': 'Upcoming charges',
   analytics: 'Analytics',
   transactions: 'Transactions',
@@ -128,13 +128,13 @@ export function Help() {
                 <>
                   <p className="mb-2">
                     The sidebar gives you access to: <strong>Dashboard</strong>{' '}
-                    (balance cards, This month, Savers, Need vs Want, Weekly
-                    insights, Trackers, Upcoming charges),{' '}
-                    <strong>Analytics</strong> (net worth, reports, trackers,
-                    savers, wants, insights, monthly review),{' '}
-                    <strong>Transactions</strong> (filter and search),{' '}
-                    <strong>Settings</strong>, and <strong>Help</strong> (this
-                    user guide).
+                    (balance cards, This month, Savers, Plan summary, Weekly
+                    insights, Trackers, Upcoming charges), <strong>Plan</strong>{' '}
+                    (full needs vs wants workspace), <strong>Analytics</strong>{' '}
+                    (net worth, reports, trackers, savers, wants, insights,
+                    monthly review), <strong>Transactions</strong> (filter and
+                    search), <strong>Settings</strong>, and{' '}
+                    <strong>Help</strong> (this user guide).
                   </p>
                   <p className="mb-0">
                     You can collapse the sidebar by clicking the brand area at
@@ -163,8 +163,8 @@ export function Help() {
                   </p>
                   <p className="mb-2">
                     On the Dashboard, the (i) icon next to some section titles
-                    (Trackers, Need vs Want, Upcoming charges) opens a short
-                    explanation for that section.
+                    (Trackers, Plan, Upcoming charges) opens a short explanation
+                    for that section.
                   </p>
                   <p className="mb-0">
                     <a
@@ -183,9 +183,10 @@ export function Help() {
                   The Dashboard shows balance cards (Available and Spendable),
                   then sections you can reorder: <strong>This month</strong>{' '}
                   (month-on-month comparison and narrative insights), Savers,
-                  Need vs Want, Weekly insights, Trackers, and Upcoming charges.
-                  You can change the order in Settings (Dashboard sections) or
-                  by dragging section headers on the Dashboard.
+                  Plan (summary with a link to the full Plan page), Weekly
+                  insights, Trackers, and Upcoming charges. You can change the
+                  order in Settings (Dashboard sections) or by dragging section
+                  headers on the Dashboard.
                 </p>
               )}
 
@@ -237,15 +238,25 @@ export function Help() {
               {activeSection === 'need-vs-want' && (
                 <>
                   <p className="mb-2">
-                    <strong>Needs</strong> are summarized from your Upcoming
-                    charges (recurring bills and subscriptions that reduce
-                    Spendable). <strong>Wants</strong> are items you are saving
-                    toward: set a target and saved amount, optional priority or
-                    allocation percent when splitting savings across multiple
-                    wants. The planner estimates timelines using Spendable,
-                    tracker budgets, your spendable alert floor, pay settings,
-                    and recent weekly spending. Under Analytics → Wants you can
-                    view progress over time.
+                    Open <strong>Plan</strong> from the sidebar (
+                    <Link to="/plan">/plan</Link>) for the full workspace. The
+                    planner compares{' '}
+                    <strong>charges due before your next payday</strong> to{' '}
+                    <strong>
+                      this week&apos;s spending extended to payday
+                    </strong>{' '}
+                    and uses the higher amount as the near-term need before
+                    suggesting how much you can put toward{' '}
+                    <strong>wants</strong>. Wants are savings targets with
+                    optional priority or allocation percent when splitting
+                    across multiple goals.
+                  </p>
+                  <p className="mb-2">
+                    The Dashboard <strong>Plan</strong> card shows the same
+                    numbers at a glance and links back to the full page. Under{' '}
+                    <strong>Analytics → Wants</strong> you can view progress
+                    over time (retrospective); Plan is where you adjust targets
+                    and pace.
                   </p>
                   <p className="mb-2 text-muted small">
                     This area is labelled Beta v1: layout and behaviour may
@@ -281,11 +292,12 @@ export function Help() {
                   range and an optional income-to-spending flow (Sankey).{' '}
                   <strong>Trackers</strong> and <strong>Savers</strong>{' '}
                   analytics show trends, budget vs spend, and balance over time.{' '}
-                  <strong>Wants</strong> analytics show progress and growth.{' '}
-                  <strong>Weekly insights</strong> compare money in vs out by
-                  week and category spending. <strong>Monthly review</strong>{' '}
-                  gives money in/out, top categories, and tracker spend for any
-                  month.
+                  <strong>Wants</strong> analytics show progress and growth; use{' '}
+                  <Link to="/plan">Plan</Link> to manage wants and the savings
+                  planner. <strong>Weekly insights</strong> compare money in vs
+                  out by week and category spending.{' '}
+                  <strong>Monthly review</strong> gives money in/out, top
+                  categories, and tracker spend for any month.
                 </p>
               )}
 
@@ -317,7 +329,7 @@ export function Help() {
                     <strong>Dashboard tour:</strong> A guided tour runs
                     automatically the first time you visit the Dashboard. It
                     walks through balance cards, Savers, Trackers, Weekly
-                    insights, Upcoming charges, Need vs Want, Navigation, and
+                    insights, Upcoming charges, Plan summary, Navigation, and
                     Lock. You can run it again from Settings → Help (&quot;Show
                     dashboard tour again&quot;).
                   </p>

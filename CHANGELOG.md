@@ -10,11 +10,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **Profile export/import:** Export whitelisted settings, trackers, upcoming charges, and wants (standalone savings targets) to a passphrase-encrypted file (Settings > Data). Import on another device to restore your setup. Never exports transactions, API tokens, or bank data. Uses PBKDF2 + AES-GCM; file format versioned for forward compatibility. See `src/services/profileExport.ts`, `src/pages/Settings.tsx`.
 - **Analytics section:** `/analytics` with overview and detail pages for Net worth, Reports, Trackers, Savers, Wants, Insights, and Monthly review. Uses existing transaction and snapshot data to surface longer-term trends across your finances. See `src/App.tsx`, `src/pages/analytics/*` (e.g. `AnalyticsWants.tsx`, `AnalyticsGoalDetail.tsx` for per-want detail).
-- **This month (Month at a glance) dashboard card:** New Dashboard section summarising the current month vs previous month with a line chart, key metrics, and narrative insights, alongside Savers, Need vs Want, Weekly insights, Trackers, and Upcoming sections. See `src/components/dashboard/MonthSummarySection.tsx`, `src/pages/Dashboard.tsx`, `src/index.css` (dashboard grid).
-- **Need vs Want Beta v1 label:** The Dashboard Need vs Want card and the Analytics **Wants** page header show a **Beta v1** badge while the feature is still evolving from user feedback; behaviour and copy may change in a later beta or stable release. See `src/components/dashboard/NeedVsWantSection.tsx`, `src/pages/analytics/AnalyticsWants.tsx`.
+- **This month (Month at a glance) dashboard card:** New Dashboard section summarising the current month vs previous month with a line chart, key metrics, and narrative insights, alongside Savers, Plan, Weekly insights, Trackers, and Upcoming sections. See `src/components/dashboard/MonthSummarySection.tsx`, `src/pages/Dashboard.tsx`, `src/index.css` (dashboard grid).
+- **Plan Beta v1 label:** The Dashboard Plan summary card and the Analytics **Wants** page header show a **Beta v1** badge while the feature is still evolving from user feedback; behaviour and copy may change in a later beta or stable release. See `src/components/plan/NeedVsWantDashboardSummary.tsx`, `src/pages/analytics/AnalyticsWants.tsx`.
+
+### Removed
+
+- **50/30/20 budget:** Removed the Analytics budget experience (overview card, `/analytics/budget` and `/analytics/income` now redirect to `/analytics`), supporting services, the transaction “count as income” control used for that flow, and Future items plus `budget_3020_config` from profile export/import. The `future_items` table and `transaction_user_data.is_income` column remain in the database for existing installs but are unused by the app.
 
 ### Changed
 
+- **Plan (needs vs wants):** Full planner, want list, and need breakdown live on **`/plan`** (sidebar **Plan**). The Dashboard shows a compact **Plan** summary card (suggested savings, at-risk wants, need driver, link to the full page). Settings section label for this block is **Plan**. Analytics **Wants** links to Plan for editing. See `src/pages/PlanPage.tsx`, `src/components/plan/*`, `src/components/dashboard/NeedVsWantSection.tsx`.
 - **Dashboard layout and ordering:** Dashboard sections now use a 2-column grid with cards that grow to fit content. Sections can be reordered via drag-and-drop on the Dashboard or from Settings (Dashboard sections). See `src/pages/Dashboard.tsx`, `src/lib/dashboardSections.ts`, `src/index.css` (dashboard grid).
 
 ## [0.0.2] - 2025-03-03

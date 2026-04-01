@@ -5,6 +5,7 @@
 
 import { getDb, getAppSetting } from '@/db'
 import type { PaydayFrequency } from '@/lib/payday'
+import { firstOccurrenceOnOrAfter } from './upcoming'
 
 export type { PaydayFrequency }
 
@@ -13,6 +14,7 @@ export interface UpcomingChargeRow {
   frequency: string
   amount: number
   is_reserved: number
+  cancel_by_date?: string | null
 }
 
 function todayDateString(): string {
@@ -45,10 +47,16 @@ export function calculateReservedAmount(
   const today = todayDateString()
 
   for (const charge of charges) {
-    if (charge.next_charge_date >= nextPayday) continue
-    if (charge.next_charge_date <= today) continue
+    const projectedChargeDate = firstOccurrenceOnOrAfter(
+      charge.next_charge_date,
+      charge.frequency,
+      today,
+      charge.cancel_by_date ?? null
+    )
+    if (!projectedChargeDate) continue
+    if (projectedChargeDate >= nextPayday) continue
 
-    const daysUntilCharge = daysBetween(today, charge.next_charge_date)
+    const daysUntilCharge = daysBetween(today, projectedChargeDate)
 
     switch (charge.frequency) {
       case 'WEEKLY':
@@ -110,16 +118,17 @@ export function getReservedAmount(): number {
   const nextPayday = getAppSetting('next_payday')
   const paydayFrequency = getAppSetting('payday_frequency')
   const stmt = db.prepare(
-    `SELECT next_charge_date, frequency, amount, is_reserved FROM upcoming_charges`
+    `SELECT next_charge_date, frequency, amount, is_reserved, cancel_by_date FROM upcoming_charges`
   )
   const charges: UpcomingChargeRow[] = []
   while (stmt.step()) {
-    const row = stmt.get() as [string, string, number, number]
+    const row = stmt.get() as [string, string, number, number, string | null]
     charges.push({
       next_charge_date: row[0],
       frequency: row[1],
       amount: row[2],
       is_reserved: row[3],
+      cancel_by_date: row[4] ?? null,
     })
   }
   stmt.free()

@@ -1,10 +1,81 @@
 import { describe, expect, it } from 'vitest'
 import {
+  allocatePerWantPerPayCents,
   formatCompactDurationFromDays,
   formatMixedDurationFromDays,
   getExpectedPerPayCentsForTarget,
+  getNeedEstimateDriver,
   getWantScheduleHealth,
 } from './wantPlanner'
+
+describe('getNeedEstimateDriver', () => {
+  it('returns upcoming when charges exceed behavioral estimate', () => {
+    expect(
+      getNeedEstimateDriver({
+        upcomingNeedsBeforeNextPayCents: 5000,
+        behavioralNeedCents: 3000,
+      })
+    ).toBe('upcoming')
+  })
+
+  it('returns behavioral when spending pace exceeds charges', () => {
+    expect(
+      getNeedEstimateDriver({
+        upcomingNeedsBeforeNextPayCents: 2000,
+        behavioralNeedCents: 8000,
+      })
+    ).toBe('behavioral')
+  })
+
+  it('returns tie when both legs are equal', () => {
+    expect(
+      getNeedEstimateDriver({
+        upcomingNeedsBeforeNextPayCents: 4000,
+        behavioralNeedCents: 4000,
+      })
+    ).toBe('tie')
+  })
+})
+
+describe('allocatePerWantPerPayCents', () => {
+  it('splits equally across active wants with remainder distributed', () => {
+    const map = allocatePerWantPerPayCents(100, 'equal', [
+      { id: 1, remainingCents: 1000, priorityRank: 1, allocationPercent: null },
+      { id: 2, remainingCents: 1000, priorityRank: 2, allocationPercent: null },
+      { id: 3, remainingCents: 1000, priorityRank: 3, allocationPercent: null },
+    ])
+    expect(map.get(1)! + map.get(2)! + map.get(3)!).toBe(100)
+    expect(Math.abs(map.get(1)! - map.get(2)!)).toBeLessThanOrEqual(1)
+  })
+
+  it('priority mode fills highest priority first', () => {
+    const map = allocatePerWantPerPayCents(150, 'priority', [
+      { id: 1, remainingCents: 80, priorityRank: 1, allocationPercent: null },
+      { id: 2, remainingCents: 200, priorityRank: 2, allocationPercent: null },
+    ])
+    expect(map.get(1)).toBe(80)
+    expect(map.get(2)).toBe(70)
+  })
+
+  it('percent mode uses allocation weights when they sum above zero', () => {
+    const map = allocatePerWantPerPayCents(100, 'percent', [
+      {
+        id: 1,
+        remainingCents: 1000,
+        priorityRank: 1,
+        allocationPercent: 25,
+      },
+      {
+        id: 2,
+        remainingCents: 1000,
+        priorityRank: 2,
+        allocationPercent: 75,
+      },
+    ])
+    expect(map.get(1)).toBe(25)
+    expect(map.get(2)).toBe(75)
+  })
+})
 
 describe('getWantScheduleHealth', () => {
   const now = new Date('2026-03-24T00:00:00Z')

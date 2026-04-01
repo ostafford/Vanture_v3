@@ -49,6 +49,44 @@ const FREQUENCY_ORDER: TrackerResetFrequency[] = [
   'MONTHLY',
 ]
 
+type FrequencyScope = 'ALL' | TrackerResetFrequency
+
+const FREQUENCY_SCOPE_OPTIONS: { value: FrequencyScope; label: string }[] = [
+  { value: 'ALL', label: 'All' },
+  { value: 'PAYDAY', label: 'Payday' },
+  { value: 'WEEKLY', label: 'Weekly' },
+  { value: 'FORTNIGHTLY', label: 'Fortnightly' },
+  { value: 'MONTHLY', label: 'Monthly' },
+]
+
+function periodOffsetPhrase(offset: number): string {
+  if (offset === 0) return 'Current period'
+  if (offset === -1) return 'Previous period'
+  return `${-offset} periods ago`
+}
+
+function formatOrdinalDayMonth(isoDate: string): string {
+  const d = new Date(isoDate + (isoDate.length === 10 ? 'T12:00:00Z' : ''))
+  if (Number.isNaN(d.getTime())) return isoDate
+  const day = d.getUTCDate()
+  const mod100 = day % 100
+  const suffix =
+    mod100 >= 11 && mod100 <= 13
+      ? 'th'
+      : day % 10 === 1
+        ? 'st'
+        : day % 10 === 2
+          ? 'nd'
+          : day % 10 === 3
+            ? 'rd'
+            : 'th'
+  const month = d.toLocaleDateString(undefined, {
+    month: 'short',
+    timeZone: 'UTC',
+  })
+  return `${day}${suffix} ${month}`
+}
+
 function getTrackerProgressStyle(progress: number): {
   variant: 'primary' | 'warning' | 'danger' | 'success'
   striped: boolean
@@ -81,10 +119,27 @@ export function TrackersSection({
   const [resetDay, setResetDay] = useState(1)
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([])
   const [badgeColor, setBadgeColor] = useState<string | null>(null)
-  const [periodOffset, setPeriodOffset] = useState(0)
+  const [selectedFrequencyScope, setSelectedFrequencyScope] =
+    useState<FrequencyScope>('ALL')
+  const [offsetByScope, setOffsetByScope] = useState<
+    Record<FrequencyScope, number>
+  >({
+    ALL: 0,
+    PAYDAY: 0,
+    WEEKLY: 0,
+    FORTNIGHTLY: 0,
+    MONTHLY: 0,
+  })
   const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY)
 
-  const trackers = getTrackersWithProgressForPeriod(periodOffset)
+  const activePeriodOffset = offsetByScope[selectedFrequencyScope]
+  const resetActiveScopeToCurrentPeriod = () =>
+    setOffsetByScope((prev) => ({ ...prev, [selectedFrequencyScope]: 0 }))
+  const trackers = getTrackersWithProgressForPeriod(activePeriodOffset)
+  const visibleTrackers =
+    selectedFrequencyScope === 'ALL'
+      ? trackers
+      : trackers.filter((t) => t.reset_frequency === selectedFrequencyScope)
   const categories = getCategories()
   const payAmountCents = getPayAmountCents()
   const totalPaydayBudgetCents = getTrackersWithProgress()
@@ -200,22 +255,15 @@ export function TrackersSection({
                   >
                     <i className="mdi mdi-chart-line" aria-hidden />
                   </span>
-                  <div className="d-flex flex-column">
+                  <div className="d-flex align-items-center">
                     <span>Trackers</span>
-                    <span className="small text-muted">
-                      {periodOffset === 0
-                        ? '(Current period)'
-                        : periodOffset === -1
-                          ? '(Previous period)'
-                          : `(${-periodOffset} periods ago)`}
-                    </span>
+                    <HelpPopover
+                      id="trackers-help"
+                      title="Trackers"
+                      content="Set a budget and reset frequency (Weekly, Fortnightly, Monthly, or Payday). Assign categories to each tracker. Use the frequency tabs to focus on one cadence at a time. Previous/Next moves the selected tab's period only, so you can browse Weekly, Payday, or Monthly history independently."
+                      ariaLabel="What are trackers?"
+                    />
                   </div>
-                  <HelpPopover
-                    id="trackers-help"
-                    title="Trackers"
-                    content="Set a budget and reset frequency (Weekly, Fortnightly, Monthly, or Payday). Assign one or more categories to each tracker. The dashboard shows progress, days left, and transactions in the current period. Each tracker uses its own reset period (Weekly, Payday, etc.); Previous/Next steps each tracker back or forward by that period."
-                    ariaLabel="What are trackers?"
-                  />
                 </div>
                 <div className="d-flex gap-1">
                   <OverlayTrigger
@@ -263,10 +311,34 @@ export function TrackersSection({
                   <Button
                     variant="outline-secondary"
                     size="sm"
-                    onClick={() => setPeriodOffset((o) => o - 1)}
+                    onClick={() =>
+                      setOffsetByScope((prev) => ({
+                        ...prev,
+                        [selectedFrequencyScope]:
+                          prev[selectedFrequencyScope] - 1,
+                      }))
+                    }
                     aria-label="Previous period"
                   >
                     <i className="mdi mdi-chevron-left" aria-hidden />
+                  </Button>
+                </OverlayTrigger>
+                <OverlayTrigger
+                  placement="top"
+                  overlay={
+                    <Tooltip id="trackers-today-tooltip-mobile">
+                      Go to current period
+                    </Tooltip>
+                  }
+                >
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={resetActiveScopeToCurrentPeriod}
+                    disabled={activePeriodOffset === 0}
+                    aria-label="Go to current period"
+                  >
+                    <i className="mdi mdi-calendar-today" aria-hidden />
                   </Button>
                 </OverlayTrigger>
                 <OverlayTrigger
@@ -278,8 +350,16 @@ export function TrackersSection({
                   <Button
                     variant="outline-secondary"
                     size="sm"
-                    onClick={() => setPeriodOffset((o) => o + 1)}
-                    disabled={periodOffset >= 0}
+                    onClick={() =>
+                      setOffsetByScope((prev) => ({
+                        ...prev,
+                        [selectedFrequencyScope]: Math.min(
+                          0,
+                          prev[selectedFrequencyScope] + 1
+                        ),
+                      }))
+                    }
+                    disabled={activePeriodOffset >= 0}
                     aria-label="Next period"
                   >
                     <i className="mdi mdi-chevron-right" aria-hidden />
@@ -297,22 +377,31 @@ export function TrackersSection({
                   >
                     <i className="mdi mdi-chart-line" aria-hidden />
                   </span>
-                  <div className="d-flex flex-column">
+                  <div className="d-flex align-items-center">
                     <span>Trackers</span>
-                    <span className="small text-muted">
-                      {periodOffset === 0
-                        ? '(Current period)'
-                        : periodOffset === -1
-                          ? '(Previous period)'
-                          : `(${-periodOffset} periods ago)`}
-                    </span>
+                    <HelpPopover
+                      id="trackers-help"
+                      title="Trackers"
+                      content="Set a budget and reset frequency (Weekly, Fortnightly, Monthly, or Payday). Assign categories to each tracker. Use the frequency tabs to focus on one cadence at a time. Previous/Next moves the selected tab's period only, so you can browse Weekly, Payday, or Monthly history independently."
+                      ariaLabel="What are trackers?"
+                    />
+                    <OverlayTrigger
+                      placement="top"
+                      overlay={
+                        <Tooltip id="trackers-analytics-header-tooltip-desktop">
+                          Analytics coming soon
+                        </Tooltip>
+                      }
+                    >
+                      <Link
+                        to="/analytics"
+                        className="btn btn-outline-secondary btn-sm ms-2"
+                        aria-label="Analytics coming soon"
+                      >
+                        <i className="mdi mdi-chart-box" aria-hidden />
+                      </Link>
+                    </OverlayTrigger>
                   </div>
-                  <HelpPopover
-                    id="trackers-help"
-                    title="Trackers"
-                    content="Set a budget and reset frequency (Weekly, Fortnightly, Monthly, or Payday). Assign one or more categories to each tracker. The dashboard shows progress, days left, and transactions in the current period. Each tracker uses its own reset period (Weekly, Payday, etc.); Previous/Next steps each tracker back or forward by that period."
-                    ariaLabel="What are trackers?"
-                  />
                 </div>
                 <div className="d-flex gap-1 align-items-center flex-nowrap ms-auto">
                   <OverlayTrigger
@@ -326,10 +415,34 @@ export function TrackersSection({
                     <Button
                       variant="outline-secondary"
                       size="sm"
-                      onClick={() => setPeriodOffset((o) => o - 1)}
+                      onClick={() =>
+                        setOffsetByScope((prev) => ({
+                          ...prev,
+                          [selectedFrequencyScope]:
+                            prev[selectedFrequencyScope] - 1,
+                        }))
+                      }
                       aria-label="Previous period"
                     >
                       <i className="mdi mdi-chevron-left" aria-hidden />
+                    </Button>
+                  </OverlayTrigger>
+                  <OverlayTrigger
+                    placement="top"
+                    overlay={
+                      <Tooltip id="trackers-today-tooltip-desktop">
+                        Go to current period
+                      </Tooltip>
+                    }
+                  >
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={resetActiveScopeToCurrentPeriod}
+                      disabled={activePeriodOffset === 0}
+                      aria-label="Go to current period"
+                    >
+                      <i className="mdi mdi-calendar-today" aria-hidden />
                     </Button>
                   </OverlayTrigger>
                   <OverlayTrigger
@@ -341,28 +454,20 @@ export function TrackersSection({
                     <Button
                       variant="outline-secondary"
                       size="sm"
-                      onClick={() => setPeriodOffset((o) => o + 1)}
-                      disabled={periodOffset >= 0}
+                      onClick={() =>
+                        setOffsetByScope((prev) => ({
+                          ...prev,
+                          [selectedFrequencyScope]: Math.min(
+                            0,
+                            prev[selectedFrequencyScope] + 1
+                          ),
+                        }))
+                      }
+                      disabled={activePeriodOffset >= 0}
                       aria-label="Next period"
                     >
                       <i className="mdi mdi-chevron-right" aria-hidden />
                     </Button>
-                  </OverlayTrigger>
-                  <OverlayTrigger
-                    placement="top"
-                    overlay={
-                      <Tooltip id="trackers-analytics-header-tooltip-desktop">
-                        Analytics coming soon
-                      </Tooltip>
-                    }
-                  >
-                    <Link
-                      to="/analytics"
-                      className="btn btn-outline-secondary btn-sm me-1"
-                      aria-label="Analytics coming soon"
-                    >
-                      <i className="mdi mdi-chart-box" aria-hidden />
-                    </Link>
                   </OverlayTrigger>
                   <OverlayTrigger
                     placement="top"
@@ -384,6 +489,72 @@ export function TrackersSection({
               </div>
             </>
           )}
+          <div className="d-flex justify-content-center mt-1">
+            <div
+              className="btn-group btn-group-sm flex-wrap"
+              role="group"
+              aria-label="Select tracker frequency view"
+            >
+              {FREQUENCY_SCOPE_OPTIONS.map((scope) => (
+                <button
+                  key={scope.value}
+                  type="button"
+                  className={`btn btn-outline-secondary ${
+                    selectedFrequencyScope === scope.value ? 'active' : ''
+                  }`}
+                  onClick={() => setSelectedFrequencyScope(scope.value)}
+                  aria-pressed={selectedFrequencyScope === scope.value}
+                >
+                  {scope.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {trackers.length > 0 && (
+            <div
+              className="small text-muted text-center mt-1 px-2"
+              aria-live="polite"
+            >
+              {selectedFrequencyScope !== 'ALL' ? (
+                visibleTrackers[0]?.period_start &&
+                visibleTrackers[0]?.period_end ? (
+                  <>
+                    {FREQUENCY_SCOPE_OPTIONS.find(
+                      (o) => o.value === selectedFrequencyScope
+                    )?.label ?? ''}{' '}
+                    period
+                    {activePeriodOffset !== 0 && (
+                      <> ({periodOffsetPhrase(activePeriodOffset)})</>
+                    )}
+                    : {formatOrdinalDayMonth(visibleTrackers[0].period_start)} -{' '}
+                    {formatOrdinalDayMonth(visibleTrackers[0].period_end)}
+                  </>
+                ) : null
+              ) : (
+                <>
+                  <div className="mb-1">
+                    {periodOffsetPhrase(activePeriodOffset)}
+                  </div>
+                  {FREQUENCY_ORDER.map((freq) => {
+                    const sample = trackers.find(
+                      (tr) => tr.reset_frequency === freq
+                    )
+                    if (!sample?.period_start || !sample?.period_end)
+                      return null
+                    const label =
+                      RESET_FREQUENCIES.find((f) => f.value === freq)?.label ??
+                      freq
+                    return (
+                      <div key={freq}>
+                        {label}: {formatOrdinalDayMonth(sample.period_start)} -{' '}
+                        {formatOrdinalDayMonth(sample.period_end)}
+                      </div>
+                    )
+                  })}
+                </>
+              )}
+            </div>
+          )}
         </Card.Header>
         <Card.Body>
           {paydayBudgetExceedsPay && (
@@ -394,16 +565,18 @@ export function TrackersSection({
               amount in Settings.
             </Alert>
           )}
-          {trackers.length === 0 ? (
+          {visibleTrackers.length === 0 ? (
             <p className="text-muted small mb-0">
-              No trackers yet. Add one to get started.
+              {selectedFrequencyScope === 'ALL'
+                ? 'No trackers yet. Add one to get started.'
+                : `No ${selectedFrequencyScope.toLowerCase()} trackers yet.`}
             </p>
           ) : (
             <div
               className="d-flex flex-column gap-3"
               style={{ paddingBottom: '0.75rem' }}
             >
-              {[...trackers]
+              {[...visibleTrackers]
                 .sort(
                   (a, b) =>
                     FREQUENCY_ORDER.indexOf(
@@ -415,8 +588,9 @@ export function TrackersSection({
                 )
                 .map((t, index, sorted) => {
                   const showGroupLabel =
-                    index === 0 ||
-                    sorted[index - 1].reset_frequency !== t.reset_frequency
+                    selectedFrequencyScope === 'ALL' &&
+                    (index === 0 ||
+                      sorted[index - 1].reset_frequency !== t.reset_frequency)
                   const groupLabel = RESET_FREQUENCIES.find(
                     (f) => f.value === t.reset_frequency
                   )?.label
@@ -557,8 +731,10 @@ export function TrackersSection({
                         </div>
                         <Collapse in={expandedId === t.id}>
                           <div className="mt-2 small">
-                            {getTrackerTransactionsInPeriod(t.id, periodOffset)
-                              .length === 0 ? (
+                            {getTrackerTransactionsInPeriod(
+                              t.id,
+                              activePeriodOffset
+                            ).length === 0 ? (
                               <span className="text-muted">
                                 No transactions this period
                               </span>
@@ -566,7 +742,7 @@ export function TrackersSection({
                               <ul className="list-unstyled mb-0">
                                 {getTrackerTransactionsInPeriod(
                                   t.id,
-                                  periodOffset
+                                  activePeriodOffset
                                 ).map((tx) => (
                                   <li key={tx.id}>
                                     {formatShortDate(

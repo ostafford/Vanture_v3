@@ -28,7 +28,6 @@ import { AnalyticsMonthlyReview } from '@/pages/analytics/AnalyticsMonthlyReview
 import { AnalyticsSaverDetail } from '@/pages/analytics/AnalyticsSaverDetail'
 import { AnalyticsWants } from '@/pages/analytics/AnalyticsWants'
 import { AnalyticsGoalDetail } from '@/pages/analytics/AnalyticsGoalDetail'
-
 function LegacyGoalsToWantsRedirect() {
   const { goalId } = useParams<{ goalId: string }>()
   if (!goalId) return <Navigate to="/analytics/wants" replace />
@@ -36,6 +35,7 @@ function LegacyGoalsToWantsRedirect() {
 }
 import { Settings } from '@/pages/Settings'
 import { Help } from '@/pages/Help'
+import { PlanPage } from '@/pages/PlanPage'
 import { Unlock } from '@/pages/Unlock'
 import { Onboarding } from '@/pages/Onboarding'
 
@@ -213,9 +213,18 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
+            <Route path="plan" element={<PlanPage />} />
             <Route path="transactions" element={<Transactions />} />
             <Route path="analytics" element={<AnalyticsLayout />}>
               <Route index element={<AnalyticsIndex />} />
+              <Route
+                path="budget"
+                element={<Navigate to="/analytics" replace />}
+              />
+              <Route
+                path="income"
+                element={<Navigate to="/analytics" replace />}
+              />
               <Route path="trackers" element={<AnalyticsTrackers />} />
               <Route
                 path="trackers/:trackerId"

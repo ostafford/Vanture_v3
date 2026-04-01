@@ -31,6 +31,34 @@ export interface TrackerWithProgress extends TrackerRow {
   period_end?: string
 }
 
+export interface TrackerListRow {
+  id: number
+  name: string
+  budget_amount: number
+  reset_frequency: string
+}
+
+export function getTrackersList(): TrackerListRow[] {
+  const db = getDb()
+  if (!db) return []
+  const stmt = db.prepare(
+    `SELECT id, name, budget_amount, reset_frequency
+     FROM trackers WHERE is_active = 1 ORDER BY name`
+  )
+  const list: TrackerListRow[] = []
+  while (stmt.step()) {
+    const row = stmt.get() as [number, string, number, string]
+    list.push({
+      id: row[0],
+      name: row[1],
+      budget_amount: row[2],
+      reset_frequency: row[3],
+    })
+  }
+  stmt.free()
+  return list
+}
+
 function daysBetween(dateStrA: string, dateStrB: string): number {
   const norm = (s: string) => (s.length >= 10 ? s.slice(0, 10) : s)
   const a = new Date(norm(dateStrA) + 'T12:00:00Z').getTime()

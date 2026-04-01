@@ -70,7 +70,7 @@ export function setDashboardSectionOrder(order: DashboardSectionId[]): void {
 export const DASHBOARD_SECTION_LABELS: Record<DashboardSectionId, string> = {
   month_summary: 'This month',
   savers: 'Savers',
-  need_vs_want: 'Need vs Want',
+  need_vs_want: 'Plan',
   insights: 'Weekly insights',
   trackers: 'Trackers',
   upcoming: 'Upcoming transactions',

@@ -180,6 +180,7 @@ export function AnalyticsIndex() {
                   <h6 className="mb-1 fw-semibold">Wants</h6>
                   <p className="mb-0 text-muted small">
                     Track progress toward your wants and see growth over time.
+                    Add or edit wants from <strong>Plan</strong> in the sidebar.
                   </p>
                   <span className="small text-primary mt-1 d-inline-block">
                     View wants{' '}

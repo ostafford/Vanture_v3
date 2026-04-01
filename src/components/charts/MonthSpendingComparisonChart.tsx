@@ -6,13 +6,13 @@ import type {
   MonthMetric,
 } from '@/lib/monthSpendingSeries'
 import { formatDollars, formatMoney } from '@/lib/format'
+import { getMonthComparisonSemanticStrokes } from '@/components/charts/monthComparisonSemanticStrokes'
 
 const BORDER_COLOR = 'var(--vantura-border, #ebedf2)'
 const MARGIN_TOP = 12
 const MARGIN_BOTTOM = 24
 const MARGIN_RIGHT = 24
 const SUCCESS_COLOR = 'var(--vantura-success, #1bcfb4)'
-const DANGER_COLOR = 'var(--vantura-danger, #fe7c96)'
 const SUCCESS_FILL =
   'color-mix(in srgb, var(--vantura-success) 18%, transparent)'
 const DANGER_FILL = 'color-mix(in srgb, var(--vantura-danger) 18%, transparent)'
@@ -57,51 +57,6 @@ function getMetricValues(
   }
 
   return { currentValues, previousValues }
-}
-
-function computeMtd(points: MonthSpendingSeriesPoint[], metric: MonthMetric) {
-  const currentKey =
-    metric === 'spending'
-      ? 'currentSpending'
-      : metric === 'income'
-        ? 'currentIncome'
-        : 'currentNet'
-  const previousKey =
-    metric === 'spending'
-      ? 'previousSpending'
-      : metric === 'income'
-        ? 'previousIncome'
-        : 'previousNet'
-
-  let currentMtd: number | null = null
-  let previousMtd: number | null = null
-
-  for (const p of points) {
-    const c = p[currentKey] as number | null
-    const prev = p[previousKey] as number | null
-    if (c != null) currentMtd = c
-    if (prev != null) previousMtd = prev
-  }
-
-  return { currentMtd, previousMtd }
-}
-
-export function getMonthComparisonSemanticStrokes(
-  points: MonthSpendingSeriesPoint[],
-  metric: MonthMetric
-): { currentStroke: string; previousStroke: string } | null {
-  const { currentMtd, previousMtd } = computeMtd(points, metric)
-  if (currentMtd == null || previousMtd == null) return null
-
-  const isGood =
-    metric === 'spending'
-      ? currentMtd <= previousMtd
-      : currentMtd >= previousMtd
-
-  return {
-    currentStroke: isGood ? SUCCESS_COLOR : DANGER_COLOR,
-    previousStroke: isGood ? DANGER_COLOR : SUCCESS_COLOR,
-  }
 }
 
 function computeAverage(values: (number | null)[]): number | null {
