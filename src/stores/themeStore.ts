@@ -4,6 +4,7 @@
 
 import { createStore } from 'zustand/vanilla'
 import { getDb, schedulePersist } from '@/db'
+import { persistThemeForBoot } from '@/lib/themeBoot'
 
 export type Theme = 'light' | 'dark'
 
@@ -20,6 +21,7 @@ export const themeStore = createStore<ThemeStore>((set) => ({
 
   setTheme(theme: Theme) {
     set({ theme })
+    persistThemeForBoot(theme)
     const db = getDb()
     if (db) {
       db.run(
@@ -42,16 +44,19 @@ export const themeStore = createStore<ThemeStore>((set) => ({
         const theme = String(value) as Theme
         if (theme === 'light' || theme === 'dark') {
           set({ theme, hydrated: true })
+          persistThemeForBoot(theme)
           return
         }
       }
       set({ theme: 'light', hydrated: true })
+      persistThemeForBoot('light')
       db.run(
         `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('theme', 'light')`
       )
       schedulePersist()
     } catch {
       set({ theme: 'light', hydrated: true })
+      persistThemeForBoot('light')
     }
   },
 }))

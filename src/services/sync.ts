@@ -56,6 +56,15 @@ export type SyncProgress = {
   hasMore?: boolean
 }
 
+/** User-visible status line for Settings / toast during full or incremental sync. */
+export function formatSyncProgressMessage(p: SyncProgress): string {
+  if (p.phase === 'done') return 'Complete.'
+  if (p.phase === 'transactions' && p.fetched != null) {
+    return `Fetched ${p.fetched} transactions…`
+  }
+  return `Syncing ${p.phase}…`
+}
+
 function run(sql: string, params: (string | number | null)[] = []): void {
   const db = getDb()
   if (!db) throw new Error('Database not ready')

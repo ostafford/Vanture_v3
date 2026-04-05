@@ -29,7 +29,7 @@ User- and developer-visible changes are listed in [CHANGELOG.md](CHANGELOG.md). 
 
 ### Phase 3: Core Features — Implemented
 
-- **Dashboard (2-column grid):** Balance cards (Available, Spendable with prorated reserved amount). Reorderable sections—**This month** (month-on-month summary), **Weekly insights**, **Trackers**, **Upcoming charges**—with drag-and-drop on the Dashboard or from Settings (Dashboard sections). Navbar: Sync, Last synced, Lock, Theme. See `src/pages/Dashboard.tsx`, `src/lib/dashboardSections.ts`.
+- **Dashboard (2-column grid):** Balance cards (Available, Spendable with prorated reserved amount). Reorderable sections—**Month at a glance** (month-on-month summary; chart legends use the actual month names), **Weekly insights**, **Trackers**, **Upcoming charges**—with drag-and-drop on the Dashboard or from Settings (Dashboard sections). Navbar: Sync, Last synced, Lock, Theme. See `src/pages/Dashboard.tsx`, `src/lib/dashboardSections.ts`.
 - **Spendable balance:** Available minus reserved for upcoming charges (prorated by next payday; monthly/quarterly/yearly). See `src/services/balance.ts`, `src/components/BalanceCard.tsx`.
 - **Trackers:** Create/edit with name, budget, reset frequency (Weekly/Fortnightly/Monthly/Payday), multi-category, optional badge color. Progress bar, days left, transactions in period. See `src/services/trackers.ts`, `src/components/dashboard/TrackersSection.tsx`.
 - **Weekly insights:** Money In, Money Out, Saver changes, Charges count, Payments; category breakdown. Click a category bar to set a custom colour (applies to that category in all weeks). See `src/services/insights.ts`, `src/components/dashboard/InsightsSection.tsx`.

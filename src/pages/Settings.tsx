@@ -5,21 +5,15 @@ import { useStore } from 'zustand'
 import { Button, Modal, Spinner, Form } from 'react-bootstrap'
 import { getAppSetting, setAppSetting, deleteDatabase } from '@/db'
 import { accentStore } from '@/stores/accentStore'
-import { syncStore } from '@/stores/syncStore'
 import { toast } from '@/stores/toastStore'
 import { ACCENT_PALETTES, type AccentId } from '@/lib/accentPalettes'
 import { sessionStore } from '@/stores/sessionStore'
-import { performFullSync, type SyncProgress } from '@/services/sync'
 import {
   deriveKeyFromPassphrase,
   decryptToken,
   encryptToken,
 } from '@/lib/crypto'
-import {
-  validateUpBankToken,
-  UpBankUnauthorizedError,
-  SYNC_401_MESSAGE,
-} from '@/api/upBank'
+import { validateUpBankToken } from '@/api/upBank'
 import { type PaydayFrequency, getPaydayDayOptions } from '@/lib/payday'
 import { setDashboardTourCompleted } from '@/lib/dashboardTour'
 import {
@@ -35,6 +29,7 @@ import {
   type CategorizationRule,
 } from '@/services/transactionUserData'
 import { getCategories } from '@/services/categories'
+import { formatSyncProgressMessage } from '@/services/sync'
 import {
   exportProfile,
   previewImportProfile,
@@ -52,6 +47,7 @@ import {
   getNotificationPermission,
   requestNotificationPermission,
 } from '@/lib/notifications'
+import { useFullReSync } from '@/hooks/useFullReSync'
 
 const SETTINGS_ACTIVE_SECTION_KEY = 'vantura_settings_active_section'
 const LEGACY_SETTINGS_ACCORDION_KEY = 'vantura_settings_accordion'
@@ -284,10 +280,14 @@ function DashboardSectionOrderForm() {
 }
 
 export function Settings() {
-  const [lastSync, setLastSync] = useState<string | null>(null)
-  const [syncing, setSyncing] = useState(false)
-  const [syncError, setSyncError] = useState<string | null>(null)
-  const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null)
+  const {
+    lastSync,
+    syncing,
+    syncError,
+    syncProgress,
+    setSyncError,
+    handleReSync,
+  } = useFullReSync()
   const [showClearModal, setShowClearModal] = useState(false)
   const [clearing, setClearing] = useState(false)
   const [showUpdateTokenModal, setShowUpdateTokenModal] = useState(false)
@@ -355,10 +355,6 @@ export function Settings() {
   })
 
   useEffect(() => {
-    setLastSync(getAppSetting('last_sync'))
-  }, [syncing])
-
-  useEffect(() => {
     const freq = getAppSetting('payday_frequency') as PaydayFrequency | null
     const dayStr = getAppSetting('payday_day')
     const next = getAppSetting('next_payday')
@@ -380,37 +376,6 @@ export function Settings() {
       setPaydayPayAmount('')
     }
   }, [])
-
-  async function handleReSync() {
-    const token = sessionStore.getState().getToken()
-    if (!token || syncing) return
-    if (getAppSetting('demo_mode') === '1') {
-      toast.info('Demo mode – no sync.')
-      return
-    }
-    setSyncing(true)
-    setSyncError(null)
-    syncStore.getState().setSyncing(true)
-    try {
-      setSyncProgress({ phase: 'accounts' })
-      await performFullSync(token, (p) => setSyncProgress(p))
-      setLastSync(getAppSetting('last_sync'))
-      syncStore.getState().syncCompleted()
-      toast.success('Full sync complete. All transactions updated.')
-    } catch (err) {
-      setSyncError(
-        err instanceof UpBankUnauthorizedError
-          ? SYNC_401_MESSAGE
-          : err instanceof Error
-            ? err.message
-            : 'Sync failed. Please try again.'
-      )
-    } finally {
-      setSyncProgress(null)
-      setSyncing(false)
-      syncStore.getState().setSyncing(false)
-    }
-  }
 
   async function handleClearAllData() {
     setClearing(true)
@@ -1002,12 +967,7 @@ export function Settings() {
                         role="status"
                         aria-live="polite"
                       >
-                        {syncProgress.phase === 'done'
-                          ? 'Complete.'
-                          : syncProgress.phase === 'transactions' &&
-                              syncProgress.fetched != null
-                            ? `Fetched ${syncProgress.fetched} transactions…`
-                            : `Syncing ${syncProgress.phase}…`}
+                        {formatSyncProgressMessage(syncProgress)}
                       </p>
                     )}
                     {syncError && (

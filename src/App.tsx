@@ -29,16 +29,20 @@ function AppContent() {
     null
   )
   const theme = useStore(themeStore, (s) => s.theme)
+  const themeHydrated = useStore(themeStore, (s) => s.hydrated)
   const accent = useStore(accentStore, (s) => s.accent)
+  const accentHydrated = useStore(accentStore, (s) => s.hydrated)
   const unlocked = useStore(sessionStore, (s) => s.unlocked)
 
   useEffect(() => {
+    if (!themeHydrated) return
     document.documentElement.setAttribute('data-theme', theme)
-  }, [theme])
+  }, [theme, themeHydrated])
 
   useEffect(() => {
+    if (!accentHydrated) return
     document.documentElement.setAttribute('data-accent', accent)
-  }, [accent])
+  }, [accent, accentHydrated])
 
   useEffect(() => {
     let cancelled = false
@@ -83,18 +87,7 @@ function AppContent() {
 
   if (bootError) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          padding: 24,
-          backgroundColor: '#f7f7f7',
-          color: '#1a1a1a',
-        }}
-      >
+      <div className="app-boot-shell app-boot-shell--padded">
         <h2 className="mb-2">Could not load app storage</h2>
         <p className="text-muted mb-4 text-center">{bootError}</p>
         <p className="small text-muted mb-3 text-center">
@@ -126,50 +119,16 @@ function AppContent() {
 
   if (!ready) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          backgroundColor: '#f7f7f7',
-          color: '#1a1a1a',
-        }}
-      >
-        <div
-          className="placeholder-glow d-flex align-items-center gap-2"
-          style={{ fontSize: '1rem' }}
-        >
-          <span className="placeholder col-1 rounded" style={{ height: 20 }} />
-          <span className="placeholder col-2 rounded" style={{ height: 20 }} />
-        </div>
-        <p className="mt-3 mb-0 small text-muted">Loading...</p>
+      <div className="app-boot-shell">
+        <span className="visually-hidden">Loading</span>
       </div>
     )
   }
 
   if (onboardingComplete === null) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          backgroundColor: 'var(--vantura-background)',
-          color: 'var(--vantura-text)',
-        }}
-      >
-        <div
-          className="placeholder-glow d-flex align-items-center gap-2"
-          style={{ fontSize: '1rem' }}
-        >
-          <span className="placeholder col-1 rounded" style={{ height: 20 }} />
-          <span className="placeholder col-2 rounded" style={{ height: 20 }} />
-        </div>
-        <p className="mt-3 mb-0 small text-muted">Loading...</p>
+      <div className="app-boot-shell">
+        <span className="visually-hidden">Loading</span>
       </div>
     )
   }

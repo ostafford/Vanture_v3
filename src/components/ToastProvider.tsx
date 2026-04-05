@@ -14,13 +14,14 @@ export function ToastProvider() {
   const show = useStore(toastStore, (s) => s.show)
   const message = useStore(toastStore, (s) => s.message)
   const variant = useStore(toastStore, (s) => s.variant)
+  const persistent = useStore(toastStore, (s) => s.persistent)
   const hide = useStore(toastStore, (s) => s.hide)
 
   useEffect(() => {
-    if (!show) return
+    if (!show || persistent) return
     const t = setTimeout(hide, AUTO_HIDE_MS)
     return () => clearTimeout(t)
-  }, [show, hide])
+  }, [show, hide, persistent])
 
   return (
     <ToastContainer
@@ -32,7 +33,7 @@ export function ToastProvider() {
       <Toast
         show={show}
         onClose={hide}
-        autohide
+        autohide={!persistent}
         delay={AUTO_HIDE_MS}
         bg={variantToBootstrap(variant)}
         className="bg-opacity-90 toast-fit-content"

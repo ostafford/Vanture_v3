@@ -11,21 +11,7 @@ import {
   getTrackerSpentInPeriod,
 } from '@/services/trackers'
 import { formatMoney } from '@/lib/format'
-
-const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-]
+import { comparisonMonthPairLabels, monthNameLong } from '@/lib/monthLabels'
 
 function getMonthBounds(
   year: number,
@@ -40,9 +26,11 @@ function getMonthBounds(
 function DeltaBadge({
   delta,
   invert,
+  vsPriorLabel,
 }: {
   delta: MonthDelta
   invert?: boolean
+  vsPriorLabel: string
 }) {
   if (delta.direction === 'flat') return null
   const isUp = delta.direction === 'up'
@@ -55,7 +43,7 @@ function DeltaBadge({
   return (
     <div
       className={`small ${cls}`}
-      aria-label={`${delta.direction} ${label} vs last month`}
+      aria-label={`${delta.direction} ${label} vs ${vsPriorLabel}`}
       style={{ fontSize: '0.75rem', lineHeight: 1.3 }}
     >
       <i
@@ -87,6 +75,10 @@ export function AnalyticsMonthlyReview() {
 
   const { from, to } = useMemo(() => getMonthBounds(year, month), [year, month])
   const comparison = useMemo(() => getMonthComparison(from, to), [from, to])
+  const monthPairLabels = useMemo(
+    () => comparisonMonthPairLabels(year, month),
+    [year, month]
+  )
   const categories = useMemo(
     () => getCategoryBreakdownForDateRange(from, to),
     [from, to]
@@ -122,9 +114,9 @@ export function AnalyticsMonthlyReview() {
                 onChange={(e) => setMonth(Number(e.target.value))}
                 aria-label="Month"
               >
-                {MONTHS.map((m, i) => (
-                  <option key={i} value={i + 1}>
-                    {m}
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                  <option key={m} value={m}>
+                    {monthNameLong(2020, m)}
                   </option>
                 ))}
               </Form.Select>
@@ -149,7 +141,7 @@ export function AnalyticsMonthlyReview() {
       <Card className="grid-margin">
         <Card.Header>
           <Card.Title className="mb-0">
-            {MONTHS[month - 1]} {year} — Summary
+            {monthNameLong(year, month)} {year} — Summary
           </Card.Title>
         </Card.Header>
         <Card.Body>
@@ -160,7 +152,10 @@ export function AnalyticsMonthlyReview() {
                 ${formatMoney(comparison.moneyIn.current)}
               </div>
               {comparison.hasPreviousData && (
-                <DeltaBadge delta={comparison.moneyIn} />
+                <DeltaBadge
+                  delta={comparison.moneyIn}
+                  vsPriorLabel={monthPairLabels.vsPriorShort}
+                />
               )}
             </Col>
             <Col xs={6} md={3}>
@@ -169,14 +164,22 @@ export function AnalyticsMonthlyReview() {
                 ${formatMoney(comparison.moneyOut.current)}
               </div>
               {comparison.hasPreviousData && (
-                <DeltaBadge delta={comparison.moneyOut} invert />
+                <DeltaBadge
+                  delta={comparison.moneyOut}
+                  invert
+                  vsPriorLabel={monthPairLabels.vsPriorShort}
+                />
               )}
             </Col>
             <Col xs={6} md={3}>
               <div className="small text-muted">Charges (count)</div>
               <div className="fw-semibold">{comparison.charges.current}</div>
               {comparison.hasPreviousData && (
-                <DeltaBadge delta={comparison.charges} invert />
+                <DeltaBadge
+                  delta={comparison.charges}
+                  invert
+                  vsPriorLabel={monthPairLabels.vsPriorShort}
+                />
               )}
             </Col>
             {comparison.currentTopCategory && (
@@ -193,7 +196,7 @@ export function AnalyticsMonthlyReview() {
           {comparison.hasPreviousData && comparison.narratives.length > 0 && (
             <div className="mt-3 pt-2 border-top">
               <div className="small text-muted mb-2">
-                vs {MONTHS[(month - 2 + 12) % 12]}
+                vs {monthPairLabels.previousLabel}
               </div>
               {comparison.narratives.map((n, i) => (
                 <div key={i} className="d-flex align-items-start gap-1 mb-1">

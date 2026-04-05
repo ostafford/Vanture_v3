@@ -27,21 +27,11 @@ import {
 } from '@/components/charts/monthComparisonSemanticStrokes'
 import { ComparisonKpis } from '@/components/atAGlance/ComparisonKpis'
 import { ComparisonNarratives } from '@/components/atAGlance/ComparisonNarratives'
-
-const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-]
+import {
+  comparisonMonthPairLabels,
+  formatWeekStartLabel,
+  monthNameLong,
+} from '@/lib/monthLabels'
 
 const WEEK_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -97,16 +87,39 @@ export function AnalyticsAtAGlanceSection() {
     return getWeekComparison(weekOffset)
   }, [mode, year, monthFrom, monthTo, weekOffset])
 
-  const vsPriorLabel =
-    mode === 'year'
-      ? 'last year'
-      : mode === 'month'
-        ? 'prev month'
-        : 'last week'
-
   const pointsCurrent = useMemo(() => getYearMonthlyTotals(year), [year])
   const pointsPrevious = useMemo(() => getYearMonthlyTotals(year - 1), [year])
   const previousYear = year - 1
+
+  const monthPairLabels = useMemo(
+    () => comparisonMonthPairLabels(monthYear, monthNum),
+    [monthYear, monthNum]
+  )
+
+  const weekRange = useMemo(() => getWeekRange(weekOffset), [weekOffset])
+  const weekRangePrev = useMemo(
+    () => getWeekRange(weekOffset - 1),
+    [weekOffset]
+  )
+
+  const weekLineLabels = useMemo(
+    () => ({
+      current: formatWeekStartLabel(weekRange.start),
+      previous: formatWeekStartLabel(weekRangePrev.start),
+    }),
+    [weekRange, weekRangePrev]
+  )
+
+  const vsPriorLabel = useMemo(() => {
+    if (mode === 'year') return String(previousYear)
+    if (mode === 'month') return monthPairLabels.vsPriorShort
+    return weekLineLabels.previous
+  }, [
+    mode,
+    previousYear,
+    monthPairLabels.vsPriorShort,
+    weekLineLabels.previous,
+  ])
 
   /** In-progress calendar year: draw “this year” only through the current month; historical years use all 12. */
   const yearCurrentThroughMonth = useMemo(
@@ -160,9 +173,8 @@ export function AnalyticsAtAGlanceSection() {
     semanticStrokes?.previousStroke ??
     'var(--vantura-chart-previous, var(--bs-gray-600, #6c757d))'
 
-  const monthLabel = MONTH_NAMES[monthNum - 1]
+  const monthLabel = monthNameLong(monthYear, monthNum)
   const showMonthYearLine = monthYear !== currentCalendarYear
-  const weekRange = useMemo(() => getWeekRange(weekOffset), [weekOffset])
 
   const headerIcon =
     mode === 'year'
@@ -179,17 +191,27 @@ export function AnalyticsAtAGlanceSection() {
 
   const chartAriaYear = `${year} monthly ${metric} trend compared to ${previousYear}`
 
-  const lineChartTitle =
-    (metric === 'spending'
-      ? 'Spending'
-      : metric === 'income'
-        ? 'Income'
-        : 'Net') +
-    (mode === 'year'
-      ? ' This Year vs Last Year'
-      : mode === 'month'
-        ? ' This Month vs Last Month'
-        : ' This Week vs Last Week')
+  const lineChartTitle = useMemo(() => {
+    const base =
+      metric === 'spending'
+        ? 'Spending'
+        : metric === 'income'
+          ? 'Income'
+          : 'Net'
+    if (mode === 'year') return `${base} ${year} vs ${previousYear}`
+    if (mode === 'month')
+      return `${base} ${monthPairLabels.currentLabel} vs ${monthPairLabels.previousLabel}`
+    return `${base} Week of ${formatWeekOfLabel(weekRange)} vs ${formatWeekOfLabel(weekRangePrev)}`
+  }, [
+    metric,
+    mode,
+    year,
+    previousYear,
+    monthPairLabels.currentLabel,
+    monthPairLabels.previousLabel,
+    weekRange,
+    weekRangePrev,
+  ])
 
   const formatWeekX = (d: number) =>
     WEEK_SHORT[Math.min(7, Math.max(1, d)) - 1] ?? `Day ${d}`
@@ -445,7 +467,7 @@ export function AnalyticsAtAGlanceSection() {
                       }}
                       aria-hidden
                     />
-                    <span>Last year</span>
+                    <span>{previousYear}</span>
                   </button>
 
                   <button
@@ -466,7 +488,7 @@ export function AnalyticsAtAGlanceSection() {
                       }}
                       aria-hidden
                     />
-                    <span>This year</span>
+                    <span>{year}</span>
                   </button>
 
                   <button
@@ -557,7 +579,9 @@ export function AnalyticsAtAGlanceSection() {
               showAverage={showAverageLine}
               showCurrent={showCurrent}
               showPrevious={showPrevious}
-              aria-label="This month vs last month daily cumulative comparison"
+              previousLineLabel={monthPairLabels.previousLabel}
+              currentLineLabel={monthPairLabels.currentLabel}
+              aria-label={`${monthPairLabels.currentLabel} vs ${monthPairLabels.previousLabel} daily cumulative comparison`}
             />
 
             <div className="d-flex justify-content-center mt-2">
@@ -580,7 +604,7 @@ export function AnalyticsAtAGlanceSection() {
                     }}
                     aria-hidden
                   />
-                  <span>Last month</span>
+                  <span>{monthPairLabels.previousLabel}</span>
                 </button>
 
                 <button
@@ -601,7 +625,7 @@ export function AnalyticsAtAGlanceSection() {
                     }}
                     aria-hidden
                   />
-                  <span>This month</span>
+                  <span>{monthPairLabels.currentLabel}</span>
                 </button>
 
                 <button
@@ -693,9 +717,9 @@ export function AnalyticsAtAGlanceSection() {
               showPrevious={showPrevious}
               formatXAxisTick={formatWeekX}
               formatTooltipDayTitle={formatWeekX}
-              previousLineLabel="Last week"
-              currentLineLabel="This week"
-              aria-label="This week vs last week daily cumulative comparison"
+              previousLineLabel={weekLineLabels.previous}
+              currentLineLabel={weekLineLabels.current}
+              aria-label={`${weekLineLabels.current} vs ${weekLineLabels.previous} daily cumulative comparison`}
             />
 
             <div className="d-flex justify-content-center mt-2">
@@ -718,7 +742,7 @@ export function AnalyticsAtAGlanceSection() {
                     }}
                     aria-hidden
                   />
-                  <span>Last week</span>
+                  <span>{weekLineLabels.previous}</span>
                 </button>
 
                 <button
@@ -739,7 +763,7 @@ export function AnalyticsAtAGlanceSection() {
                     }}
                     aria-hidden
                   />
-                  <span>This week</span>
+                  <span>{weekLineLabels.current}</span>
                 </button>
               </div>
             </div>

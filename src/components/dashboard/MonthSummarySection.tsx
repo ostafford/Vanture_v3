@@ -16,22 +16,8 @@ import { MonthSpendingComparisonChart } from '@/components/charts/MonthSpendingC
 import { getMonthComparisonSemanticStrokes } from '@/components/charts/monthComparisonSemanticStrokes'
 import { ComparisonKpis } from '@/components/atAGlance/ComparisonKpis'
 import { ComparisonNarratives } from '@/components/atAGlance/ComparisonNarratives'
+import { comparisonMonthPairLabels, monthNameLong } from '@/lib/monthLabels'
 import type React from 'react'
-
-const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-]
 
 export function MonthSummarySection({
   dragHandleProps,
@@ -53,7 +39,11 @@ export function MonthSummarySection({
     () => getMonthDayByDaySeries(from, to),
     [from, to]
   )
-  const monthLabel = MONTH_NAMES[month - 1]
+  const monthLabel = monthNameLong(year, month)
+  const monthPairLabels = useMemo(
+    () => comparisonMonthPairLabels(year, month),
+    [year, month]
+  )
   const showYear = year !== new Date().getFullYear()
   const semanticStrokes = useMemo(() => {
     return getMonthComparisonSemanticStrokes(monthSeries.series.points, metric)
@@ -120,7 +110,10 @@ export function MonthSummarySection({
         </div>
       </Card.Header>
       <Card.Body className="py-3">
-        <ComparisonKpis comparison={comparison} vsPriorLabel="prev month" />
+        <ComparisonKpis
+          comparison={comparison}
+          vsPriorLabel={monthPairLabels.vsPriorShort}
+        />
 
         {comparison.hasPreviousData && comparison.narratives.length > 0 && (
           <ComparisonNarratives narratives={comparison.narratives} />
@@ -142,7 +135,8 @@ export function MonthSummarySection({
                   ? 'Spending'
                   : metric === 'income'
                     ? 'Income'
-                    : 'Net') + ' This Month vs Last Month'}
+                    : 'Net') +
+                  ` ${monthPairLabels.currentLabel} vs ${monthPairLabels.previousLabel}`}
               </div>
             </div>
             <div
@@ -190,7 +184,9 @@ export function MonthSummarySection({
             showAverage={showAverageLine}
             showCurrent={showCurrent}
             showPrevious={showPrevious}
-            aria-label="This month vs last month daily cumulative comparison"
+            previousLineLabel={monthPairLabels.previousLabel}
+            currentLineLabel={monthPairLabels.currentLabel}
+            aria-label={`${monthPairLabels.currentLabel} vs ${monthPairLabels.previousLabel} daily cumulative comparison`}
           />
 
           <div className="d-flex justify-content-center mt-2">
@@ -213,7 +209,7 @@ export function MonthSummarySection({
                   }}
                   aria-hidden
                 />
-                <span>Last month</span>
+                <span>{monthPairLabels.previousLabel}</span>
               </button>
 
               <button
@@ -234,7 +230,7 @@ export function MonthSummarySection({
                   }}
                   aria-hidden
                 />
-                <span>This month</span>
+                <span>{monthPairLabels.currentLabel}</span>
               </button>
 
               <button

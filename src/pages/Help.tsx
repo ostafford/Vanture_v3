@@ -124,9 +124,9 @@ export function Help() {
                 <>
                   <p className="mb-2">
                     The sidebar gives you access to: <strong>Dashboard</strong>{' '}
-                    (balance cards, This month, Weekly insights, Trackers,
-                    Upcoming charges), <strong>Analytics</strong> (reports,
-                    trackers, insights, monthly review),{' '}
+                    (balance cards, Month at a glance, Weekly insights,
+                    Trackers, Upcoming charges), <strong>Analytics</strong>{' '}
+                    (reports, trackers, insights, monthly review),{' '}
                     <strong>Transactions</strong> (filter and search),{' '}
                     <strong>Settings</strong>, and <strong>Help</strong> (this
                     user guide).
@@ -176,8 +176,9 @@ export function Help() {
               {activeSection === 'dashboard' && (
                 <p className="mb-0">
                   The Dashboard shows balance cards (Available and Spendable),
-                  then sections you can reorder: <strong>This month</strong>{' '}
-                  (month-on-month comparison and narrative insights), Weekly
+                  then sections you can reorder:{' '}
+                  <strong>Month at a glance</strong> (calendar month vs previous
+                  month, with chart legends using those month names), Weekly
                   insights, Trackers, and Upcoming charges. You can change the
                   order in Settings (Dashboard sections) or by dragging section
                   headers on the Dashboard.

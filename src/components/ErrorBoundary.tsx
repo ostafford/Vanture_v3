@@ -14,17 +14,23 @@ interface State {
   error: Error | null
 }
 
+function toError(value: unknown): Error {
+  if (value instanceof Error) return value
+  if (typeof value === 'string') return new Error(value)
+  return new Error('Unknown error')
+}
+
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props)
     this.state = { hasError: false, error: null }
   }
 
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error }
+  static getDerivedStateFromError(error: unknown): State {
+    return { hasError: true, error: toError(error) }
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+  componentDidCatch(error: unknown, errorInfo: ErrorInfo): void {
     console.error('ErrorBoundary caught an error', error, errorInfo)
   }
 
@@ -38,6 +44,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render(): ReactNode {
     if (this.state.hasError && this.state.error) {
+      const { message, stack } = this.state.error
+      const isDev = import.meta.env.DEV
       return (
         <div
           style={{
@@ -52,10 +60,30 @@ export class ErrorBoundary extends Component<Props, State> {
           }}
         >
           <h2 className="mb-3">Something went wrong</h2>
-          <p className="text-muted mb-4 text-center">
+          <p className="text-muted mb-3 text-center">
             An unexpected error occurred. You can try reloading the app or going
             back to the dashboard.
           </p>
+          <p
+            className="small mb-3 text-center text-break px-2"
+            style={{ maxWidth: 560 }}
+            role="status"
+          >
+            <strong>Error:</strong> {message}
+          </p>
+          {isDev && stack ? (
+            <pre
+              className="small text-muted mb-4 p-3 rounded border text-start overflow-auto"
+              style={{
+                maxWidth: 'min(720px, 100%)',
+                maxHeight: 240,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+              }}
+            >
+              {stack}
+            </pre>
+          ) : null}
           <div className="d-flex gap-2">
             <button
               type="button"

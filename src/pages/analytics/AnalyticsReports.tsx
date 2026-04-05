@@ -15,6 +15,7 @@ import type { InsightsChartDatum } from '@/types/charts'
 import { formatMoney } from '@/lib/format'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
+import { monthNameLong, previousCalendarMonth } from '@/lib/monthLabels'
 
 function getDefaultDateRange(): { from: string; to: string } {
   const to = new Date()
@@ -26,20 +27,35 @@ function getDefaultDateRange(): { from: string; to: string } {
   }
 }
 
-const REPORT_PRESETS: { label: string; days?: number; month?: boolean }[] = [
-  { label: 'Last 7 days', days: 7 },
-  { label: 'Last 30 days', days: 30 },
-  { label: 'Last 90 days', days: 90 },
-  { label: 'This month', month: true },
-  { label: 'Last month', month: true },
-]
+type ReportPreset =
+  | { id: string; label: string; days: number }
+  | { id: string; label: string; month: 'current' | 'previous' }
 
-function getPresetRange(preset: (typeof REPORT_PRESETS)[number]): {
-  from: string
-  to: string
-} {
+function buildReportPresets(): ReportPreset[] {
   const now = new Date()
-  if (preset.days) {
+  const cy = now.getFullYear()
+  const cm = now.getMonth() + 1
+  const prev = previousCalendarMonth(cy, cm)
+  return [
+    { id: 'd7', label: 'Last 7 days', days: 7 },
+    { id: 'd30', label: 'Last 30 days', days: 30 },
+    { id: 'd90', label: 'Last 90 days', days: 90 },
+    {
+      id: 'm_current',
+      label: monthNameLong(cy, cm),
+      month: 'current',
+    },
+    {
+      id: 'm_previous',
+      label: monthNameLong(prev.year, prev.month),
+      month: 'previous',
+    },
+  ]
+}
+
+function getPresetRange(preset: ReportPreset): { from: string; to: string } {
+  const now = new Date()
+  if ('days' in preset) {
     const from = new Date(now)
     from.setDate(from.getDate() - preset.days)
     return {
@@ -47,7 +63,7 @@ function getPresetRange(preset: (typeof REPORT_PRESETS)[number]): {
       to: now.toISOString().slice(0, 10),
     }
   }
-  if (preset.label === 'This month') {
+  if (preset.month === 'current') {
     const y = now.getFullYear()
     const m = now.getMonth() + 1
     const from = `${y}-${String(m).padStart(2, '0')}-01`
@@ -71,6 +87,7 @@ export function AnalyticsReports() {
   const accent = useStore(accentStore, (s) => s.accent)
   const chartPalette = ACCENT_PALETTES[accent].chartPalette
   const categoryColors = getInsightsCategoryColors()
+  const reportPresets = buildReportPresets()
 
   const breakdown = useMemo(
     () => getCategoryBreakdownForDateRange(dateFrom, dateTo),
@@ -144,9 +161,9 @@ export function AnalyticsReports() {
         <Card.Body>
           <div className="mb-3">
             <ButtonGroup size="sm" className="flex-wrap">
-              {REPORT_PRESETS.map((preset) => (
+              {reportPresets.map((preset) => (
                 <Button
-                  key={preset.label}
+                  key={preset.id}
                   variant="outline-secondary"
                   onClick={() => {
                     const r = getPresetRange(preset)

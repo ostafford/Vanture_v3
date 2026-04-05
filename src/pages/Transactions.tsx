@@ -1,6 +1,15 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Card, Form, Row, Col, Button, Dropdown, Modal } from 'react-bootstrap'
+import {
+  Card,
+  Form,
+  Row,
+  Col,
+  Button,
+  Dropdown,
+  Modal,
+  Spinner,
+} from 'react-bootstrap'
 import { useStore } from 'zustand'
 import {
   getTransactionsGroupedByDate,
@@ -19,7 +28,9 @@ import {
   suggestCategoryFromRules,
   learnCategoryFromOverride,
 } from '@/services/transactionUserData'
+import { getAppSetting } from '@/db'
 import { syncStore } from '@/stores/syncStore'
+import { useFullReSync } from '@/hooks/useFullReSync'
 import {
   formatMoney,
   formatShortDate,
@@ -95,6 +106,8 @@ function useFiltersFromSearchParams(): {
 
 export function Transactions() {
   const lastSyncCompletedAt = useStore(syncStore, (s) => s.lastSyncCompletedAt)
+  const { syncing, syncError, handleReSync } = useFullReSync()
+  const isDemoMode = getAppSetting('demo_mode') === '1'
   const { filters, sort, setFilters } = useFiltersFromSearchParams()
   const [page, setPage] = useState(0)
   const [filtersDrawerOpen, setFiltersDrawerOpen] = useState(false)
@@ -200,7 +213,36 @@ export function Transactions() {
           </span>
           Transactions
         </h3>
+        <Button
+          type="button"
+          className="btn-gradient-primary"
+          size="sm"
+          onClick={handleReSync}
+          disabled={syncing || isDemoMode}
+          aria-label="Re-sync with Up Bank"
+          aria-busy={syncing}
+        >
+          {syncing ? (
+            <>
+              <Spinner
+                animation="border"
+                size="sm"
+                className="me-1"
+                role="status"
+                aria-hidden="true"
+              />
+              Syncing…
+            </>
+          ) : (
+            'Re-sync now'
+          )}
+        </Button>
       </div>
+      {syncError ? (
+        <div className="text-danger small mb-3" role="alert">
+          {syncError}
+        </div>
+      ) : null}
       <Card className="mb-3 grid-margin">
         <Card.Body>
           {isMobile ? (

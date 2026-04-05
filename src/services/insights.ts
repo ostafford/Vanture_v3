@@ -29,6 +29,12 @@ import {
   type MonthSpendingSeries,
   type MonthDailyInput,
 } from '@/lib/monthSpendingSeries'
+import {
+  formatWeekStartLabel,
+  monthNarrativePriorLabel,
+  weekNarrativePriorLabel,
+  yearNarrativePriorLabel,
+} from '@/lib/monthLabels'
 
 export interface WeekRange {
   start: Date
@@ -223,12 +229,7 @@ export function getInsightsHistory(weeksBack: number): InsightsHistoryRow[] {
     const insights = getWeeklyInsights(range)
     const startStr = range.startStr
     const endStr = range.endStr.slice(0, 10)
-    const label =
-      offset === 0
-        ? 'This week'
-        : offset === -1
-          ? 'Last week'
-          : `${-offset} weeks ago`
+    const label = formatWeekStartLabel(range.start)
     result.push({
       weekOffset: offset,
       weekLabel: label,
@@ -262,12 +263,7 @@ export function getCategoryBreakdownHistory(
     const range = getWeekRange(offset)
     const rows = getWeeklyCategoryBreakdown(range)
     const row = rows.find((r) => r.category_id === categoryId)
-    const label =
-      offset === 0
-        ? 'This week'
-        : offset === -1
-          ? 'Last week'
-          : `${-offset}w ago`
+    const label = formatWeekStartLabel(range.start)
     result.push({
       weekOffset: offset,
       weekLabel: label,
@@ -478,16 +474,20 @@ function fmtCentsDelta(cents: number): string {
 /** Labels for period-over-period narratives (vs last month/year/week). */
 export type NarrativePeriod = 'month' | 'year' | 'week'
 
-function narrativePriorLabel(p: NarrativePeriod): string {
+function narrativePriorLabel(
+  p: NarrativePeriod,
+  currentFrom: string,
+  previousFrom: string
+): string {
   switch (p) {
     case 'month':
-      return 'last month'
+      return monthNarrativePriorLabel(previousFrom, currentFrom)
     case 'year':
-      return 'last year'
+      return yearNarrativePriorLabel(previousFrom)
     case 'week':
-      return 'last week'
+      return weekNarrativePriorLabel(previousFrom)
     default:
-      return 'last month'
+      return monthNarrativePriorLabel(previousFrom, currentFrom)
   }
 }
 
@@ -502,7 +502,7 @@ export function getPeriodComparison(
   previousTo: string,
   narrativePeriod: NarrativePeriod
 ): MonthComparisonData {
-  const prior = narrativePriorLabel(narrativePeriod)
+  const prior = narrativePriorLabel(narrativePeriod, currentFrom, previousFrom)
 
   const curInsights = getInsightsForDateRange(currentFrom, currentTo)
   const curCategories = getCategoryBreakdownForDateRange(currentFrom, currentTo)
