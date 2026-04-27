@@ -1,5 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
-import * as d3 from 'd3'
+import { useEffect, useRef } from 'react'
+import {
+  select,
+  scaleLinear,
+  scaleBand,
+  axisBottom,
+  axisLeft,
+  type NumberValue,
+  type Selection,
+} from 'd3'
 import type { InsightsChartDatum } from '@/types/charts'
 import { formatDollars } from '@/lib/format'
 import {
@@ -7,14 +15,14 @@ import {
   estimateLeftAxisValueLabelSpace,
   estimateBottomAxisLabelSpace,
 } from '@/lib/chartLabelSpace'
+import { useChartDimensions } from '@/hooks/useChartDimensions'
+import { positionTooltip, setTooltipContent } from '@/lib/chartTooltip'
 
 const BORDER_COLOR = 'var(--vantura-border, #ebedf2)'
 const BAR_MAX_WIDTH = 32
 const MARGIN_TOP = 8
 const MARGIN_RIGHT_DESKTOP = 24
 const MARGIN_RIGHT_MOBILE = 8
-const TOOLTIP_OFFSET = 10
-const TOOLTIP_PADDING = 8
 
 type InsightsBarChartProps = {
   chartData: InsightsChartDatum[]
@@ -41,20 +49,8 @@ export function InsightsBarChart({
   style,
   'aria-label': ariaLabel,
 }: InsightsBarChartProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerRef, dimensions] = useChartDimensions()
   const tooltipRef = useRef<HTMLDivElement>(null)
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
-
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect
-      setDimensions({ width, height })
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
 
   useEffect(() => {
     const container = containerRef.current
@@ -62,7 +58,7 @@ export function InsightsBarChart({
     if (!container || dimensions.width <= 0 || dimensions.height <= 0) return
     if (chartData.length === 0) return
 
-    d3.select(container).selectAll('*').remove()
+    select(container).selectAll('*').remove()
 
     const keys = chartData.map((d) => d.category_id)
     const names = chartData.map((d) => d.name)
@@ -82,8 +78,7 @@ export function InsightsBarChart({
     const innerWidth = dimensions.width - left - right
     const innerHeight = dimensions.height - MARGIN_TOP - bottom
 
-    const svg = d3
-      .select(container)
+    const svg = select(container)
       .append('svg')
       .attr('width', dimensions.width)
       .attr('height', dimensions.height)
@@ -94,17 +89,14 @@ export function InsightsBarChart({
       .append('g')
       .attr('transform', `translate(${left},${MARGIN_TOP})`)
 
-    const valueScale = d3
-      .scaleLinear()
+    const valueScale = scaleLinear()
       .domain([0, maxDomain])
       .range([0, innerWidth])
-    const valueScaleVert = d3
-      .scaleLinear()
+    const valueScaleVert = scaleLinear()
       .domain([0, maxDomain])
       .range([innerHeight, 0])
 
-    const categoryScale = d3
-      .scaleBand()
+    const categoryScale = scaleBand()
       .domain(keys)
       .range(isMobile ? [0, innerWidth] : [0, innerHeight])
       .paddingInner(0.2)
@@ -119,30 +111,15 @@ export function InsightsBarChart({
 
     const showTooltip = (datum: InsightsChartDatum, event: MouseEvent) => {
       if (!tooltipEl || !container.parentElement) return
-      const content = `<strong>${datum.name}</strong><br/>$${formatDollars(datum.totalDollars)} spent`
-      tooltipEl.innerHTML = content
+      setTooltipContent(tooltipEl, datum.name, [
+        `$${formatDollars(datum.totalDollars)} spent`,
+      ])
       tooltipEl.style.display = 'block'
-      const wr = container.parentElement.getBoundingClientRect()
-      const tw = tooltipEl.offsetWidth || 120
-      const th = tooltipEl.offsetHeight || 40
-      let leftPx = event.clientX - wr.left + TOOLTIP_OFFSET
-      let topPx = event.clientY - wr.top + TOOLTIP_OFFSET
-      leftPx = Math.max(
-        TOOLTIP_PADDING,
-        Math.min(wr.width - tw - TOOLTIP_PADDING, leftPx)
-      )
-      topPx = Math.max(
-        TOOLTIP_PADDING,
-        Math.min(wr.height - th - TOOLTIP_PADDING, topPx)
-      )
-      tooltipEl.style.left = `${leftPx}px`
-      tooltipEl.style.top = `${topPx}px`
+      positionTooltip(tooltipEl, container, event, 120, 44)
     }
 
     const hideTooltip = () => {
-      if (tooltipRef.current) {
-        tooltipRef.current.style.display = 'none'
-      }
+      if (tooltipRef.current) tooltipRef.current.style.display = 'none'
     }
 
     const formatTickLabel = (key: string) => nameByKey[key] ?? key
@@ -170,13 +147,11 @@ export function InsightsBarChart({
           .attr('stop-opacity', 1)
       })
 
-      const xAxis = d3
-        .axisBottom(categoryScale)
+      const xAxis = axisBottom(categoryScale)
         .tickFormat(formatTickLabel)
         .tickSizeOuter(0)
-      const yAxis = d3
-        .axisLeft(valueScaleVert)
-        .tickFormat((d: d3.NumberValue) => `$${formatDollars(Number(d))}`)
+      const yAxis = axisLeft(valueScaleVert)
+        .tickFormat((d: NumberValue) => `$${formatDollars(Number(d))}`)
         .tickSizeOuter(0)
 
       g.append('g')
@@ -191,10 +166,10 @@ export function InsightsBarChart({
       g.append('g')
         .call(yAxis)
         .style('font-size', '11px')
-        .call((sel: d3.Selection<SVGGElement, unknown, null, undefined>) =>
+        .call((sel: Selection<SVGGElement, unknown, null, undefined>) =>
           sel.selectAll('.domain, .tick line').attr('stroke', BORDER_COLOR)
         )
-        .call((sel: d3.Selection<SVGGElement, unknown, null, undefined>) =>
+        .call((sel: Selection<SVGGElement, unknown, null, undefined>) =>
           sel.selectAll('.tick text').attr('fill', 'currentColor')
         )
 
@@ -231,12 +206,12 @@ export function InsightsBarChart({
             d: InsightsChartDatum
           ) {
             showTooltip(d, event)
-            if (!reduceMotion) d3.select(this).style('opacity', 0.8)
+            if (!reduceMotion) select(this).style('opacity', 0.8)
           }
         )
         .on('mouseout', function (this: SVGRectElement) {
           hideTooltip()
-          d3.select(this).style('opacity', null)
+          select(this).style('opacity', null)
         })
         .on('click', (_: MouseEvent, d: InsightsChartDatum) => {
           onBarClick?.(d)
@@ -264,32 +239,30 @@ export function InsightsBarChart({
           .attr('stop-opacity', 1)
       })
 
-      const xAxis = d3
-        .axisBottom(valueScale)
-        .tickFormat((d: d3.NumberValue) => `$${formatDollars(Number(d))}`)
+      const xAxis = axisBottom(valueScale)
+        .tickFormat((d: NumberValue) => `$${formatDollars(Number(d))}`)
         .tickSizeOuter(0)
-      const yAxis = d3
-        .axisLeft(categoryScale)
+      const yAxis = axisLeft(categoryScale)
         .tickFormat(formatTickLabel)
         .tickSizeOuter(0)
 
       g.append('g')
         .attr('transform', `translate(0,${innerHeight})`)
         .call(xAxis)
-        .call((sel: d3.Selection<SVGGElement, unknown, null, undefined>) =>
+        .call((sel: Selection<SVGGElement, unknown, null, undefined>) =>
           sel.selectAll('.domain, .tick line').attr('stroke', BORDER_COLOR)
         )
-        .call((sel: d3.Selection<SVGGElement, unknown, null, undefined>) =>
+        .call((sel: Selection<SVGGElement, unknown, null, undefined>) =>
           sel.selectAll('.tick text').attr('fill', 'currentColor')
         )
 
       g.append('g')
         .call(yAxis)
         .style('font-size', '12px')
-        .call((sel: d3.Selection<SVGGElement, unknown, null, undefined>) =>
+        .call((sel: Selection<SVGGElement, unknown, null, undefined>) =>
           sel.selectAll('.domain, .tick line').attr('stroke', BORDER_COLOR)
         )
-        .call((sel: d3.Selection<SVGGElement, unknown, null, undefined>) =>
+        .call((sel: Selection<SVGGElement, unknown, null, undefined>) =>
           sel.selectAll('.tick text').attr('fill', 'currentColor')
         )
 
@@ -322,12 +295,12 @@ export function InsightsBarChart({
             d: InsightsChartDatum
           ) {
             showTooltip(d, event)
-            if (!reduceMotion) d3.select(this).style('opacity', 0.8)
+            if (!reduceMotion) select(this).style('opacity', 0.8)
           }
         )
         .on('mouseout', function (this: SVGRectElement) {
           hideTooltip()
-          d3.select(this).style('opacity', null)
+          select(this).style('opacity', null)
         })
         .on('click', (_: MouseEvent, d: InsightsChartDatum) => {
           onBarClick?.(d)
@@ -336,9 +309,9 @@ export function InsightsBarChart({
 
     return () => {
       hideTooltip()
-      d3.select(container).selectAll('*').remove()
+      select(container).selectAll('*').remove()
     }
-  }, [chartData, maxDomain, isMobile, onBarClick, dimensions])
+  }, [chartData, maxDomain, isMobile, onBarClick, dimensions, containerRef])
 
   return (
     <div

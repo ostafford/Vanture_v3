@@ -1,10 +1,23 @@
-import { useEffect, useRef, useState } from 'react'
-import * as d3 from 'd3'
+import { useEffect, useRef } from 'react'
+import {
+  select,
+  scaleLinear,
+  min as d3Min,
+  max as d3Max,
+  line,
+  area,
+  axisBottom,
+  axisLeft,
+  pointer,
+  type NumberValue,
+} from 'd3'
 import type { YearMonthPoint } from '@/services/insights'
 import type { MonthMetric } from '@/lib/monthSpendingSeries'
 import { formatDollars, formatMoney } from '@/lib/format'
 import { meanOfFiniteNumbers } from '@/lib/yearMonthlyChartMetrics'
 import { getYearMonthlySemanticStrokes } from '@/components/charts/monthComparisonSemanticStrokes'
+import { useChartDimensions } from '@/hooks/useChartDimensions'
+import { positionTooltip, setTooltipContent } from '@/lib/chartTooltip'
 
 const BORDER_COLOR = 'var(--vantura-border, #ebedf2)'
 const AVERAGE_STROKE = 'var(--vantura-chart-average, #f2994a)'
@@ -16,8 +29,6 @@ const SUCCESS_COLOR = 'var(--vantura-success, #1bcfb4)'
 const SUCCESS_FILL =
   'color-mix(in srgb, var(--vantura-success) 18%, transparent)'
 const DANGER_FILL = 'color-mix(in srgb, var(--vantura-danger) 18%, transparent)'
-const TOOLTIP_OFFSET = 10
-const TOOLTIP_PADDING = 8
 
 const SHORT_MONTHS = [
   'Jan',
@@ -74,24 +85,13 @@ export function YearMonthlyLineChart({
   style,
   'aria-label': ariaLabel,
 }: YearMonthlyLineChartProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerRef, { width }] = useChartDimensions()
   const tooltipRef = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState(0)
 
   const currentThroughMonth = Math.max(
     1,
     Math.min(12, Math.floor(currentThroughMonthProp))
   )
-
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const ro = new ResizeObserver((entries) => {
-      setWidth(entries[0].contentRect.width)
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
 
   useEffect(() => {
     const container = containerRef.current
@@ -101,7 +101,7 @@ export function YearMonthlyLineChart({
     if (pointsCurrent.length !== pointsPrevious.length) return
     if (pointsCurrent.length > 12) return
 
-    d3.select(container).selectAll('*').remove()
+    select(container).selectAll('*').remove()
 
     const n = pointsCurrent.length
     const curVals = pointsCurrent.map((p) => metricValue(p, metric))
@@ -122,8 +122,8 @@ export function YearMonthlyLineChart({
     if (avg != null) allVals.push(avg)
     if (allVals.length === 0) return
 
-    const minVal = d3.min(allVals) ?? 0
-    const maxVal = d3.max(allVals) ?? 0
+    const minVal = d3Min(allVals) ?? 0
+    const maxVal = d3Max(allVals) ?? 0
 
     let domainMin: number
     let domainMax: number
@@ -162,29 +162,26 @@ export function YearMonthlyLineChart({
     const innerHeight = height - MARGIN_TOP - MARGIN_BOTTOM
     if (innerWidth <= 0 || innerHeight <= 0) return
 
-    const xScale = d3.scaleLinear().domain([1, n]).range([0, innerWidth])
+    const xScale = scaleLinear().domain([1, n]).range([0, innerWidth])
 
-    const yScale = d3
-      .scaleLinear()
+    const yScale = scaleLinear()
       .domain([yMin, yMax])
       .nice()
       .range([innerHeight, 0])
 
     const currentDefined = (_: number, i: number) => i < currentThroughMonth
 
-    const currentLine = d3
-      .line<number>()
+    // Named 'currentLine'/'previousLine' to avoid shadowing the imported 'line' function
+    const currentLine = line<number>()
       .defined(currentDefined)
       .x((_, i) => xScale(i + 1))
       .y((d) => yScale(d))
 
-    const previousLine = d3
-      .line<number>()
+    const previousLine = line<number>()
       .x((_, i) => xScale(i + 1))
       .y((d) => yScale(d))
 
-    const svg = d3
-      .select(container)
+    const svg = select(container)
       .append('svg')
       .attr('width', width)
       .attr('height', height)
@@ -193,16 +190,14 @@ export function YearMonthlyLineChart({
       .append('g')
       .attr('transform', `translate(${MARGIN_LEFT},${MARGIN_TOP})`)
 
-    const xAxis = d3
-      .axisBottom(xScale)
+    const xAxis = axisBottom(xScale)
       .tickValues([...MONTH_AXIS_TICKS].filter((m) => m <= n))
       .tickFormat((d) => SHORT_MONTHS[Number(d) - 1] ?? '')
       .tickSizeOuter(0)
 
-    const yAxis = d3
-      .axisLeft(yScale)
+    const yAxis = axisLeft(yScale)
       .ticks(5)
-      .tickFormat((d: d3.NumberValue) => `$${formatDollars(Number(d) / 100)}`)
+      .tickFormat((d: NumberValue) => `$${formatDollars(Number(d) / 100)}`)
       .tickSizeOuter(0)
 
     g.append('g')
@@ -234,8 +229,8 @@ export function YearMonthlyLineChart({
     }
 
     if (showCurrentYear && pointsCurrent.length >= 1) {
-      const area = d3
-        .area<number>()
+      // Named 'areaGen' to avoid shadowing the imported 'area' function
+      const areaGen = area<number>()
         .defined(currentDefined)
         .x((_, i) => xScale(i + 1))
         .y0(innerHeight)
@@ -245,7 +240,7 @@ export function YearMonthlyLineChart({
         .datum(curVals)
         .attr('fill', currentFill)
         .attr('stroke', 'none')
-        .attr('d', area)
+        .attr('d', areaGen)
         .attr('opacity', 0.9)
 
       g.append('path')
@@ -281,37 +276,25 @@ export function YearMonthlyLineChart({
           : metric === 'income'
             ? 'Income'
             : 'Net'
-      let html = `<strong>${label}</strong>`
-      if (showCurrentYear) {
-        const curDefined = monthIndex < currentThroughMonth
-        html += `<br/>${currentYear}: ${
-          curDefined ? `$${formatMoney(c)}` : 'No data'
-        }`
-      }
-      if (showPreviousYear) {
-        html += `<br/>${previousYear}: $${formatMoney(p)}`
-      }
-      if (avg != null) {
-        html += `<br/>Average: $${formatMoney(avg)}`
-      }
-      html += `<br/><span class="text-muted small">${metricLabel}</span>`
-      tooltipEl.innerHTML = html
+
+      const lines: (string | null)[] = [
+        showCurrentYear
+          ? `${currentYear}: ${monthIndex < currentThroughMonth ? `$${formatMoney(c)}` : 'No data'}`
+          : null,
+        showPreviousYear ? `${previousYear}: $${formatMoney(p)}` : null,
+        avg != null ? `Average: $${formatMoney(avg)}` : null,
+      ]
+      setTooltipContent(tooltipEl, label, lines)
+
+      // Append the metric label as a styled span
+      const span = document.createElement('span')
+      span.className = 'text-muted small'
+      span.textContent = metricLabel
+      tooltipEl.appendChild(document.createElement('br'))
+      tooltipEl.appendChild(span)
+
       tooltipEl.style.display = 'block'
-      const wr = container.parentElement.getBoundingClientRect()
-      const tw = tooltipEl.offsetWidth || 160
-      const th = tooltipEl.offsetHeight || 50
-      let leftPx = event.clientX - wr.left + TOOLTIP_OFFSET
-      let topPx = event.clientY - wr.top + TOOLTIP_OFFSET
-      leftPx = Math.max(
-        TOOLTIP_PADDING,
-        Math.min(wr.width - tw - TOOLTIP_PADDING, leftPx)
-      )
-      topPx = Math.max(
-        TOOLTIP_PADDING,
-        Math.min(wr.height - th - TOOLTIP_PADDING, topPx)
-      )
-      tooltipEl.style.left = `${leftPx}px`
-      tooltipEl.style.top = `${topPx}px`
+      positionTooltip(tooltipEl, container, event, 160, 60)
     }
 
     const hoverGuide = g
@@ -344,9 +327,7 @@ export function YearMonthlyLineChart({
       .style('display', 'none')
 
     const hideTooltip = () => {
-      if (tooltipRef.current) {
-        tooltipRef.current.style.display = 'none'
-      }
+      if (tooltipRef.current) tooltipRef.current.style.display = 'none'
       hoverGuide.style('display', 'none')
       hoverCurrentDot.style('display', 'none')
       hoverPreviousDot.style('display', 'none')
@@ -376,7 +357,7 @@ export function YearMonthlyLineChart({
       .style('cursor', 'crosshair')
       .style('pointer-events', 'all')
       .on('mousemove', function (event: MouseEvent) {
-        const [mx] = d3.pointer(event, this)
+        const [mx] = pointer(event, this)
         const i = nearestMonthIndex(mx)
         const label = SHORT_MONTHS[i] ?? `Month ${i + 1}`
         const x = xScale(i + 1)
@@ -415,7 +396,7 @@ export function YearMonthlyLineChart({
 
     return () => {
       hideTooltip()
-      d3.select(container).selectAll('*').remove()
+      select(container).selectAll('*').remove()
     }
   }, [
     pointsCurrent,
@@ -429,6 +410,7 @@ export function YearMonthlyLineChart({
     previousYear,
     width,
     height,
+    containerRef,
   ])
 
   return (

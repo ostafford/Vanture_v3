@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import * as d3 from 'd3'
+import { select, scaleLinear, line, curveMonotoneX } from 'd3'
 import type { CategoryBreakdownRow } from '@/services/insights'
 import { getInsightsCategoryColors } from '@/lib/chartColors'
 import { normalizeCategoryIdForColor } from '@/lib/chartColors'
@@ -43,8 +43,7 @@ export function SankeyFlowChart({
 
     const totalOut = categories.reduce((s, c) => s + c.total, 0)
     const maxFlow = Math.max(moneyInCents, totalOut, 1)
-    const linkScale = d3
-      .scaleLinear()
+    const linkScale = scaleLinear()
       .domain([0, maxFlow])
       .range([MIN_LINK_WIDTH, MAX_LINK_WIDTH])
       .clamp(true)
@@ -53,24 +52,20 @@ export function SankeyFlowChart({
     const rightX = width - 20 - NODE_WIDTH
     const centerY = height / 2
 
-    // Income node (left, single)
     const incomeNodeY = centerY - NODE_WIDTH / 2
-    // Category nodes (right, stacked)
     const catHeight = (height - 40) / Math.max(categories.length, 1)
     const categoryNodes = categories.map((c, i) => ({
       ...c,
       y: 20 + i * catHeight + (catHeight - NODE_WIDTH) / 2,
     }))
 
-    const g = d3.select(svg).selectChild<SVGGElement>('g')
+    const g = select(svg).selectChild<SVGGElement>('g')
     if (!g.empty()) g.remove()
 
-    const container = d3
-      .select(svg)
+    const container = select(svg)
       .append('g')
       .attr('transform', 'translate(0,0)')
 
-    // Links: Income (center) to each category
     categoryNodes.forEach((cat, i) => {
       const linkWidth = linkScale(cat.total)
       const colorKey = normalizeCategoryIdForColor(cat.category_id)
@@ -78,7 +73,7 @@ export function SankeyFlowChart({
         categoryColors[colorKey] ??
         categoryColors[UNCATEGORISED_COLOR_KEY] ??
         chartPalette[i % chartPalette.length]
-      const path = d3.line().curve(d3.curveMonotoneX)([
+      const path = line().curve(curveMonotoneX)([
         [leftX + NODE_WIDTH, centerY],
         [leftX + NODE_WIDTH + COLUMN_GAP * 0.3, centerY],
         [rightX - COLUMN_GAP * 0.3, cat.y + NODE_WIDTH / 2],
@@ -94,7 +89,6 @@ export function SankeyFlowChart({
         .attr('stroke-linecap', 'round')
     })
 
-    // Income node (rectangle)
     container
       .append('rect')
       .attr('x', leftX)
@@ -105,7 +99,6 @@ export function SankeyFlowChart({
       .attr('opacity', 0.9)
       .attr('rx', 2)
 
-    // Category nodes
     categoryNodes.forEach((cat, i) => {
       const colorKey = normalizeCategoryIdForColor(cat.category_id)
       const color =
@@ -123,10 +116,9 @@ export function SankeyFlowChart({
         .attr('rx', 2)
     })
 
-    // Labels in a separate layer so they're not clipped
-    const labelG = d3.select(svg).selectChild<SVGGElement>('g.labels')
+    const labelG = select(svg).selectChild<SVGGElement>('g.labels')
     if (!labelG.empty()) labelG.remove()
-    const labels = d3.select(svg).append('g').attr('class', 'labels')
+    const labels = select(svg).append('g').attr('class', 'labels')
     labels
       .append('text')
       .attr('x', leftX - 4)

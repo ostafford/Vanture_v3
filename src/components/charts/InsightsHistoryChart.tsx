@@ -1,19 +1,26 @@
-import { useEffect, useRef, useState } from 'react'
-import * as d3 from 'd3'
+import { useEffect, useRef } from 'react'
+import {
+  select,
+  scaleBand,
+  scaleLinear,
+  axisBottom,
+  axisLeft,
+  type NumberValue,
+} from 'd3'
 import type { InsightsHistoryRow } from '@/services/insights'
 import { formatMoney } from '@/lib/format'
 import {
   estimateLeftAxisValueLabelSpace,
   estimateBottomAxisLabelSpace,
 } from '@/lib/chartLabelSpace'
+import { useChartDimensions } from '@/hooks/useChartDimensions'
+import { positionTooltip, setTooltipContent } from '@/lib/chartTooltip'
 
 const BORDER_COLOR = 'var(--vantura-border, #ebedf2)'
 const MONEY_IN_COLOR = 'var(--vantura-chart-money-in)'
 const MONEY_OUT_COLOR = 'var(--vantura-chart-money-out)'
 const MARGIN_TOP = 8
 const MARGIN_RIGHT = 24
-const TOOLTIP_OFFSET = 10
-const TOOLTIP_PADDING = 8
 
 type InsightsHistoryChartProps = {
   data: InsightsHistoryRow[]
@@ -30,20 +37,8 @@ export function InsightsHistoryChart({
   style,
   'aria-label': ariaLabel,
 }: InsightsHistoryChartProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerRef, dimensions] = useChartDimensions()
   const tooltipRef = useRef<HTMLDivElement>(null)
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
-
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect
-      setDimensions({ width, height })
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
 
   useEffect(() => {
     const container = containerRef.current
@@ -51,7 +46,7 @@ export function InsightsHistoryChart({
     if (!container || dimensions.width <= 0 || dimensions.height <= 0) return
     if (data.length === 0) return
 
-    d3.select(container).selectAll('*').remove()
+    select(container).selectAll('*').remove()
 
     const maxVal =
       maxDomainProp ??
@@ -66,15 +61,13 @@ export function InsightsHistoryChart({
     const innerWidth = dimensions.width - left - right
     const innerHeight = dimensions.height - MARGIN_TOP - bottom
 
-    const xScale = d3
-      .scaleBand()
+    const xScale = scaleBand()
       .domain(labels)
       .range([0, innerWidth])
       .paddingInner(0.2)
       .paddingOuter(0.1)
 
-    const yScale = d3
-      .scaleLinear()
+    const yScale = scaleLinear()
       .domain([0, maxVal])
       .range([innerHeight, 0])
       .nice()
@@ -82,8 +75,7 @@ export function InsightsHistoryChart({
     const bandwidth = xScale.bandwidth()
     const barWidth = bandwidth * 0.4
 
-    const svg = d3
-      .select(container)
+    const svg = select(container)
       .append('svg')
       .attr('width', dimensions.width)
       .attr('height', dimensions.height)
@@ -94,31 +86,16 @@ export function InsightsHistoryChart({
 
     const showTooltip = (row: InsightsHistoryRow, event: MouseEvent) => {
       if (!tooltipEl || !container.parentElement) return
-      tooltipEl.innerHTML = `<strong>${row.weekLabel}</strong><br/>
-        Money In: $${formatMoney(row.moneyIn)}<br/>
-        Money Out: $${formatMoney(row.moneyOut)}`
+      setTooltipContent(tooltipEl, row.weekLabel, [
+        `Money In: $${formatMoney(row.moneyIn)}`,
+        `Money Out: $${formatMoney(row.moneyOut)}`,
+      ])
       tooltipEl.style.display = 'block'
-      const wr = container.parentElement.getBoundingClientRect()
-      const tw = tooltipEl.offsetWidth || 160
-      const th = tooltipEl.offsetHeight || 50
-      let leftPx = event.clientX - wr.left + TOOLTIP_OFFSET
-      let topPx = event.clientY - wr.top + TOOLTIP_OFFSET
-      leftPx = Math.max(
-        TOOLTIP_PADDING,
-        Math.min(wr.width - tw - TOOLTIP_PADDING, leftPx)
-      )
-      topPx = Math.max(
-        TOOLTIP_PADDING,
-        Math.min(wr.height - th - TOOLTIP_PADDING, topPx)
-      )
-      tooltipEl.style.left = `${leftPx}px`
-      tooltipEl.style.top = `${topPx}px`
+      positionTooltip(tooltipEl, container, event, 160, 52)
     }
 
     const hideTooltip = () => {
-      if (tooltipRef.current) {
-        tooltipRef.current.style.display = 'none'
-      }
+      if (tooltipRef.current) tooltipRef.current.style.display = 'none'
     }
 
     data.forEach((row) => {
@@ -141,11 +118,11 @@ export function InsightsHistoryChart({
         .style('cursor', 'pointer')
         .on('mouseover', function (event: MouseEvent) {
           showTooltip(row, event)
-          d3.select(this).style('opacity', 0.8)
+          select(this).style('opacity', 0.8)
         })
         .on('mouseout', function () {
           hideTooltip()
-          d3.select(this).style('opacity', null)
+          select(this).style('opacity', null)
         })
 
       g.append('rect')
@@ -160,18 +137,17 @@ export function InsightsHistoryChart({
         .style('cursor', 'pointer')
         .on('mouseover', function (event: MouseEvent) {
           showTooltip(row, event)
-          d3.select(this).style('opacity', 0.8)
+          select(this).style('opacity', 0.8)
         })
         .on('mouseout', function () {
           hideTooltip()
-          d3.select(this).style('opacity', null)
+          select(this).style('opacity', null)
         })
     })
 
-    const xAxis = d3.axisBottom(xScale).tickSizeOuter(0)
-    const yAxis = d3
-      .axisLeft(yScale)
-      .tickFormat((d: d3.NumberValue) => `$${formatMoney(Number(d))}`)
+    const xAxis = axisBottom(xScale).tickSizeOuter(0)
+    const yAxis = axisLeft(yScale)
+      .tickFormat((d: NumberValue) => `$${formatMoney(Number(d))}`)
       .tickSizeOuter(0)
 
     g.append('g')
@@ -193,9 +169,9 @@ export function InsightsHistoryChart({
 
     return () => {
       hideTooltip()
-      d3.select(container).selectAll('*').remove()
+      select(container).selectAll('*').remove()
     }
-  }, [data, maxDomainProp, dimensions])
+  }, [data, maxDomainProp, dimensions, containerRef])
 
   return (
     <div

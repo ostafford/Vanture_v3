@@ -1,18 +1,25 @@
-import { useEffect, useRef, useState } from 'react'
-import * as d3 from 'd3'
+import { useEffect, useRef } from 'react'
+import {
+  select,
+  scaleBand,
+  scaleLinear,
+  axisBottom,
+  axisLeft,
+  type NumberValue,
+} from 'd3'
 import type { CategoryBreakdownHistoryRow } from '@/services/insights'
 import { formatMoney } from '@/lib/format'
 import {
   estimateLeftAxisValueLabelSpace,
   estimateBottomAxisLabelSpace,
 } from '@/lib/chartLabelSpace'
+import { useChartDimensions } from '@/hooks/useChartDimensions'
+import { positionTooltip, setTooltipContent } from '@/lib/chartTooltip'
 
 const BORDER_COLOR = 'var(--vantura-border, #ebedf2)'
 const BAR_COLOR = 'var(--vantura-primary)'
 const MARGIN_TOP = 8
 const MARGIN_RIGHT = 24
-const TOOLTIP_OFFSET = 10
-const TOOLTIP_PADDING = 8
 
 type CategoryTrendChartProps = {
   data: CategoryBreakdownHistoryRow[]
@@ -33,20 +40,8 @@ export function CategoryTrendChart({
   style,
   'aria-label': ariaLabel,
 }: CategoryTrendChartProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerRef, dimensions] = useChartDimensions()
   const tooltipRef = useRef<HTMLDivElement>(null)
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
-
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect
-      setDimensions({ width, height })
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
 
   useEffect(() => {
     const container = containerRef.current
@@ -54,10 +49,9 @@ export function CategoryTrendChart({
     if (!container || dimensions.width <= 0 || dimensions.height <= 0) return
     if (data.length === 0) return
 
-    d3.select(container).selectAll('*').remove()
+    select(container).selectAll('*').remove()
 
     const maxVal = maxDomainProp ?? Math.max(...data.map((d) => d.total), 100)
-
     const labels = data.map((d) => d.weekLabel)
 
     const left = estimateLeftAxisValueLabelSpace(maxVal / 100, 11)
@@ -67,21 +61,18 @@ export function CategoryTrendChart({
     const innerWidth = dimensions.width - left - right
     const innerHeight = dimensions.height - MARGIN_TOP - bottom
 
-    const xScale = d3
-      .scaleBand()
+    const xScale = scaleBand()
       .domain(labels)
       .range([0, innerWidth])
       .paddingInner(0.2)
       .paddingOuter(0.1)
 
-    const yScale = d3
-      .scaleLinear()
+    const yScale = scaleLinear()
       .domain([0, maxVal])
       .range([innerHeight, 0])
       .nice()
 
-    const svg = d3
-      .select(container)
+    const svg = select(container)
       .append('svg')
       .attr('width', dimensions.width)
       .attr('height', dimensions.height)
@@ -95,30 +86,16 @@ export function CategoryTrendChart({
       event: MouseEvent
     ) => {
       if (!tooltipEl || !container.parentElement) return
-      tooltipEl.innerHTML = `<strong>${categoryName}</strong> - ${row.weekLabel}<br/>
-        Spent: $${formatMoney(row.total)}`
+      setTooltipContent(tooltipEl, categoryName, [
+        `${row.weekLabel}`,
+        `Spent: $${formatMoney(row.total)}`,
+      ])
       tooltipEl.style.display = 'block'
-      const wr = container.parentElement.getBoundingClientRect()
-      const tw = tooltipEl.offsetWidth || 140
-      const th = tooltipEl.offsetHeight || 40
-      let leftPx = event.clientX - wr.left + TOOLTIP_OFFSET
-      let topPx = event.clientY - wr.top + TOOLTIP_OFFSET
-      leftPx = Math.max(
-        TOOLTIP_PADDING,
-        Math.min(wr.width - tw - TOOLTIP_PADDING, leftPx)
-      )
-      topPx = Math.max(
-        TOOLTIP_PADDING,
-        Math.min(wr.height - th - TOOLTIP_PADDING, topPx)
-      )
-      tooltipEl.style.left = `${leftPx}px`
-      tooltipEl.style.top = `${topPx}px`
+      positionTooltip(tooltipEl, container, event, 140, 44)
     }
 
     const hideTooltip = () => {
-      if (tooltipRef.current) {
-        tooltipRef.current.style.display = 'none'
-      }
+      if (tooltipRef.current) tooltipRef.current.style.display = 'none'
     }
 
     data.forEach((row) => {
@@ -136,18 +113,17 @@ export function CategoryTrendChart({
         .style('cursor', 'pointer')
         .on('mouseover', function (event: MouseEvent) {
           showTooltip(row, event)
-          d3.select(this).style('opacity', 0.8)
+          select(this).style('opacity', 0.8)
         })
         .on('mouseout', function () {
           hideTooltip()
-          d3.select(this).style('opacity', null)
+          select(this).style('opacity', null)
         })
     })
 
-    const xAxis = d3.axisBottom(xScale).tickSizeOuter(0)
-    const yAxis = d3
-      .axisLeft(yScale)
-      .tickFormat((d: d3.NumberValue) => `$${formatMoney(Number(d))}`)
+    const xAxis = axisBottom(xScale).tickSizeOuter(0)
+    const yAxis = axisLeft(yScale)
+      .tickFormat((d: NumberValue) => `$${formatMoney(Number(d))}`)
       .tickSizeOuter(0)
 
     g.append('g')
@@ -169,9 +145,9 @@ export function CategoryTrendChart({
 
     return () => {
       hideTooltip()
-      d3.select(container).selectAll('*').remove()
+      select(container).selectAll('*').remove()
     }
-  }, [data, categoryName, maxDomainProp, barColor, dimensions])
+  }, [data, categoryName, maxDomainProp, barColor, dimensions, containerRef])
 
   return (
     <div

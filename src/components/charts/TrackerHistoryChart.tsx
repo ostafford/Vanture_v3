@@ -1,11 +1,20 @@
-import { useEffect, useRef, useState } from 'react'
-import * as d3 from 'd3'
+import { useEffect, useRef } from 'react'
+import {
+  select,
+  scaleBand,
+  scaleLinear,
+  axisBottom,
+  axisLeft,
+  type NumberValue,
+} from 'd3'
 import type { TrackerPeriodHistoryRow } from '@/services/trackers'
 import { formatMoney } from '@/lib/format'
 import {
   estimateLeftAxisValueLabelSpace,
   estimateBottomAxisLabelSpace,
 } from '@/lib/chartLabelSpace'
+import { useChartDimensions } from '@/hooks/useChartDimensions'
+import { positionTooltip, setTooltipContent } from '@/lib/chartTooltip'
 
 const BORDER_COLOR = 'var(--vantura-border, #ebedf2)'
 const BUDGET_COLOR = 'var(--vantura-border, #ebedf2)'
@@ -13,8 +22,6 @@ const SPENT_COLOR = 'var(--vantura-primary)'
 const SPENT_OVER_COLOR = 'var(--vantura-danger)'
 const MARGIN_TOP = 8
 const MARGIN_RIGHT = 24
-const TOOLTIP_OFFSET = 10
-const TOOLTIP_PADDING = 8
 
 type TrackerHistoryChartProps = {
   data: TrackerPeriodHistoryRow[]
@@ -33,20 +40,8 @@ export function TrackerHistoryChart({
   style,
   'aria-label': ariaLabel,
 }: TrackerHistoryChartProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerRef, dimensions] = useChartDimensions()
   const tooltipRef = useRef<HTMLDivElement>(null)
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
-
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect
-      setDimensions({ width, height })
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
 
   useEffect(() => {
     const container = containerRef.current
@@ -54,7 +49,7 @@ export function TrackerHistoryChart({
     if (!container || dimensions.width <= 0 || dimensions.height <= 0) return
     if (data.length === 0) return
 
-    d3.select(container).selectAll('*').remove()
+    select(container).selectAll('*').remove()
 
     const maxVal =
       maxDomainProp ?? Math.max(...data.flatMap((d) => [d.budget, d.spent]), 1)
@@ -67,15 +62,13 @@ export function TrackerHistoryChart({
     const innerWidth = dimensions.width - left - right
     const innerHeight = dimensions.height - MARGIN_TOP - bottom
 
-    const xScale = d3
-      .scaleBand()
+    const xScale = scaleBand()
       .domain(labels)
       .range([0, innerWidth])
       .paddingInner(0.2)
       .paddingOuter(0.1)
 
-    const yScale = d3
-      .scaleLinear()
+    const yScale = scaleLinear()
       .domain([0, maxVal])
       .range([innerHeight, 0])
       .nice()
@@ -83,8 +76,7 @@ export function TrackerHistoryChart({
     const bandwidth = xScale.bandwidth()
     const barWidth = bandwidth * 0.35
 
-    const svg = d3
-      .select(container)
+    const svg = select(container)
       .append('svg')
       .attr('width', dimensions.width)
       .attr('height', dimensions.height)
@@ -100,32 +92,16 @@ export function TrackerHistoryChart({
     const showTooltip = (row: TrackerPeriodHistoryRow, event: MouseEvent) => {
       if (!tooltipEl || !container.parentElement) return
       const over = row.spent > row.budget
-      const content = `<strong>${row.periodLabel}</strong><br/>
-        Budget: $${formatMoney(row.budget)}<br/>
-        Spent: $${formatMoney(row.spent)}${over ? ' (over)' : ''}`
-      tooltipEl.innerHTML = content
+      setTooltipContent(tooltipEl, row.periodLabel, [
+        `Budget: $${formatMoney(row.budget)}`,
+        `Spent: $${formatMoney(row.spent)}${over ? ' (over)' : ''}`,
+      ])
       tooltipEl.style.display = 'block'
-      const wr = container.parentElement.getBoundingClientRect()
-      const tw = tooltipEl.offsetWidth || 120
-      const th = tooltipEl.offsetHeight || 40
-      let leftPx = event.clientX - wr.left + TOOLTIP_OFFSET
-      let topPx = event.clientY - wr.top + TOOLTIP_OFFSET
-      leftPx = Math.max(
-        TOOLTIP_PADDING,
-        Math.min(wr.width - tw - TOOLTIP_PADDING, leftPx)
-      )
-      topPx = Math.max(
-        TOOLTIP_PADDING,
-        Math.min(wr.height - th - TOOLTIP_PADDING, topPx)
-      )
-      tooltipEl.style.left = `${leftPx}px`
-      tooltipEl.style.top = `${topPx}px`
+      positionTooltip(tooltipEl, container, event, 120, 44)
     }
 
     const hideTooltip = () => {
-      if (tooltipRef.current) {
-        tooltipRef.current.style.display = 'none'
-      }
+      if (tooltipRef.current) tooltipRef.current.style.display = 'none'
     }
 
     data.forEach((row) => {
@@ -149,11 +125,11 @@ export function TrackerHistoryChart({
         .style('cursor', onBarClick ? 'pointer' : 'default')
         .on('mouseover', function (event: MouseEvent) {
           showTooltip(row, event)
-          if (!reduceMotion) d3.select(this).style('opacity', 0.8)
+          if (!reduceMotion) select(this).style('opacity', 0.8)
         })
         .on('mouseout', function () {
           hideTooltip()
-          d3.select(this).style('opacity', null)
+          select(this).style('opacity', null)
         })
         .on('click', () => onBarClick?.(row))
 
@@ -169,23 +145,21 @@ export function TrackerHistoryChart({
         .style('cursor', onBarClick ? 'pointer' : 'default')
         .on('mouseover', function (event: MouseEvent) {
           showTooltip(row, event)
-          if (!reduceMotion) d3.select(this).style('opacity', 0.8)
+          if (!reduceMotion) select(this).style('opacity', 0.8)
         })
         .on('mouseout', function () {
           hideTooltip()
-          d3.select(this).style('opacity', null)
+          select(this).style('opacity', null)
         })
         .on('click', () => onBarClick?.(row))
     })
 
-    const xAxis = d3
-      .axisBottom(xScale)
+    const xAxis = axisBottom(xScale)
       .tickFormat((d) => String(d))
       .tickSizeOuter(0)
 
-    const yAxis = d3
-      .axisLeft(yScale)
-      .tickFormat((d: d3.NumberValue) => `$${formatMoney(Number(d))}`)
+    const yAxis = axisLeft(yScale)
+      .tickFormat((d: NumberValue) => `$${formatMoney(Number(d))}`)
       .tickSizeOuter(0)
 
     g.append('g')
@@ -207,9 +181,9 @@ export function TrackerHistoryChart({
 
     return () => {
       hideTooltip()
-      d3.select(container).selectAll('*').remove()
+      select(container).selectAll('*').remove()
     }
-  }, [data, maxDomainProp, onBarClick, dimensions])
+  }, [data, maxDomainProp, onBarClick, dimensions, containerRef])
 
   return (
     <div

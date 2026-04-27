@@ -1,19 +1,28 @@
-import { useEffect, useRef, useState } from 'react'
-import * as d3 from 'd3'
+import { useEffect, useRef } from 'react'
+import {
+  select,
+  scalePoint,
+  scaleLinear,
+  line,
+  area,
+  axisBottom,
+  axisLeft,
+  type NumberValue,
+} from 'd3'
 import type { TrackerTransactionTimelineRow } from '@/services/trackers'
 import { formatMoney } from '@/lib/format'
 import {
   estimateLeftAxisValueLabelSpace,
   estimateBottomAxisLabelSpace,
 } from '@/lib/chartLabelSpace'
+import { useChartDimensions } from '@/hooks/useChartDimensions'
+import { positionTooltip, setTooltipContent } from '@/lib/chartTooltip'
 
 const BORDER_COLOR = 'var(--vantura-border, #ebedf2)'
 const LINE_COLOR = 'var(--vantura-primary)'
 const AREA_OPACITY = 0.2
 const MARGIN_TOP = 8
 const MARGIN_RIGHT = 24
-const TOOLTIP_OFFSET = 10
-const TOOLTIP_PADDING = 8
 
 type TrackerCumulativeChartProps = {
   data: TrackerTransactionTimelineRow[]
@@ -30,20 +39,8 @@ export function TrackerCumulativeChart({
   style,
   'aria-label': ariaLabel,
 }: TrackerCumulativeChartProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerRef, dimensions] = useChartDimensions()
   const tooltipRef = useRef<HTMLDivElement>(null)
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
-
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect
-      setDimensions({ width, height })
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
 
   useEffect(() => {
     const container = containerRef.current
@@ -51,7 +48,7 @@ export function TrackerCumulativeChart({
     if (!container || dimensions.width <= 0 || dimensions.height <= 0) return
     if (data.length === 0) return
 
-    d3.select(container).selectAll('*').remove()
+    select(container).selectAll('*').remove()
 
     const maxCumulative =
       maxDomainProp ?? Math.max(...data.map((d) => d.cumulativeSpent), 1)
@@ -64,27 +61,24 @@ export function TrackerCumulativeChart({
     const innerWidth = dimensions.width - left - right
     const innerHeight = dimensions.height - MARGIN_TOP - bottom
 
-    const xScale = d3.scalePoint().domain(dateLabels).range([0, innerWidth])
+    const xScale = scalePoint().domain(dateLabels).range([0, innerWidth])
 
-    const yScale = d3
-      .scaleLinear()
+    const yScale = scaleLinear()
       .domain([0, maxCumulative])
       .range([innerHeight, 0])
       .nice()
 
-    const line = d3
-      .line<TrackerTransactionTimelineRow>()
+    // Named 'lineGen'/'areaGen' to avoid shadowing the imported 'line'/'area' functions
+    const lineGen = line<TrackerTransactionTimelineRow>()
       .x((d) => xScale(d.date) ?? 0)
       .y((d) => yScale(d.cumulativeSpent))
 
-    const area = d3
-      .area<TrackerTransactionTimelineRow>()
+    const areaGen = area<TrackerTransactionTimelineRow>()
       .x((d) => xScale(d.date) ?? 0)
       .y0(innerHeight)
       .y1((d) => yScale(d.cumulativeSpent))
 
-    const svg = d3
-      .select(container)
+    const svg = select(container)
       .append('svg')
       .attr('width', dimensions.width)
       .attr('height', dimensions.height)
@@ -98,38 +92,23 @@ export function TrackerCumulativeChart({
       event: MouseEvent
     ) => {
       if (!tooltipEl || !container.parentElement) return
-      tooltipEl.innerHTML = `<strong>${row.date}</strong><br/>
-        ${row.description || 'Transaction'}: $${formatMoney(row.amount)}<br/>
-        Cumulative: $${formatMoney(row.cumulativeSpent)}`
+      setTooltipContent(tooltipEl, row.date, [
+        `${row.description || 'Transaction'}: $${formatMoney(row.amount)}`,
+        `Cumulative: $${formatMoney(row.cumulativeSpent)}`,
+      ])
       tooltipEl.style.display = 'block'
-      const wr = container.parentElement.getBoundingClientRect()
-      const tw = tooltipEl.offsetWidth || 160
-      const th = tooltipEl.offsetHeight || 50
-      let leftPx = event.clientX - wr.left + TOOLTIP_OFFSET
-      let topPx = event.clientY - wr.top + TOOLTIP_OFFSET
-      leftPx = Math.max(
-        TOOLTIP_PADDING,
-        Math.min(wr.width - tw - TOOLTIP_PADDING, leftPx)
-      )
-      topPx = Math.max(
-        TOOLTIP_PADDING,
-        Math.min(wr.height - th - TOOLTIP_PADDING, topPx)
-      )
-      tooltipEl.style.left = `${leftPx}px`
-      tooltipEl.style.top = `${topPx}px`
+      positionTooltip(tooltipEl, container, event, 160, 52)
     }
 
     const hideTooltip = () => {
-      if (tooltipRef.current) {
-        tooltipRef.current.style.display = 'none'
-      }
+      if (tooltipRef.current) tooltipRef.current.style.display = 'none'
     }
 
     g.append('path')
       .datum(data)
       .attr('fill', LINE_COLOR)
       .attr('fill-opacity', AREA_OPACITY)
-      .attr('d', area)
+      .attr('d', areaGen)
 
     g.append('path')
       .datum(data)
@@ -138,7 +117,7 @@ export function TrackerCumulativeChart({
       .attr('stroke-width', 2)
       .attr('stroke-linecap', 'round')
       .attr('stroke-linejoin', 'round')
-      .attr('d', line)
+      .attr('d', lineGen)
 
     g.selectAll('.point')
       .data(data)
@@ -153,25 +132,23 @@ export function TrackerCumulativeChart({
         'mouseover',
         function (event: MouseEvent, d: TrackerTransactionTimelineRow) {
           showTooltip(d, event)
-          d3.select(this).attr('r', 5)
+          select(this).attr('r', 5)
         }
       )
       .on('mouseout', function () {
         hideTooltip()
-        d3.select(this).attr('r', 3)
+        select(this).attr('r', 3)
       })
 
-    const xAxis = d3
-      .axisBottom(xScale)
+    const xAxis = axisBottom(xScale)
       .tickFormat((d) => {
         const s = String(d)
         return s.length > 10 ? s.slice(5, 10) : s
       })
       .tickSizeOuter(0)
 
-    const yAxis = d3
-      .axisLeft(yScale)
-      .tickFormat((d: d3.NumberValue) => `$${formatMoney(Number(d))}`)
+    const yAxis = axisLeft(yScale)
+      .tickFormat((d: NumberValue) => `$${formatMoney(Number(d))}`)
       .tickSizeOuter(0)
 
     g.append('g')
@@ -193,9 +170,9 @@ export function TrackerCumulativeChart({
 
     return () => {
       hideTooltip()
-      d3.select(container).selectAll('*').remove()
+      select(container).selectAll('*').remove()
     }
-  }, [data, maxDomainProp, dimensions])
+  }, [data, maxDomainProp, dimensions, containerRef])
 
   return (
     <div

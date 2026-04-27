@@ -1,10 +1,19 @@
-import { useEffect, useRef, useState } from 'react'
-import * as d3 from 'd3'
+import { useEffect, useRef } from 'react'
+import {
+  select,
+  scalePoint,
+  scaleLinear,
+  line,
+  area,
+  axisBottom,
+  axisLeft,
+} from 'd3'
 import { formatMoney } from '@/lib/format'
 import {
   estimateLeftAxisValueLabelSpace,
   estimateBottomAxisLabelSpace,
 } from '@/lib/chartLabelSpace'
+import { useChartDimensions } from '@/hooks/useChartDimensions'
 
 const BORDER_COLOR = 'var(--vantura-border, #ebedf2)'
 const MARGIN_TOP = 8
@@ -38,20 +47,8 @@ export function ProgressChart({
   style,
   'aria-label': ariaLabel,
 }: ProgressChartProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerRef, dimensions] = useChartDimensions()
   const tooltipRef = useRef<HTMLDivElement>(null)
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
-
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect
-      setDimensions({ width, height })
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
 
   useEffect(() => {
     const container = containerRef.current
@@ -64,7 +61,7 @@ export function ProgressChart({
     )
       return
 
-    const containerSelection = d3.select(container)
+    const containerSelection = select(container)
     containerSelection.selectAll('svg').remove()
 
     const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date))
@@ -81,16 +78,15 @@ export function ProgressChart({
     const width = dimensions.width - left - right
     const height = dimensions.height - MARGIN_TOP - bottom
 
-    const xScale = d3
-      .scalePoint<string>()
+    const xScale = scalePoint<string>()
       .domain(sorted.map((d) => d.date))
       .range([0, width])
       .padding(0.1)
 
-    const yScale = d3.scaleLinear().domain([0, maxY]).range([height, 0]).nice()
+    const yScale = scaleLinear().domain([0, maxY]).range([height, 0]).nice()
 
-    const line = d3
-      .line<ProgressDataPoint>()
+    // Named 'lineGen'/'areaGen' to avoid shadowing the imported 'line'/'area' functions
+    const lineGen = line<ProgressDataPoint>()
       .x((d) => xScale(d.date) ?? 0)
       .y((d) => yScale(d.amount))
 
@@ -117,8 +113,7 @@ export function ProgressChart({
     g.append('g')
       .attr('transform', `translate(0,${height})`)
       .call(
-        d3
-          .axisBottom(xScale)
+        axisBottom(xScale)
           .tickFormat((d) => String(d).slice(5))
           .tickValues(tickValues)
           .tickSizeOuter(0)
@@ -129,8 +124,7 @@ export function ProgressChart({
 
     g.append('g')
       .call(
-        d3
-          .axisLeft(yScale)
+        axisLeft(yScale)
           .tickFormat((v) => `$${formatMoney(Number(v))}`)
           .tickSizeOuter(0)
       )
@@ -141,8 +135,7 @@ export function ProgressChart({
     g.selectAll('.domain, .tick line').attr('stroke', BORDER_COLOR)
 
     if (areaFill && sorted.length > 1) {
-      const area = d3
-        .area<ProgressDataPoint>()
+      const areaGen = area<ProgressDataPoint>()
         .x((d) => xScale(d.date) ?? 0)
         .y0(height)
         .y1((d) => yScale(d.amount))
@@ -151,7 +144,7 @@ export function ProgressChart({
         .datum(sorted)
         .attr('fill', lineColor)
         .attr('opacity', 0.1)
-        .attr('d', area)
+        .attr('d', areaGen)
     }
 
     g.append('path')
@@ -161,7 +154,7 @@ export function ProgressChart({
       .attr('stroke-width', 2)
       .attr('stroke-linejoin', 'round')
       .attr('stroke-linecap', 'round')
-      .attr('d', line)
+      .attr('d', lineGen)
 
     if (goalAmount != null && goalAmount > 0) {
       const goalY = yScale(goalAmount)
@@ -201,11 +194,11 @@ export function ProgressChart({
           tooltipEl.style.left = `${event.offsetX + 10}px`
           tooltipEl.style.top = `${event.offsetY + 10}px`
         }
-        d3.select(this).attr('r', 5)
+        select(this).attr('r', 5)
       })
       .on('mouseleave', function () {
         if (tooltipEl) tooltipEl.style.display = 'none'
-        d3.select(this).attr('r', 3)
+        select(this).attr('r', 3)
       })
   }, [
     data,
@@ -215,6 +208,7 @@ export function ProgressChart({
     lineColor,
     areaFill,
     ariaLabel,
+    containerRef,
   ])
 
   return (

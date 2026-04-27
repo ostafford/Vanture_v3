@@ -69,15 +69,32 @@ export function Dashboard() {
   const [thresholdDollars, setThresholdDollars] = useState('')
   const [thresholdPctPay, setThresholdPctPay] = useState('')
 
-  const availableCents = getAvailableBalance()
-  const spendableCents = getSpendableBalance()
-  const payAmountCents = getPayAmountCents()
-  const thresholdCentsRaw = getAppSetting(SPENDABLE_ALERT_KEY)
+  const {
+    availableCents,
+    spendableCents,
+    payAmountCents,
+    thresholdCentsRaw,
+    pctPayRaw,
+    nextPayday,
+    reservedCents,
+  } = useMemo(
+    () => ({
+      availableCents: getAvailableBalance(),
+      spendableCents: getSpendableBalance(),
+      payAmountCents: getPayAmountCents(),
+      thresholdCentsRaw: getAppSetting(SPENDABLE_ALERT_KEY),
+      pctPayRaw: getAppSetting(SPENDABLE_ALERT_PCT_PAY_KEY),
+      nextPayday: getAppSetting('next_payday'),
+      reservedCents: getReservedAmount(),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lastSyncCompletedAt, dataVersion]
+  )
+
   const thresholdCents =
     thresholdCentsRaw != null && thresholdCentsRaw !== ''
       ? parseInt(thresholdCentsRaw, 10)
       : null
-  const pctPayRaw = getAppSetting(SPENDABLE_ALERT_PCT_PAY_KEY)
   const pctPay =
     pctPayRaw != null && pctPayRaw !== '' ? parseInt(pctPayRaw, 10) : 0
   const pctThresholdCents =
@@ -96,8 +113,6 @@ export function Dashboard() {
     spendableCents < effectiveThresholdCents
   const spendableGradient = isSpendableLow ? 'danger' : 'success'
 
-  const nextPayday = getAppSetting('next_payday')
-  const reservedCents = getReservedAmount()
   const spendableSubtitle =
     nextPayday && nextPayday.trim() !== ''
       ? `$${formatMoney(reservedCents)} reserved until ${formatShortDate(nextPayday)}`
@@ -119,9 +134,12 @@ export function Dashboard() {
     const now = new Date()
     return `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`
   }, [])
-  void dataVersion
-  void lastSyncCompletedAt
-  const dueSoon = getDueSoonCharges()
+
+  const dueSoon = useMemo(
+    () => getDueSoonCharges(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lastSyncCompletedAt, dataVersion]
+  )
   const reservedSubtitle = useMemo(() => {
     const nextDue = dueSoon[0]
     if (!nextDue) return undefined
@@ -337,7 +355,7 @@ export function Dashboard() {
         <Col md={4} className="stretch-card">
           <StatCard
             title="Reserved"
-            value={getReservedAmount()}
+            value={reservedCents}
             subtitle={reservedSubtitle}
             gradient="danger"
           />

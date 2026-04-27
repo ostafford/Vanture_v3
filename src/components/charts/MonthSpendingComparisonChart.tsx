@@ -1,5 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import * as d3 from 'd3'
+import { useEffect, useMemo, useRef } from 'react'
+import {
+  select,
+  scaleLinear,
+  min as d3Min,
+  max as d3Max,
+  line,
+  area,
+  axisBottom,
+  axisLeft,
+  pointer,
+  type NumberValue,
+  type Selection,
+} from 'd3'
 import type {
   MonthSpendingSeries,
   MonthSpendingSeriesPoint,
@@ -7,6 +19,8 @@ import type {
 } from '@/lib/monthSpendingSeries'
 import { formatDollars, formatMoney } from '@/lib/format'
 import { getMonthComparisonSemanticStrokes } from '@/components/charts/monthComparisonSemanticStrokes'
+import { useChartDimensions } from '@/hooks/useChartDimensions'
+import { positionTooltip, setTooltipContent } from '@/lib/chartTooltip'
 
 const BORDER_COLOR = 'var(--vantura-border, #ebedf2)'
 const MARGIN_TOP = 12
@@ -16,8 +30,6 @@ const SUCCESS_COLOR = 'var(--vantura-success, #1bcfb4)'
 const SUCCESS_FILL =
   'color-mix(in srgb, var(--vantura-success) 18%, transparent)'
 const DANGER_FILL = 'color-mix(in srgb, var(--vantura-danger) 18%, transparent)'
-const TOOLTIP_OFFSET = 10
-const TOOLTIP_PADDING = 8
 
 export interface MonthSpendingComparisonChartProps {
   series: MonthSpendingSeries | null
@@ -103,9 +115,8 @@ export function MonthSpendingComparisonChart({
     () => formatTooltipDayTitle ?? ((d: number) => `Day ${d}`),
     [formatTooltipDayTitle]
   )
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerRef, { width }] = useChartDimensions()
   const tooltipRef = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState(0)
 
   const prepared = useMemo(() => {
     if (!series || series.points.length === 0) return null
@@ -133,8 +144,8 @@ export function MonthSpendingComparisonChart({
       }
     }
 
-    const minVal = d3.min(allValues) ?? 0
-    const maxVal = d3.max(allValues) ?? 0
+    const minVal = d3Min(allValues) ?? 0
+    const maxVal = d3Max(allValues) ?? 0
 
     let domainMin: number
     if (metric === 'net') {
@@ -156,21 +167,10 @@ export function MonthSpendingComparisonChart({
   }, [series, metric, showAverage, showCurrent, showPrevious])
 
   useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const ro = new ResizeObserver((entries) => {
-      const { width: nextWidth } = entries[0].contentRect
-      setWidth(nextWidth)
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-
-  useEffect(() => {
     const container = containerRef.current
     if (!container || !prepared || width <= 0 || height <= 0) return
 
-    d3.select(container).selectAll('*').remove()
+    select(container).selectAll('*').remove()
 
     const { points, yDomain, avg } = prepared
     const semanticStrokes = getMonthComparisonSemanticStrokes(points, metric)
@@ -193,8 +193,7 @@ export function MonthSpendingComparisonChart({
 
     if (innerWidth <= 0 || innerHeight <= 0) return
 
-    const svg = d3
-      .select(container)
+    const svg = select(container)
       .append('svg')
       .attr('width', width)
       .attr('height', height)
@@ -203,19 +202,14 @@ export function MonthSpendingComparisonChart({
       .append('g')
       .attr('transform', `translate(${marginLeft},${MARGIN_TOP})`)
 
-    const xScale = d3
-      .scaleLinear()
+    const xScale = scaleLinear()
       .domain([1, points.length])
       .range([0, innerWidth])
 
-    const yScale = d3
-      .scaleLinear()
-      .domain(yDomain)
-      .nice()
-      .range([innerHeight, 0])
+    const yScale = scaleLinear().domain(yDomain).nice().range([innerHeight, 0])
 
-    const currentLine = d3
-      .line<MonthSpendingSeriesPoint>()
+    // Named 'currentLine'/'previousLine' to avoid shadowing the imported 'line' function
+    const currentLine = line<MonthSpendingSeriesPoint>()
       .defined((d) => {
         const { currentValues } = getMetricValues([d], metric)
         return currentValues[0] != null
@@ -226,8 +220,7 @@ export function MonthSpendingComparisonChart({
         return yScale(currentValues[0] ?? 0)
       })
 
-    const previousLine = d3
-      .line<MonthSpendingSeriesPoint>()
+    const previousLine = line<MonthSpendingSeriesPoint>()
       .defined((d) => {
         const { previousValues } = getMetricValues([d], metric)
         return previousValues[0] != null
@@ -238,36 +231,34 @@ export function MonthSpendingComparisonChart({
         return yScale(previousValues[0] ?? 0)
       })
 
-    const xAxis = d3
-      .axisBottom(xScale)
+    const xAxis = axisBottom(xScale)
       .ticks(Math.min(points.length, 8))
-      .tickFormat((d: d3.NumberValue) => formatXResolved(Number(d)))
+      .tickFormat((d: NumberValue) => formatXResolved(Number(d)))
       .tickSizeOuter(0)
 
-    const yAxis = d3
-      .axisLeft(yScale)
+    const yAxis = axisLeft(yScale)
       .ticks(5)
-      .tickFormat((d: d3.NumberValue) => `$${formatDollars(Number(d) / 100)}`)
+      .tickFormat((d: NumberValue) => `$${formatDollars(Number(d) / 100)}`)
       .tickSizeOuter(0)
 
     g.append('g')
       .attr('transform', `translate(0,${innerHeight})`)
       .call(xAxis)
       .style('font-size', '11px')
-      .call((sel: d3.Selection<SVGGElement, unknown, null, undefined>) =>
+      .call((sel: Selection<SVGGElement, unknown, null, undefined>) =>
         sel.selectAll('.domain, .tick line').attr('stroke', BORDER_COLOR)
       )
-      .call((sel: d3.Selection<SVGGElement, unknown, null, undefined>) =>
+      .call((sel: Selection<SVGGElement, unknown, null, undefined>) =>
         sel.selectAll('.tick text').attr('fill', 'currentColor')
       )
 
     g.append('g')
       .call(yAxis)
       .style('font-size', '10px')
-      .call((sel: d3.Selection<SVGGElement, unknown, null, undefined>) =>
+      .call((sel: Selection<SVGGElement, unknown, null, undefined>) =>
         sel.selectAll('.domain, .tick line').attr('stroke', BORDER_COLOR)
       )
-      .call((sel: d3.Selection<SVGGElement, unknown, null, undefined>) =>
+      .call((sel: Selection<SVGGElement, unknown, null, undefined>) =>
         sel.selectAll('.tick text').attr('fill', 'currentColor')
       )
 
@@ -282,10 +273,9 @@ export function MonthSpendingComparisonChart({
         .attr('stroke-dasharray', '4 4')
     }
 
-    // Conditionally render visible series
     if (showCurrent) {
-      const area = d3
-        .area<MonthSpendingSeriesPoint>()
+      // Named 'areaGen' to avoid shadowing the imported 'area' function
+      const areaGen = area<MonthSpendingSeriesPoint>()
         .defined(currentLine.defined())
         .x((d) => xScale(d.day))
         .y0(innerHeight)
@@ -298,7 +288,7 @@ export function MonthSpendingComparisonChart({
         .datum(points)
         .attr('fill', currentFill)
         .attr('stroke', 'none')
-        .attr('d', area)
+        .attr('d', areaGen)
         .attr('opacity', 0.9)
 
       g.append('path')
@@ -320,7 +310,6 @@ export function MonthSpendingComparisonChart({
         .attr('opacity', 0.9)
     }
 
-    // Hover tooltip + markers (matches behavior used in other D3 charts)
     const tooltipEl = tooltipRef.current
     const currentKey =
       metric === 'spending'
@@ -370,49 +359,29 @@ export function MonthSpendingComparisonChart({
     ) => {
       if (!tooltipEl || !container.parentElement) return
 
-      const lines: string[] = []
+      const tooltipLines: string[] = []
       if (showPrevious) {
         const v = point[previousKey] as number | null
-        const formatted = v == null ? 'No data' : `$${formatMoney(v)}`
-        lines.push(`${previousLineLabel}: ${formatted}`)
+        tooltipLines.push(
+          `${previousLineLabel}: ${v == null ? 'No data' : `$${formatMoney(v)}`}`
+        )
       }
       if (showCurrent) {
         const v = point[currentKey] as number | null
-        const formatted = v == null ? 'No data' : `$${formatMoney(v)}`
-        lines.push(`${currentLineLabel}: ${formatted}`)
+        tooltipLines.push(
+          `${currentLineLabel}: ${v == null ? 'No data' : `$${formatMoney(v)}`}`
+        )
       }
       if (avg != null) {
-        lines.push(`Average: $${formatMoney(avg)}`)
+        tooltipLines.push(`Average: $${formatMoney(avg)}`)
       }
 
       const dayTitle = formatTitleResolved(point.day)
-      if (lines.length === 0) {
-        tooltipEl.innerHTML = `<strong>${dayTitle}</strong><br/>No series selected`
-        tooltipEl.style.display = 'block'
-        // Positioning still matters; we'll reuse existing placement logic below.
-      } else {
-        tooltipEl.innerHTML = `<strong>${dayTitle}</strong><br/>${lines.join(
-          '<br/>'
-        )}`
-        tooltipEl.style.display = 'block'
-      }
-
-      const wr = container.parentElement.getBoundingClientRect()
-      const tw = tooltipEl.offsetWidth || 160
-      const th = tooltipEl.offsetHeight || 50
-
-      let leftPx = event.clientX - wr.left + TOOLTIP_OFFSET
-      let topPx = event.clientY - wr.top + TOOLTIP_OFFSET
-      leftPx = Math.max(
-        TOOLTIP_PADDING,
-        Math.min(wr.width - tw - TOOLTIP_PADDING, leftPx)
-      )
-      topPx = Math.max(
-        TOOLTIP_PADDING,
-        Math.min(wr.height - th - TOOLTIP_PADDING, topPx)
-      )
-      tooltipEl.style.left = `${leftPx}px`
-      tooltipEl.style.top = `${topPx}px`
+      const contentLines =
+        tooltipLines.length === 0 ? ['No series selected'] : tooltipLines
+      setTooltipContent(tooltipEl, dayTitle, contentLines)
+      tooltipEl.style.display = 'block'
+      positionTooltip(tooltipEl, container, event, 160, 52)
     }
 
     const hideTooltip = () => {
@@ -432,7 +401,7 @@ export function MonthSpendingComparisonChart({
       .style('cursor', 'crosshair')
       .style('pointer-events', 'all')
       .on('mousemove', function (event: MouseEvent) {
-        const [mx] = d3.pointer(event, this)
+        const [mx] = pointer(event, this)
         const rawDay = xScale.invert(mx)
         const day = Math.max(1, Math.min(points.length, Math.round(rawDay)))
         const point = points[day - 1]
@@ -485,7 +454,7 @@ export function MonthSpendingComparisonChart({
 
     return () => {
       hideTooltip()
-      d3.select(container).selectAll('*').remove()
+      select(container).selectAll('*').remove()
     }
   }, [
     prepared,
@@ -499,6 +468,7 @@ export function MonthSpendingComparisonChart({
     formatTitleResolved,
     previousLineLabel,
     currentLineLabel,
+    containerRef,
   ])
 
   if (!series || series.points.length === 0) {
