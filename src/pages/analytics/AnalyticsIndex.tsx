@@ -174,6 +174,39 @@ export function AnalyticsIndex() {
             </Card>
           </Link>
         </Col>
+        <Col xs={12} md={6} lg={3}>
+          <Link
+            to="/analytics/maybuys"
+            className="text-decoration-none"
+            style={{ color: 'inherit' }}
+          >
+            <Card className="h-100 border">
+              <Card.Body className="d-flex align-items-start">
+                <span
+                  className="page-title-icon bg-gradient-primary text-white rounded d-inline-flex align-items-center justify-content-center me-2 flex-shrink-0"
+                  style={{ width: 36, height: 36, minWidth: 36 }}
+                >
+                  <i
+                    className="mdi mdi-cart-heart"
+                    style={{ fontSize: '1.25rem' }}
+                    aria-hidden
+                  />
+                </span>
+                <div>
+                  <h6 className="mb-1 fw-semibold">Maybuys</h6>
+                  <p className="mb-0 text-muted small">
+                    Add items you&apos;re thinking about buying. Let the timer
+                    help you spend more intentionally.
+                  </p>
+                  <span className="small text-primary mt-1 d-inline-block">
+                    View Maybuys{' '}
+                    <i className="mdi mdi-chevron-right" aria-hidden />
+                  </span>
+                </div>
+              </Card.Body>
+            </Card>
+          </Link>
+        </Col>
       </Row>
 
       <Card className="border">

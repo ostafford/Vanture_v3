@@ -48,6 +48,10 @@ User- and developer-visible changes are listed in [CHANGELOG.md](CHANGELOG.md). 
 
 - **Build:** `npm run build` → `dist/` with base `/Vantura_v3/`; `dist/index.html` copied to `dist/404.html` for SPA routing. GitHub Actions (`.github/workflows/deploy.yml`) deploys on push to `main`.
 
+### Phase 13: Maybuys — Implemented
+
+- **Maybuys wishlist:** Add items you're considering buying (name, price, optional URL and notes). A "days thinking" timer nudges you toward an intentional decision — mark each item as Bought or Skip it to move it to History with a days-held count. Optionally link a Saver to see how much you've already set aside. A reorderable Dashboard card previews up to 3 pending items. Full page at `/analytics/maybuys`. See `src/services/maybuys.ts`, `src/components/dashboard/MaybuySection.tsx`, `src/pages/analytics/AnalyticsMaybuys.tsx`.
+
 ### Phase 7: Settings — Implemented
 
 - **Settings page:** Re-sync (button, Last synced, error state); theme and accent colour options; "Show dashboard tour again" button; Clear all data (confirmation; deletes database, reloads to Onboarding). See `src/pages/Settings.tsx`, `src/db/index.ts`.

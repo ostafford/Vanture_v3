@@ -568,6 +568,8 @@ export function createTracker(
 
 /**
  * Update tracker name, budget, frequency, reset_day, categories.
+ * Recalculates last_reset_date and next_reset_date so the period is correct
+ * immediately after a frequency or reset_day change.
  */
 export function updateTracker(
   id: number,
@@ -580,9 +582,29 @@ export function updateTracker(
 ): void {
   const db = getDb()
   if (!db) throw new Error('Database not ready')
+  const today = new Date().toISOString().slice(0, 10)
+  let lastReset: string
+  let nextReset: string
+  if (resetFrequency === 'PAYDAY') {
+    const nextPayday = getAppSetting('next_payday')
+    nextReset = nextPayday ?? today
+    lastReset = today
+  } else {
+    lastReset = getLastResetDate(resetFrequency, resetDay, today)
+    nextReset = getNextResetDate(resetFrequency, resetDay, lastReset)
+  }
   db.run(
-    `UPDATE trackers SET name = ?, budget_amount = ?, reset_frequency = ?, reset_day = ?, badge_color = ? WHERE id = ?`,
-    [name, budgetAmountCents, resetFrequency, resetDay, badgeColor ?? null, id]
+    `UPDATE trackers SET name = ?, budget_amount = ?, reset_frequency = ?, reset_day = ?, badge_color = ?, last_reset_date = ?, next_reset_date = ? WHERE id = ?`,
+    [
+      name,
+      budgetAmountCents,
+      resetFrequency,
+      resetDay,
+      badgeColor ?? null,
+      lastReset,
+      nextReset,
+      id,
+    ]
   )
   db.run(`DELETE FROM tracker_categories WHERE tracker_id = ?`, [id])
   for (const catId of categoryIds) {

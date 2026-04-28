@@ -298,14 +298,14 @@ export function TrackersSection({
                     placement="top"
                     overlay={
                       <Tooltip id="trackers-analytics-header-tooltip">
-                        Open analytics
+                        View tracker analytics
                       </Tooltip>
                     }
                   >
                     <Link
-                      to="/analytics"
+                      to="/analytics/trackers"
                       className="btn btn-outline-secondary btn-sm"
-                      aria-label="Open analytics"
+                      aria-label="View tracker analytics"
                     >
                       <i className="mdi mdi-chart-box" aria-hidden />
                     </Link>
@@ -417,14 +417,14 @@ export function TrackersSection({
                       placement="top"
                       overlay={
                         <Tooltip id="trackers-analytics-header-tooltip-desktop">
-                          Analytics coming soon
+                          View tracker analytics
                         </Tooltip>
                       }
                     >
                       <Link
-                        to="/analytics"
+                        to="/analytics/trackers"
                         className="btn btn-outline-secondary btn-sm ms-2"
-                        aria-label="Analytics coming soon"
+                        aria-label="View tracker analytics"
                       >
                         <i className="mdi mdi-chart-box" aria-hidden />
                       </Link>
@@ -632,6 +632,10 @@ export function TrackersSection({
                     t.period_start && t.period_end
                       ? `${formatShortDate(t.period_start)} – ${formatShortDate(t.period_end)}`
                       : ''
+                  const periodTxs = getTrackerTransactionsInPeriod(
+                    t.id,
+                    activePeriodOffset
+                  )
                   const daysTooltipText = periodRangeText
                     ? `${t.daysLeft} days left in this ${frequencyLabel.toLowerCase()} period (${periodRangeText})`
                     : `${t.daysLeft} days left in this ${frequencyLabel.toLowerCase()} period`
@@ -671,15 +675,15 @@ export function TrackersSection({
                               placement="top"
                               overlay={
                                 <Tooltip id={`trackers-analytics-${t.id}`}>
-                                  Analytics coming soon
+                                  View analytics for {t.name}
                                 </Tooltip>
                               }
                             >
                               <Link
-                                to="/analytics"
+                                to={`/analytics/trackers/${t.id}`}
                                 className="btn btn-link btn-sm p-0 text-primary"
                                 onClick={(e) => e.stopPropagation()}
-                                aria-label={`Analytics coming soon for ${t.name}`}
+                                aria-label={`View analytics for ${t.name}`}
                               >
                                 <i className="mdi mdi-chart-line" aria-hidden />
                               </Link>
@@ -761,19 +765,13 @@ export function TrackersSection({
                         </div>
                         <Collapse in={expandedId === t.id}>
                           <div className="mt-2 small">
-                            {getTrackerTransactionsInPeriod(
-                              t.id,
-                              activePeriodOffset
-                            ).length === 0 ? (
+                            {periodTxs.length === 0 ? (
                               <span className="text-muted">
                                 No transactions this period
                               </span>
                             ) : (
                               <ul className="list-unstyled mb-0">
-                                {getTrackerTransactionsInPeriod(
-                                  t.id,
-                                  activePeriodOffset
-                                ).map((tx) => (
+                                {periodTxs.map((tx) => (
                                   <li key={tx.id}>
                                     {formatShortDate(
                                       tx.created_at ?? tx.settled_at ?? ''

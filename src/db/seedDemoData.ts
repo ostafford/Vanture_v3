@@ -406,8 +406,9 @@ export function seedDemoData(): void {
       `INSERT OR REPLACE INTO transactions (
         id, account_id, status, raw_text, description, message, is_categorizable,
         category_id, parent_category_id, amount, currency, settled_at, created_at,
-        is_round_up, round_up_parent_id, transfer_account_id, transfer_type, synced_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        is_round_up, round_up_parent_id, transfer_account_id, transfer_type, synced_at,
+        round_up_amount
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         `demo-roundup-${parentD}`,
         DEMO_ACCOUNT_ID,
@@ -427,6 +428,7 @@ export function seedDemoData(): void {
         DEMO_SAVER_ID,
         null,
         NOW,
+        roundUpCents[ruIdx],
       ]
     )
   })
@@ -629,5 +631,69 @@ export function seedDemoData(): void {
     `INSERT OR REPLACE INTO transaction_user_data (transaction_id, user_notes, user_category_override)
      VALUES (?, ?, ?)`,
     ['demo-income-0-0', 'Monthly salary - March', null]
+  )
+
+  // Maybuys: mix of pending, bought, and skipped for demo
+  const daysAgo = (n: number) => {
+    const d = new Date()
+    d.setDate(d.getDate() - n)
+    return d.toISOString()
+  }
+
+  run(
+    `INSERT INTO maybuys (name, price_cents, url, notes, saver_account_id, status, created_at, decided_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      'Sony WH-1000XM5 Headphones',
+      42900,
+      'https://www.sony.com.au',
+      'For working from home — the office gets noisy.',
+      DEMO_SAVER_2_ID,
+      'PENDING',
+      daysAgo(11),
+      null,
+    ]
+  )
+  run(
+    `INSERT INTO maybuys (name, price_cents, url, notes, saver_account_id, status, created_at, decided_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      'Standing Desk',
+      64900,
+      null,
+      null,
+      DEMO_SAVER_ID,
+      'PENDING',
+      daysAgo(4),
+      null,
+    ]
+  )
+  run(
+    `INSERT INTO maybuys (name, price_cents, url, notes, saver_account_id, status, created_at, decided_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      'New Running Shoes',
+      19999,
+      null,
+      'Needed after 800km on the current pair.',
+      null,
+      'BOUGHT',
+      daysAgo(18),
+      daysAgo(7),
+    ]
+  )
+  run(
+    `INSERT INTO maybuys (name, price_cents, url, notes, saver_account_id, status, created_at, decided_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      'Instant Pot',
+      11900,
+      null,
+      "Thought I'd cook more — probably won't use it.",
+      null,
+      'SKIPPED',
+      daysAgo(25),
+      daysAgo(12),
+    ]
   )
 }

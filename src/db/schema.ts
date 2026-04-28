@@ -5,7 +5,7 @@
 
 import type { Database } from 'sql.js'
 
-const SCHEMA_VERSION = 15
+const SCHEMA_VERSION = 17
 
 function tableExists(database: Database, name: string): boolean {
   const stmt = database.prepare(
@@ -26,7 +26,8 @@ const DDL_STATEMENTS = [
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     ownership_type TEXT,
-    synced_at TEXT
+    synced_at TEXT,
+    is_closed INTEGER NOT NULL DEFAULT 0
   )`,
   `CREATE TABLE IF NOT EXISTS categories (
     id TEXT PRIMARY KEY,
@@ -120,6 +121,18 @@ const DDL_STATEMENTS = [
     target_date TEXT,
     notes TEXT,
     created_at TEXT NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS maybuys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    price_cents INTEGER NOT NULL,
+    url TEXT,
+    notes TEXT,
+    saver_account_id TEXT,
+    status TEXT NOT NULL DEFAULT 'PENDING',
+    created_at TEXT NOT NULL,
+    decided_at TEXT,
+    FOREIGN KEY (saver_account_id) REFERENCES accounts(id)
   )`,
 ]
 
@@ -358,6 +371,41 @@ export function runMigrations(database: Database): void {
     database.run(
       `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
       ['15']
+    )
+  }
+  if (version < 16) {
+    database.run(
+      `CREATE TABLE IF NOT EXISTS maybuys (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        price_cents INTEGER NOT NULL,
+        url TEXT,
+        notes TEXT,
+        saver_account_id TEXT,
+        status TEXT NOT NULL DEFAULT 'PENDING',
+        created_at TEXT NOT NULL,
+        decided_at TEXT,
+        FOREIGN KEY (saver_account_id) REFERENCES accounts(id)
+      )`
+    )
+    database.run(
+      `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
+      ['16']
+    )
+  }
+  if (version < 17) {
+    const accCols = database.exec(`PRAGMA table_info(accounts)`)
+    const accExisting = new Set(
+      (accCols[0]?.values ?? []).map((r) => String(r[1]))
+    )
+    if (!accExisting.has('is_closed')) {
+      database.run(
+        `ALTER TABLE accounts ADD COLUMN is_closed INTEGER NOT NULL DEFAULT 0`
+      )
+    }
+    database.run(
+      `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
+      ['17']
     )
   }
 }

@@ -10,6 +10,7 @@ import { AnalyticsInsights } from '@/pages/analytics/AnalyticsInsights'
 import { AnalyticsReports } from '@/pages/analytics/AnalyticsReports'
 import { AnalyticsMonthlyReview } from '@/pages/analytics/AnalyticsMonthlyReview'
 import { AnalyticsSavers } from '@/pages/analytics/AnalyticsSavers'
+import { AnalyticsMaybuys } from '@/pages/analytics/AnalyticsMaybuys'
 import { Settings } from '@/pages/Settings'
 import { Help } from '@/pages/Help'
 import { SaverAccountTransactionsRedirect } from '@/routing/SaverAccountTransactionsRedirect'
@@ -82,12 +83,21 @@ export const appRouter = createBrowserRouter(
               element: <SaverAccountTransactionsRedirect />,
             },
             {
+              path: 'maybuys',
+              element: <AnalyticsMaybuys />,
+              handle: {
+                breadcrumbLabel: 'Maybuys',
+                pageTitle: 'Maybuys',
+                pageTitleIcon: 'mdi-cart-heart',
+              } satisfies AppRouteHandle,
+            },
+            {
               path: 'wants',
-              element: <Navigate to="/analytics" replace />,
+              element: <Navigate to="/analytics/maybuys" replace />,
             },
             {
               path: 'wants/:wantId',
-              element: <Navigate to="/analytics" replace />,
+              element: <Navigate to="/analytics/maybuys" replace />,
             },
             {
               path: 'goals',

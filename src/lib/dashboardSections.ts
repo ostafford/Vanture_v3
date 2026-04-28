@@ -14,6 +14,7 @@ export const DASHBOARD_SECTION_IDS = [
   'insights',
   'trackers',
   'upcoming',
+  'maybuys',
 ] as const
 
 export type DashboardSectionId = (typeof DASHBOARD_SECTION_IDS)[number]
@@ -23,6 +24,7 @@ export const DEFAULT_DASHBOARD_SECTION_ORDER: DashboardSectionId[] = [
   'insights',
   'trackers',
   'upcoming',
+  'maybuys',
 ]
 
 function migrateLegacySectionId(id: unknown): DashboardSectionId | null {
@@ -68,6 +70,7 @@ export const DASHBOARD_SECTION_LABELS: Record<DashboardSectionId, string> = {
   insights: 'Weekly insights',
   trackers: 'Trackers',
   upcoming: 'Upcoming transactions',
+  maybuys: 'Maybuys',
 }
 
 export function getDashboardSectionSizes(): Record<

@@ -78,8 +78,8 @@ function upsertAccount(acc: UpAccount): void {
   const now = new Date().toISOString()
   const ownership = a.ownershipType != null ? String(a.ownershipType) : null
   run(
-    `INSERT OR REPLACE INTO accounts (id, display_name, account_type, balance, created_at, updated_at, ownership_type, synced_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT OR REPLACE INTO accounts (id, display_name, account_type, balance, created_at, updated_at, ownership_type, synced_at, is_closed)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`,
     [
       acc.id,
       a.displayName ?? '',
@@ -91,6 +91,28 @@ function upsertAccount(acc: UpAccount): void {
       now,
     ]
   )
+}
+
+/**
+ * Mark any accounts in the local DB that were NOT returned by the API as closed.
+ * Re-opens accounts that reappear (is_closed = 0 is set in upsertAccount).
+ * Called after all accounts from a sync pass have been upserted.
+ */
+function reconcileClosedAccounts(fetchedIds: Set<string>): void {
+  const db = getDb()
+  if (!db) return
+  const stmt = db.prepare(`SELECT id FROM accounts`)
+  const storedIds: string[] = []
+  while (stmt.step()) {
+    storedIds.push(stmt.get()[0] as string)
+  }
+  stmt.free()
+  for (const id of storedIds) {
+    if (!fetchedIds.has(id)) {
+      db.run(`UPDATE accounts SET is_closed = 1 WHERE id = ?`, [id])
+    }
+  }
+  schedulePersist()
 }
 
 function upsertTransaction(tx: UpTransaction): void {
@@ -215,6 +237,7 @@ export async function performInitialSync(
   progressCallback({ phase: 'accounts' })
   const accounts = await fetchAccounts(apiToken)
   for (const a of accounts) upsertAccount(a)
+  reconcileClosedAccounts(new Set(accounts.map((a) => a.id)))
   progressCallback({ phase: 'transactions', fetched: 0, hasMore: true })
   await fetchAllTransactions(apiToken, null, (p) => {
     progressCallback({
@@ -244,6 +267,7 @@ export async function performSync(
   progressCallback({ phase: 'accounts' })
   const accounts = await fetchAccounts(apiToken)
   for (const a of accounts) upsertAccount(a)
+  reconcileClosedAccounts(new Set(accounts.map((a) => a.id)))
   const sinceDate = getAppSetting('last_sync')
   progressCallback({ phase: 'transactions', fetched: 0, hasMore: true })
   await fetchAllTransactions(apiToken, sinceDate, (p) => {
@@ -276,6 +300,7 @@ export async function performFullSync(
   progressCallback({ phase: 'accounts' })
   const accounts = await fetchAccounts(apiToken)
   for (const a of accounts) upsertAccount(a)
+  reconcileClosedAccounts(new Set(accounts.map((a) => a.id)))
   progressCallback({ phase: 'transactions', fetched: 0, hasMore: true })
   await fetchAllTransactions(apiToken, null, (p) => {
     progressCallback({

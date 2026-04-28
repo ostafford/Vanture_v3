@@ -101,7 +101,7 @@ export function getAvailableBalance(): number {
   const db = getDb()
   if (!db) return 0
   const stmt = db.prepare(
-    `SELECT COALESCE(SUM(balance), 0) as total FROM accounts WHERE account_type = 'TRANSACTIONAL'`
+    `SELECT COALESCE(SUM(balance), 0) as total FROM accounts WHERE account_type = 'TRANSACTIONAL' AND is_closed = 0`
   )
   stmt.step()
   const row = stmt.get()

@@ -15,6 +15,7 @@ import { InsightsSection } from '@/components/dashboard/InsightsSection'
 import { TrackersSection } from '@/components/dashboard/TrackersSection'
 import { UpcomingSection } from '@/components/dashboard/UpcomingSection'
 import { MonthSummarySection } from '@/components/dashboard/MonthSummarySection'
+import { MaybuySection } from '@/components/dashboard/MaybuySection'
 import { StatCard } from '@/components/StatCard'
 import {
   shouldShowDashboardTour,
@@ -271,6 +272,8 @@ export function Dashboard() {
               onUpcomingChange={() => setDataVersion((v) => v + 1)}
             />
           )
+        case 'maybuys':
+          return <MaybuySection dragHandleProps={dragHandleProps} />
         default:
           return null
       }
