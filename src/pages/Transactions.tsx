@@ -23,10 +23,7 @@ import {
   type TransactionRow,
 } from '@/services/transactions'
 import { getCategories } from '@/services/categories'
-import {
-  getTransactionUserDataMap,
-  suggestCategoryFromRules,
-} from '@/services/transactionUserData'
+import { getTransactionUserDataMap } from '@/services/transactionUserData'
 import { getAppSetting } from '@/db'
 import { syncStore } from '@/stores/syncStore'
 import { useFullReSync } from '@/hooks/useFullReSync'
@@ -180,14 +177,6 @@ export function Transactions() {
     if (savedOverride)
       return (
         categories.find((c) => c.id === savedOverride)?.name ?? savedOverride
-      )
-    const suggested = suggestCategoryFromRules(
-      editTxRow.description || editTxRow.raw_text || ''
-    )
-    if (suggested)
-      return (
-        (categories.find((c) => c.id === suggested)?.name ?? suggested) +
-        ' (suggested)'
       )
     return editTxRow.category_name
   }, [editTxRow, userDataMap, categories])
@@ -365,7 +354,7 @@ export function Transactions() {
                                 )?.name ?? '1 category')
                               : `${filters.categoryIds!.length} categories`}
                         </Dropdown.Toggle>
-                        <Dropdown.Menu className="p-0">
+                        <Dropdown.Menu className="p-0 transactions-category-menu">
                           <Dropdown.Item
                             eventKey="__all__"
                             active={(filters.categoryIds?.length ?? 0) === 0}
@@ -535,7 +524,7 @@ export function Transactions() {
                           : `${filters.categoryIds!.length} categories`}
                     </span>
                   </Dropdown.Toggle>
-                  <Dropdown.Menu className="p-0">
+                  <Dropdown.Menu className="p-0 transactions-category-menu">
                     <Dropdown.Item
                       eventKey="__all__"
                       active={(filters.categoryIds?.length ?? 0) === 0}
@@ -723,16 +712,10 @@ export function Transactions() {
                           {(() => {
                             const ud = userDataMap[row.id]
                             const overrideCat = ud?.user_category_override
-                            const suggested = suggestCategoryFromRules(
-                              row.description || row.raw_text || ''
-                            )
                             const effective = overrideCat
                               ? (categories.find((c) => c.id === overrideCat)
                                   ?.name ?? overrideCat)
-                              : suggested
-                                ? (categories.find((c) => c.id === suggested)
-                                    ?.name ?? 'Suggested')
-                                : row.category_name
+                              : row.category_name
                             return effective ? ` · ${effective}` : ''
                           })()}
                         </div>
@@ -841,19 +824,10 @@ export function Transactions() {
                             {(() => {
                               const ud = userDataMap[row.id]
                               const overrideCat = ud?.user_category_override
-                              const suggested = suggestCategoryFromRules(
-                                row.description || row.raw_text || ''
-                              )
                               if (overrideCat) {
                                 return (
                                   categories.find((c) => c.id === overrideCat)
                                     ?.name ?? overrideCat
-                                )
-                              }
-                              if (suggested) {
-                                return (
-                                  (categories.find((c) => c.id === suggested)
-                                    ?.name ?? suggested) + ' (suggested)'
                                 )
                               }
                               return row.category_name ?? ''

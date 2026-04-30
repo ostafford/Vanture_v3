@@ -3,7 +3,7 @@
  * Sync does not touch this; upstream category is preserved in transactions table.
  */
 
-import { getDb, getAppSetting, setAppSetting, schedulePersist } from '@/db'
+import { getDb, schedulePersist } from '@/db'
 
 export interface TransactionUserRow {
   transaction_id: string
@@ -125,79 +125,4 @@ export function setTransactionUserCategoryOverride(
     }
   }
   schedulePersist()
-}
-
-/** User-defined categorization rule: pattern (substring match) → category ID. */
-export interface CategorizationRule {
-  id: string
-  pattern: string
-  categoryId: string
-}
-
-const CATEGORIZATION_RULES_KEY = 'categorization_rules'
-
-export function getCategorizationRules(): CategorizationRule[] {
-  try {
-    const raw = getAppSetting(CATEGORIZATION_RULES_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return []
-    return parsed.filter(
-      (r): r is CategorizationRule =>
-        typeof r === 'object' &&
-        r !== null &&
-        typeof (r as CategorizationRule).id === 'string' &&
-        typeof (r as CategorizationRule).pattern === 'string' &&
-        typeof (r as CategorizationRule).categoryId === 'string'
-    )
-  } catch {
-    return []
-  }
-}
-
-export function setCategorizationRules(rules: CategorizationRule[]): void {
-  setAppSetting(CATEGORIZATION_RULES_KEY, JSON.stringify(rules))
-}
-
-/** Suggest category for a transaction description using user-defined rules (no AI). */
-export function suggestCategoryFromRules(description: string): string | null {
-  const rules = getCategorizationRules()
-  const lower = description.toLowerCase()
-  for (const r of rules) {
-    if (r.pattern && lower.includes(r.pattern.toLowerCase()))
-      return r.categoryId
-  }
-  return null
-}
-
-/**
- * Auto-learn a categorization rule from a user's category override.
- * If the description already matches an existing rule, update its category;
- * otherwise add a new learned rule. Skips empty descriptions.
- */
-export function learnCategoryFromOverride(
-  description: string,
-  categoryId: string
-): void {
-  const pattern = description.trim()
-  if (!pattern || !categoryId) return
-
-  const rules = getCategorizationRules()
-  const existing = rules.find(
-    (r) => r.pattern.toLowerCase() === pattern.toLowerCase()
-  )
-  if (existing) {
-    if (existing.categoryId !== categoryId) {
-      existing.categoryId = categoryId
-      setCategorizationRules(rules)
-    }
-    return
-  }
-  const rule: CategorizationRule = {
-    id: `learned-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    pattern,
-    categoryId,
-  }
-  rules.push(rule)
-  setCategorizationRules(rules)
 }

@@ -26,6 +26,7 @@ function AppContent() {
   useEffect(() => {
     if (!themeHydrated) return
     document.documentElement.setAttribute('data-theme', theme)
+    document.documentElement.setAttribute('data-bs-theme', theme)
   }, [theme, themeHydrated])
 
   useEffect(() => {
@@ -59,6 +60,7 @@ function AppContent() {
       const theme = themeStore.getState().theme
       const accent = accentStore.getState().accent
       document.documentElement.setAttribute('data-theme', theme)
+      document.documentElement.setAttribute('data-bs-theme', theme)
       document.documentElement.setAttribute('data-accent', accent)
       if (!cancelled) setReady(true)
     }

@@ -24,12 +24,6 @@ import {
   DASHBOARD_SECTION_LABELS,
   type DashboardSectionId,
 } from '@/lib/dashboardSections'
-import {
-  getCategorizationRules,
-  setCategorizationRules,
-  type CategorizationRule,
-} from '@/services/transactionUserData'
-import { getCategories } from '@/services/categories'
 import { formatSyncProgressMessage } from '@/services/sync'
 import {
   exportProfile,
@@ -58,7 +52,6 @@ function getSettingsSectionKeys(): string[] {
     'help',
     'appearance',
     'payday',
-    'categorization',
     'dashboard-sections',
     ...(isNotificationSupported() ? (['notifications'] as const) : []),
     'data',
@@ -69,7 +62,6 @@ const SETTINGS_SECTION_LABELS: Record<string, string> = {
   help: 'Help',
   appearance: 'Appearance',
   payday: 'Payday',
-  categorization: 'Categorization rules',
   'dashboard-sections': 'Dashboard sections',
   notifications: 'Notifications',
   data: 'Data',
@@ -123,93 +115,6 @@ function formatTrackersSummary(trackers: TrackerExportRow[]): string {
 function formatUpcomingSummary(charges: UpcomingChargeExportRow[]): string {
   if (!Array.isArray(charges) || charges.length === 0) return 'None'
   return `${charges.length} upcoming charge${charges.length !== 1 ? 's' : ''}`
-}
-
-function CategorizationRulesForm() {
-  const [rules, setRules] = useState<CategorizationRule[]>(() =>
-    getCategorizationRules()
-  )
-  const [newPattern, setNewPattern] = useState('')
-  const [newCategoryId, setNewCategoryId] = useState('')
-  const categories = getCategories()
-
-  const addRule = () => {
-    const pattern = newPattern.trim()
-    if (!pattern || !newCategoryId) return
-    const rule: CategorizationRule = {
-      id: `rule-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      pattern,
-      categoryId: newCategoryId,
-    }
-    const next = [...rules, rule]
-    setRules(next)
-    setCategorizationRules(next)
-    setNewPattern('')
-    setNewCategoryId('')
-  }
-  const removeRule = (id: string) => {
-    const next = rules.filter((r) => r.id !== id)
-    setRules(next)
-    setCategorizationRules(next)
-  }
-
-  return (
-    <div>
-      <p className="small text-muted mb-3">
-        When a transaction description contains the pattern (case-insensitive),
-        that category is suggested on the Transactions page. No AI; rules only.
-      </p>
-      <div className="d-flex flex-wrap gap-2 mb-3">
-        <Form.Control
-          type="text"
-          placeholder="Pattern (e.g. COLES)"
-          value={newPattern}
-          onChange={(e) => setNewPattern(e.target.value)}
-          style={{ maxWidth: 200 }}
-        />
-        <Form.Select
-          value={newCategoryId}
-          onChange={(e) => setNewCategoryId(e.target.value)}
-          style={{ maxWidth: 200 }}
-        >
-          <option value="">Category</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </Form.Select>
-        <Button variant="outline-primary" size="sm" onClick={addRule}>
-          Add rule
-        </Button>
-      </div>
-      <ul className="list-group list-group-flush">
-        {rules.map((r) => (
-          <li
-            key={r.id}
-            className="list-group-item d-flex justify-content-between align-items-center"
-          >
-            <span className="text-break">
-              &quot;{r.pattern}&quot; →{' '}
-              {categories.find((c) => c.id === r.categoryId)?.name ??
-                r.categoryId}
-            </span>
-            <Button
-              variant="outline-danger"
-              size="sm"
-              onClick={() => removeRule(r.id)}
-              aria-label={`Remove rule for ${r.pattern}`}
-            >
-              <i className="mdi mdi-delete" aria-hidden />
-            </Button>
-          </li>
-        ))}
-      </ul>
-      {rules.length === 0 && (
-        <p className="small text-muted mb-0 mt-2">No rules yet.</p>
-      )}
-    </div>
-  )
 }
 
 function DashboardSectionOrderForm() {
@@ -862,11 +767,6 @@ export function Settings() {
                       Save payday settings
                     </Button>
                   </Form>
-                </>
-              )}
-              {activeSection === 'categorization' && (
-                <>
-                  <CategorizationRulesForm />
                 </>
               )}
               {activeSection === 'dashboard-sections' && (

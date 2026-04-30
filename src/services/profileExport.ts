@@ -36,7 +36,6 @@ export const SETTINGS_WHITELIST: readonly string[] = [
   'insights_category_colors',
   'dashboard_tour_completed',
   'dashboard_section_order',
-  'categorization_rules',
 ] as const
 
 /**

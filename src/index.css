@@ -704,6 +704,34 @@ html[data-theme='dark'] .app-boot-shell {
   color: var(--vantura-text);
 }
 
+/* Transactions: category filter dropdown behavior */
+.transactions-category-menu {
+  max-height: min(60vh, 26rem);
+  overflow-y: auto;
+}
+.transactions-category-menu .dropdown-item .form-check {
+  width: 100%;
+  margin-bottom: 0;
+}
+[data-theme='dark'] .transactions-category-menu {
+  background-color: var(--vantura-surface);
+  border-color: var(--vantura-border);
+  color: var(--vantura-text);
+}
+[data-theme='dark'] .transactions-category-menu .dropdown-item {
+  color: var(--vantura-text);
+}
+[data-theme='dark'] .transactions-category-menu .dropdown-item:hover,
+[data-theme='dark'] .transactions-category-menu .dropdown-item:focus,
+[data-theme='dark'] .transactions-category-menu .dropdown-item.active,
+[data-theme='dark'] .transactions-category-menu .dropdown-item:active {
+  background-color: color-mix(in srgb, var(--vantura-primary) 20%, transparent);
+  color: var(--vantura-text);
+}
+[data-theme='dark'] .transactions-category-menu .dropdown-divider {
+  border-top-color: var(--vantura-border);
+}
+
 /* Phase 8: Purple React utilities */
 .grid-margin {
   margin-bottom: 2.5rem;

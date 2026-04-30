@@ -55,7 +55,7 @@ User- and developer-visible changes are listed in [CHANGELOG.md](CHANGELOG.md). 
 ### Phase 7: Settings — Implemented
 
 - **Settings page:** Re-sync (button, Last synced, error state); theme and accent colour options; "Show dashboard tour again" button; Clear all data (confirmation; deletes database, reloads to Onboarding). See `src/pages/Settings.tsx`, `src/db/index.ts`.
-- **Profile export/import:** Export whitelisted settings (theme, accent, payday and pay amount, spendable alerts, dashboard section order, categorization rules, insights category colours, dashboard tour state), plus trackers and upcoming charges, to a passphrase-encrypted file; import on another device. No transactions, API tokens, or bank data are ever exported. See Settings > Data section and `src/services/profileExport.ts`.
+- **Profile export/import:** Export whitelisted settings (theme, accent, payday and pay amount, spendable alerts, dashboard section order, insights category colours, dashboard tour state), plus trackers and upcoming charges, to a passphrase-encrypted file; import on another device. No transactions, API tokens, or bank data are ever exported. See Settings > Data section and `src/services/profileExport.ts`.
 
 ## Security
 

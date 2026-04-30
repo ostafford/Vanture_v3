@@ -103,14 +103,6 @@ export function seedDemoData(): void {
   setAppSetting('last_sync', NOW)
   setAppSetting('onboarding_complete', '1')
   setAppSetting('demo_mode', '1')
-  setAppSetting(
-    'categorization_rules',
-    JSON.stringify([
-      { id: 'rule-1', pattern: 'woolworths', categoryId: 'demo-cat-groceries' },
-      { id: 'rule-2', pattern: 'uber eats', categoryId: 'demo-cat-dining' },
-      { id: 'rule-3', pattern: 'netflix', categoryId: 'demo-cat-subs' },
-    ])
-  )
 
   // Accounts: one transactional, two savers
   run(

@@ -282,13 +282,6 @@ export function Help() {
                     or by dragging section headers on the Dashboard.
                   </p>
                   <p className="mb-2">
-                    <strong>Categorization rules:</strong> In Settings you can
-                    add rules that map transaction description patterns (e.g. a
-                    merchant name) to categories. Those categories are then
-                    suggested on the Transactions page when the pattern matches.
-                    Rules only—no AI.
-                  </p>
-                  <p className="mb-2">
                     <strong>Export and import profile:</strong> You can export
                     your settings to an encrypted file (passphrase-protected)
                     and import on another device to restore your setup. Export

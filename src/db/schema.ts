@@ -5,7 +5,7 @@
 
 import type { Database } from 'sql.js'
 
-const SCHEMA_VERSION = 17
+const SCHEMA_VERSION = 18
 
 function tableExists(database: Database, name: string): boolean {
   const stmt = database.prepare(
@@ -406,6 +406,13 @@ export function runMigrations(database: Database): void {
     database.run(
       `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
       ['17']
+    )
+  }
+  if (version < 18) {
+    database.run(`DELETE FROM app_settings WHERE key = 'categorization_rules'`)
+    database.run(
+      `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
+      ['18']
     )
   }
 }
