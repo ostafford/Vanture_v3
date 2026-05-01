@@ -298,6 +298,25 @@ export function MonthSpendingComparisonChart({
         .attr('fill', 'none')
         .attr('d', currentLine)
         .attr('opacity', 0.9)
+
+      // Endpoint dot — makes the current series visible even when only 1 day of data exists
+      const lastCurrentPt = [...points].reverse().find((d) => {
+        const { currentValues: cv } = getMetricValues([d], metric)
+        return cv[0] != null
+      })
+      if (lastCurrentPt) {
+        const { currentValues: cv } = getMetricValues([lastCurrentPt], metric)
+        const v = cv[0]
+        if (v != null) {
+          g.append('circle')
+            .attr('cx', xScale(lastCurrentPt.day))
+            .attr('cy', yScale(v))
+            .attr('r', 4)
+            .attr('fill', currentStroke)
+            .attr('stroke', 'var(--vantura-surface, #fff)')
+            .attr('stroke-width', 2)
+        }
+      }
     }
 
     if (showPrevious) {

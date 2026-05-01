@@ -753,7 +753,7 @@ function getDailyMoneyInOutForRange(
   const endStr = dateTo.length <= 10 ? dateTo + 'T23:59:59.999Z' : dateTo
 
   const stmt = db.prepare(
-    `SELECT strftime('%d', COALESCE(created_at, settled_at)) AS day,
+    `SELECT CAST(substr(COALESCE(created_at, settled_at), 9, 2) AS INTEGER) AS day,
        COALESCE(SUM(CASE WHEN amount > 0 AND transfer_account_id IS NULL THEN amount ELSE 0 END), 0) AS money_in,
        COALESCE(SUM(CASE WHEN amount < 0 AND transfer_account_id IS NULL THEN ABS(amount) ELSE 0 END), 0) AS money_out
      FROM transactions
