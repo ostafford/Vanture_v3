@@ -7,6 +7,7 @@ import {
   Row,
   Col,
   Button,
+  Badge,
   Dropdown,
   Modal,
   Spinner,
@@ -24,6 +25,18 @@ import {
 } from '@/services/transactions'
 import { getCategories } from '@/services/categories'
 import { getTransactionUserDataMap } from '@/services/transactionUserData'
+import { updateTransactionCategoryLocal } from '@/services/transactions'
+import {
+  getAllTags,
+  getTagsForTransaction,
+  setTransactionTagsLocal,
+} from '@/services/tags'
+import {
+  updateTransactionCategory,
+  addTransactionTags,
+  removeTransactionTags,
+} from '@/api/upBank'
+import { sessionStore } from '@/stores/sessionStore'
 import { getAppSetting } from '@/db'
 import { syncStore } from '@/stores/syncStore'
 import { useFullReSync } from '@/hooks/useFullReSync'
@@ -41,6 +54,18 @@ const SORT_OPTIONS: { value: TransactionSort; label: string }[] = [
   { value: 'amount', label: 'Amount' },
   { value: 'merchant', label: 'Merchant' },
 ]
+
+const CARD_METHOD_LABELS: Record<string, string> = {
+  CONTACTLESS: 'Tap',
+  CHIP_AND_PIN: 'Chip & PIN',
+  ECOMMERCE: 'Online',
+  MAGNETIC_STRIPE: 'Swipe',
+  BAR_CODE: 'Barcode',
+}
+
+function cardMethodLabel(method: string): string {
+  return CARD_METHOD_LABELS[method] ?? method
+}
 
 function useFiltersFromSearchParams(): {
   filters: TransactionFilters
@@ -115,20 +140,24 @@ export function Transactions() {
   const { filters, sort, setFilters } = useFiltersFromSearchParams()
   const [page, setPage] = useState(0)
   const [filtersDrawerOpen, setFiltersDrawerOpen] = useState(false)
+  const [localDbVersion, setLocalDbVersion] = useState(0)
+  const bumpLocal = () => setLocalDbVersion((v) => v + 1)
   const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY)
   const categories = getCategories()
   const totalCount = useMemo(() => {
-    void lastSyncCompletedAt // Recompute when sync completes
+    void lastSyncCompletedAt
+    void localDbVersion
     return getFilteredTransactionsCount(filters)
-  }, [filters, lastSyncCompletedAt])
+  }, [filters, lastSyncCompletedAt, localDbVersion])
   const limit = (page + 1) * DEFAULT_PAGE_SIZE
   const grouped = useMemo(() => {
-    void lastSyncCompletedAt // Recompute when sync completes
+    void lastSyncCompletedAt
+    void localDbVersion
     return getTransactionsGroupedByDate(filters, sort, {
       limit,
       offset: 0,
     })
-  }, [filters, sort, limit, lastSyncCompletedAt])
+  }, [filters, sort, limit, lastSyncCompletedAt, localDbVersion])
   const dateKeys = useMemo(
     () => Object.keys(grouped).sort().reverse(),
     [grouped]
@@ -165,7 +194,8 @@ export function Transactions() {
       if (r) return r
     }
     return null
-  }, [editTxId, grouped])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editTxId, grouped, localDbVersion])
   const editRoundUps = useMemo(
     () => (editTxId ? getRoundUpsForTransaction(editTxId) : []),
     [editTxId, lastSyncCompletedAt]
@@ -180,6 +210,81 @@ export function Transactions() {
       )
     return editTxRow.category_name
   }, [editTxRow, userDataMap, categories])
+
+  const [categoryUpdating, setCategoryUpdating] = useState(false)
+  const [categoryError, setCategoryError] = useState<string | null>(null)
+
+  const handleCategoryChange = async (newCategoryId: string) => {
+    const token = sessionStore.getState().getToken()
+    if (!token || !editTxRow) return
+    setCategoryUpdating(true)
+    setCategoryError(null)
+    try {
+      await updateTransactionCategory(
+        editTxRow.id,
+        newCategoryId || null,
+        token
+      )
+      updateTransactionCategoryLocal(editTxRow.id, newCategoryId || null)
+      bumpLocal()
+    } catch {
+      setCategoryError('Could not update category. Try again.')
+    } finally {
+      setCategoryUpdating(false)
+    }
+  }
+
+  const [editTxTags, setEditTxTags] = useState<string[]>([])
+  const [allTags, setAllTags] = useState<string[]>([])
+  const [tagUpdating, setTagUpdating] = useState(false)
+  const [tagError, setTagError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (editTxId) {
+      setEditTxTags(getTagsForTransaction(editTxId))
+      setAllTags(getAllTags())
+      setCategoryError(null)
+      setTagError(null)
+    } else {
+      setEditTxTags([])
+      setAllTags([])
+    }
+  }, [editTxId, localDbVersion])
+
+  const handleAddTag = async (tagId: string) => {
+    const token = sessionStore.getState().getToken()
+    if (!token || !editTxId || editTxTags.length >= 6) return
+    setTagUpdating(true)
+    setTagError(null)
+    const next = [...editTxTags, tagId]
+    try {
+      await addTransactionTags(editTxId, [tagId], token)
+      setTransactionTagsLocal(editTxId, next)
+      setEditTxTags(next)
+      setAllTags(getAllTags())
+    } catch {
+      setTagError('Could not add tag. Try again.')
+    } finally {
+      setTagUpdating(false)
+    }
+  }
+
+  const handleRemoveTag = async (tagId: string) => {
+    const token = sessionStore.getState().getToken()
+    if (!token || !editTxId) return
+    setTagUpdating(true)
+    setTagError(null)
+    const next = editTxTags.filter((t) => t !== tagId)
+    try {
+      await removeTransactionTags(editTxId, [tagId], token)
+      setTransactionTagsLocal(editTxId, next)
+      setEditTxTags(next)
+    } catch {
+      setTagError('Could not remove tag. Try again.')
+    } finally {
+      setTagUpdating(false)
+    }
+  }
 
   const openDetailModal = (row: TransactionRow) => {
     setEditTxId(row.id)
@@ -940,10 +1045,65 @@ export function Transactions() {
                   </>
                 )}
 
-                {editEffectiveCategory && (
+                {editTxRow.is_categorizable ? (
+                  <>
+                    <dt className="col-sm-4 text-muted">Category</dt>
+                    <dd className="col-sm-8">
+                      {categoryUpdating ? (
+                        <Spinner animation="border" size="sm" />
+                      ) : (
+                        <Form.Select
+                          size="sm"
+                          value={editTxRow.category_id ?? ''}
+                          onChange={(e) => handleCategoryChange(e.target.value)}
+                          disabled={categoryUpdating}
+                        >
+                          <option value="">No category</option>
+                          {categories.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </Form.Select>
+                      )}
+                      {categoryError && (
+                        <small className="text-danger d-block mt-1">
+                          {categoryError}
+                        </small>
+                      )}
+                    </dd>
+                  </>
+                ) : editEffectiveCategory ? (
                   <>
                     <dt className="col-sm-4 text-muted">Category</dt>
                     <dd className="col-sm-8">{editEffectiveCategory}</dd>
+                  </>
+                ) : null}
+
+                {editTxRow.transaction_type && (
+                  <>
+                    <dt className="col-sm-4 text-muted">Type</dt>
+                    <dd className="col-sm-8">{editTxRow.transaction_type}</dd>
+                  </>
+                )}
+
+                {editTxRow.performing_customer && (
+                  <>
+                    <dt className="col-sm-4 text-muted">Paid by</dt>
+                    <dd className="col-sm-8">
+                      {editTxRow.performing_customer}
+                    </dd>
+                  </>
+                )}
+
+                {editTxRow.card_purchase_method && (
+                  <>
+                    <dt className="col-sm-4 text-muted">Paid with</dt>
+                    <dd className="col-sm-8">
+                      {cardMethodLabel(editTxRow.card_purchase_method)}
+                      {editTxRow.card_number_suffix &&
+                        ` · ••••${editTxRow.card_number_suffix}`}
+                    </dd>
                   </>
                 )}
 
@@ -954,19 +1114,49 @@ export function Transactions() {
                   </>
                 )}
 
+                {editTxRow.note && (
+                  <>
+                    <dt className="col-sm-4 text-muted">Note</dt>
+                    <dd className="col-sm-8">{editTxRow.note}</dd>
+                  </>
+                )}
+
                 {editRoundUps.map((ru) => (
                   <Fragment key={ru.id}>
                     <dt className="col-sm-4 text-muted">Round-up</dt>
                     <dd className="col-sm-8 text-success">
                       +${formatMoney(Math.abs(ru.amount))} →{' '}
                       {ru.transfer_account_display_name ?? 'Loose Change'}
+                      {editTxRow.round_up_boost_portion != null && (
+                        <span className="text-muted ms-1 fw-normal">
+                          (incl. $
+                          {formatMoney(
+                            Math.abs(editTxRow.round_up_boost_portion)
+                          )}{' '}
+                          boost)
+                        </span>
+                      )}
                     </dd>
                   </Fragment>
                 ))}
 
+                {editTxRow.cashback_amount != null && (
+                  <>
+                    <dt className="col-sm-4 text-muted">Cashback</dt>
+                    <dd className="col-sm-8 text-success">
+                      +${formatMoney(editTxRow.cashback_amount)}
+                      {editTxRow.cashback_description && (
+                        <span className="text-muted ms-1 fw-normal">
+                          · {editTxRow.cashback_description}
+                        </span>
+                      )}
+                    </dd>
+                  </>
+                )}
+
                 {editTxRow.foreign_amount != null && (
                   <>
-                    <dt className="col-sm-4 text-muted">Foreign amount</dt>
+                    <dt className="col-sm-4 text-muted">Original amount</dt>
                     <dd className="col-sm-8">
                       {editTxRow.foreign_currency ?? ''}{' '}
                       {formatMoney(Math.abs(editTxRow.foreign_amount))}
@@ -982,11 +1172,74 @@ export function Transactions() {
                     </dd>
                   </>
                 )}
+
+                <dt className="col-sm-4 text-muted pt-1">Tags</dt>
+                <dd className="col-sm-8">
+                  <div className="d-flex flex-wrap gap-1 mb-1">
+                    {editTxTags.map((tag) => (
+                      <Badge
+                        key={tag}
+                        bg="secondary"
+                        className="d-inline-flex align-items-center gap-1 fw-normal"
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          className="btn-close btn-close-white"
+                          style={{ fontSize: '0.55rem' }}
+                          aria-label={`Remove tag ${tag}`}
+                          onClick={() => handleRemoveTag(tag)}
+                          disabled={tagUpdating}
+                        />
+                      </Badge>
+                    ))}
+                    {editTxTags.length === 0 && !tagUpdating && (
+                      <span className="text-muted fst-italic">None</span>
+                    )}
+                    {tagUpdating && <Spinner animation="border" size="sm" />}
+                  </div>
+                  {editTxTags.length < 6 && (
+                    <Form.Select
+                      size="sm"
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) handleAddTag(e.target.value)
+                      }}
+                      disabled={tagUpdating}
+                    >
+                      <option value="">Add tag…</option>
+                      {allTags
+                        .filter((t) => !editTxTags.includes(t))
+                        .map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                    </Form.Select>
+                  )}
+                  {tagError && (
+                    <small className="text-danger d-block mt-1">
+                      {tagError}
+                    </small>
+                  )}
+                </dd>
               </dl>
             </>
           )}
         </Modal.Body>
-        <Modal.Footer>
+        <Modal.Footer className="justify-content-between">
+          {editTxRow?.deep_link_url ? (
+            <a
+              href={editTxRow.deep_link_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-outline-secondary btn-sm"
+            >
+              Open in Up ↗
+            </a>
+          ) : (
+            <span />
+          )}
           <Button variant="secondary" onClick={() => setEditTxId(null)}>
             Close
           </Button>

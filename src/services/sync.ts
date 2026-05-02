@@ -8,9 +8,11 @@ import {
   fetchAccounts,
   fetchAllTransactions,
   fetchCategories,
+  fetchTags,
   type UpAccount,
   type UpTransaction,
   type UpCategory,
+  type UpTag,
 } from '@/api/upBank'
 /** Return today as YYYY-MM-DD for date-only comparison. */
 function todayDateString(): string {
@@ -51,7 +53,7 @@ export function advanceNextPaydayIfNeeded(): void {
 }
 
 export type SyncProgress = {
-  phase: 'accounts' | 'transactions' | 'categories' | 'done'
+  phase: 'accounts' | 'transactions' | 'categories' | 'tags' | 'done'
   fetched?: number
   hasMore?: boolean
 }
@@ -136,13 +138,22 @@ function upsertTransaction(tx: UpTransaction): void {
     a.roundUp?.amount?.valueInBaseUnits != null
       ? a.roundUp.amount.valueInBaseUnits
       : null
+  const roundUpBoostPortion =
+    a.roundUp?.boostPortion?.valueInBaseUnits != null
+      ? a.roundUp.boostPortion.valueInBaseUnits
+      : null
   run(
     `INSERT OR REPLACE INTO transactions (
       id, account_id, status, raw_text, description, message, is_categorizable,
-      category_id, parent_category_id, amount, currency, settled_at, created_at,
-      is_round_up, round_up_parent_id, transfer_account_id, transfer_type, synced_at,
-      round_up_amount
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      category_id, parent_category_id, amount, currency, foreign_amount, foreign_currency,
+      settled_at, created_at,
+      is_round_up, round_up_parent_id, round_up_amount, round_up_boost_portion,
+      transfer_account_id, transfer_type,
+      note, cashback_description, cashback_amount,
+      card_purchase_method, card_number_suffix,
+      performing_customer, transaction_type, deep_link_url,
+      synced_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       tx.id,
       accountId,
@@ -155,16 +166,43 @@ function upsertTransaction(tx: UpTransaction): void {
       parentCategoryId,
       amount,
       a.amount?.currencyCode ?? 'AUD',
+      a.foreignAmount?.valueInBaseUnits ?? null,
+      a.foreignAmount?.currencyCode ?? null,
       a.settledAt ?? null,
       a.createdAt ?? new Date().toISOString(),
       isRoundUp,
       roundUpParentId,
+      roundUpAmount,
+      roundUpBoostPortion,
       transferAccountId,
       null,
+      a.note?.text ?? null,
+      a.cashback?.description ?? null,
+      a.cashback?.amount?.valueInBaseUnits ?? null,
+      a.cardPurchaseMethod?.method ?? null,
+      a.cardPurchaseMethod?.cardNumberSuffix ?? null,
+      a.performingCustomer?.displayName ?? null,
+      a.transactionType ?? null,
+      a.deepLinkURL ?? null,
       new Date().toISOString(),
-      roundUpAmount,
     ]
   )
+  const tagIds = (rel?.tags?.data ?? []).map((t) => t.id)
+  upsertTransactionTags(tx.id, tagIds)
+}
+
+function upsertTag(tag: UpTag): void {
+  run(`INSERT OR IGNORE INTO tags (id) VALUES (?)`, [tag.id])
+}
+
+function upsertTransactionTags(transactionId: string, tagIds: string[]): void {
+  run(`DELETE FROM transaction_tags WHERE transaction_id = ?`, [transactionId])
+  for (const tagId of tagIds) {
+    run(
+      `INSERT OR IGNORE INTO transaction_tags (transaction_id, tag_id) VALUES (?, ?)`,
+      [transactionId, tagId]
+    )
+  }
 }
 
 function upsertCategory(cat: UpCategory): void {
@@ -255,6 +293,9 @@ export async function performInitialSync(
   progressCallback({ phase: 'categories' })
   const categories = await fetchCategories(apiToken)
   for (const c of categories) upsertCategory(c)
+  progressCallback({ phase: 'tags' })
+  const tags = await fetchTags(apiToken)
+  for (const t of tags) upsertTag(t)
   setAppSetting('last_sync', new Date().toISOString())
   setAppSetting('onboarding_complete', '1')
   progressCallback({ phase: 'done' })
@@ -286,6 +327,9 @@ export async function performSync(
   progressCallback({ phase: 'categories' })
   const categories = await fetchCategories(apiToken)
   for (const c of categories) upsertCategory(c)
+  progressCallback({ phase: 'tags' })
+  const tags = await fetchTags(apiToken)
+  for (const t of tags) upsertTag(t)
   setAppSetting('last_sync', new Date().toISOString())
   recalculateTrackers()
   progressCallback({ phase: 'done' })
@@ -318,6 +362,9 @@ export async function performFullSync(
   progressCallback({ phase: 'categories' })
   const categories = await fetchCategories(apiToken)
   for (const c of categories) upsertCategory(c)
+  progressCallback({ phase: 'tags' })
+  const tags = await fetchTags(apiToken)
+  for (const t of tags) upsertTag(t)
   setAppSetting('last_sync', new Date().toISOString())
   recalculateTrackers()
   progressCallback({ phase: 'done' })

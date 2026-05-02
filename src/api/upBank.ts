@@ -48,8 +48,36 @@ export interface UpTransaction {
     description: string
     message: string | null
     isCategorizable: boolean
-    roundUp: { amount: { value: string; valueInBaseUnits: number } } | null
+    transactionType: string | null
+    deepLinkURL: string | null
+    roundUp: {
+      amount: { value: string; valueInBaseUnits: number }
+      boostPortion: { value: string; valueInBaseUnits: number } | null
+    } | null
+    cashback: {
+      description: string
+      amount: { currencyCode: string; value: string; valueInBaseUnits: number }
+    } | null
     amount: { currencyCode: string; value: string; valueInBaseUnits: number }
+    foreignAmount: {
+      currencyCode: string
+      value: string
+      valueInBaseUnits: number
+    } | null
+    holdInfo: {
+      amount: { currencyCode: string; value: string; valueInBaseUnits: number }
+      foreignAmount: {
+        currencyCode: string
+        value: string
+        valueInBaseUnits: number
+      } | null
+    } | null
+    note: { text: string } | null
+    performingCustomer: { displayName: string } | null
+    cardPurchaseMethod: {
+      method: string
+      cardNumberSuffix: string | null
+    } | null
     settledAt: string | null
     createdAt: string
   }
@@ -59,6 +87,8 @@ export interface UpTransaction {
     parentCategory?: { data: { id: string } | null }
     transferAccount?: { data: { id: string } | null }
     roundUp?: { data: { type: string; id: string } | null }
+    tags?: { data: Array<{ type: string; id: string }> }
+    attachment?: { data: { type: string; id: string } | null }
   }
 }
 
@@ -106,7 +136,7 @@ async function fetchWithAuth(
  */
 export async function validateUpBankToken(token: string): Promise<boolean> {
   try {
-    const res = await fetchWithAuth(`${BASE_URL}/api/v1/accounts`, token)
+    const res = await fetchWithAuth(`${BASE_URL}/api/v1/util/ping`, token)
     if (!res.ok) throw new Error(`Up Bank API error: ${res.status}`)
     return true
   } catch (e) {
@@ -245,4 +275,92 @@ export async function fetchCategories(token: string): Promise<UpCategory[]> {
   if (!res.ok) throw new Error(`Up Bank API error: ${res.status}`)
   const json = (await res.json()) as UpListResponse<UpCategory>
   return json.data ?? []
+}
+
+/** In the Up API, a tag's id is the label itself (e.g. "Holiday"). */
+export interface UpTag {
+  type: string
+  id: string
+}
+
+/** Fetch all tags the user has created (cursor-paginated). */
+export async function fetchTags(token: string): Promise<UpTag[]> {
+  const all: UpTag[] = []
+  let nextUrl: string | null = `${BASE_URL}/api/v1/tags?page[size]=100`
+  while (nextUrl) {
+    const res = await fetchWithAuth(nextUrl, token)
+    if (!res.ok) throw new Error(`Up Bank API error: ${res.status}`)
+    const json = (await res.json()) as UpListResponse<UpTag>
+    all.push(...(json.data ?? []))
+    nextUrl = json.links?.next ?? null
+    if (nextUrl) await sleep(1000)
+  }
+  return all
+}
+
+/**
+ * Update the category on a transaction. Pass null to remove the category.
+ * Returns 204 on success.
+ */
+export async function updateTransactionCategory(
+  transactionId: string,
+  categoryId: string | null,
+  token: string
+): Promise<void> {
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/v1/transactions/${transactionId}/relationships/category`,
+    token,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({
+        data: categoryId ? { type: 'categories', id: categoryId } : null,
+      }),
+    }
+  )
+  if (!res.ok) throw new Error(`Up Bank API error: ${res.status}`)
+}
+
+/**
+ * Associate tags with a transaction. tagIds are the tag labels (Up uses label as id).
+ * Max 6 tags per transaction. Returns 204 on success.
+ */
+export async function addTransactionTags(
+  transactionId: string,
+  tagIds: string[],
+  token: string
+): Promise<void> {
+  if (tagIds.length === 0) return
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/v1/transactions/${transactionId}/relationships/tags`,
+    token,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        data: tagIds.map((id) => ({ type: 'tags', id })),
+      }),
+    }
+  )
+  if (res.status !== 204) throw new Error(`Up Bank API error: ${res.status}`)
+}
+
+/**
+ * Remove tags from a transaction. Returns 204 on success.
+ */
+export async function removeTransactionTags(
+  transactionId: string,
+  tagIds: string[],
+  token: string
+): Promise<void> {
+  if (tagIds.length === 0) return
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/v1/transactions/${transactionId}/relationships/tags`,
+    token,
+    {
+      method: 'DELETE',
+      body: JSON.stringify({
+        data: tagIds.map((id) => ({ type: 'tags', id })),
+      }),
+    }
+  )
+  if (res.status !== 204) throw new Error(`Up Bank API error: ${res.status}`)
 }

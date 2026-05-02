@@ -3,7 +3,7 @@
  * Phase 4: Transactions & Filtering.
  */
 
-import { getDb } from '@/db'
+import { getDb, schedulePersist } from '@/db'
 
 export interface TransactionRow {
   id: string
@@ -18,12 +18,43 @@ export interface TransactionRow {
   category_name: string | null
   is_round_up: number
   round_up_parent_id: string | null
+  round_up_amount: number | null
+  round_up_boost_portion: number | null
   transfer_account_id: string | null
   transfer_account_display_name: string | null
   message: string | null
   foreign_amount: number | null
   foreign_currency: string | null
-  round_up_amount: number | null
+  note: string | null
+  cashback_description: string | null
+  cashback_amount: number | null
+  card_purchase_method: string | null
+  card_number_suffix: string | null
+  performing_customer: string | null
+  transaction_type: string | null
+  deep_link_url: string | null
+  is_categorizable: number
+}
+
+/**
+ * Write a category change directly to the transaction row and clear any
+ * local override. Called immediately after a successful PATCH to Up Bank.
+ */
+export function updateTransactionCategoryLocal(
+  transactionId: string,
+  categoryId: string | null
+): void {
+  const db = getDb()
+  if (!db) throw new Error('Database not ready')
+  db.run(
+    `UPDATE transactions SET category_id = ?, parent_category_id = NULL WHERE id = ?`,
+    [categoryId, transactionId]
+  )
+  db.run(
+    `UPDATE transaction_user_data SET user_category_override = NULL WHERE transaction_id = ?`,
+    [transactionId]
+  )
+  schedulePersist()
 }
 
 /** Display date: created (first encountered) with fallback to settled for consistency with Up app. */
@@ -136,12 +167,22 @@ function rowFromStmt(stmt: StatementLike): TransactionRow | null {
     string | null, // 9:  category_name
     number, // 10: is_round_up
     string | null, // 11: round_up_parent_id
-    string | null, // 12: transfer_account_id
-    string | null, // 13: transfer_account_display_name
-    string | null, // 14: message
-    number | null, // 15: foreign_amount
-    string | null, // 16: foreign_currency
-    number | null, // 17: round_up_amount
+    number | null, // 12: round_up_amount
+    number | null, // 13: round_up_boost_portion
+    string | null, // 14: transfer_account_id
+    string | null, // 15: transfer_account_display_name
+    string | null, // 16: message
+    number | null, // 17: foreign_amount
+    string | null, // 18: foreign_currency
+    string | null, // 19: note
+    string | null, // 20: cashback_description
+    number | null, // 21: cashback_amount
+    string | null, // 22: card_purchase_method
+    string | null, // 23: card_number_suffix
+    string | null, // 24: performing_customer
+    string | null, // 25: transaction_type
+    string | null, // 26: deep_link_url
+    number, // 27: is_categorizable
   ]
   return {
     id: row[0],
@@ -156,12 +197,22 @@ function rowFromStmt(stmt: StatementLike): TransactionRow | null {
     category_name: row[9],
     is_round_up: row[10],
     round_up_parent_id: row[11],
-    transfer_account_id: row[12],
-    transfer_account_display_name: row[13],
-    message: row[14],
-    foreign_amount: row[15],
-    foreign_currency: row[16],
-    round_up_amount: row[17],
+    round_up_amount: row[12],
+    round_up_boost_portion: row[13],
+    transfer_account_id: row[14],
+    transfer_account_display_name: row[15],
+    message: row[16],
+    foreign_amount: row[17],
+    foreign_currency: row[18],
+    note: row[19],
+    cashback_description: row[20],
+    cashback_amount: row[21],
+    card_purchase_method: row[22],
+    card_number_suffix: row[23],
+    performing_customer: row[24],
+    transaction_type: row[25],
+    deep_link_url: row[26],
+    is_categorizable: row[27] ?? 1,
   }
 }
 
@@ -184,8 +235,13 @@ export function getFilteredTransactions(
   const sql = `SELECT t.id, t.account_id, t.description, t.raw_text, t.amount, t.settled_at,
     t.created_at, t.status,
     t.category_id, c.name AS category_name, t.is_round_up, t.round_up_parent_id,
+    t.round_up_amount, t.round_up_boost_portion,
     t.transfer_account_id, a.display_name AS transfer_account_display_name,
-    t.message, t.foreign_amount, t.foreign_currency, t.round_up_amount
+    t.message, t.foreign_amount, t.foreign_currency,
+    t.note, t.cashback_description, t.cashback_amount,
+    t.card_purchase_method, t.card_number_suffix,
+    t.performing_customer, t.transaction_type, t.deep_link_url,
+    t.is_categorizable
     FROM transactions t
     LEFT JOIN categories c ON t.category_id = c.id
     LEFT JOIN accounts a ON t.transfer_account_id = a.id

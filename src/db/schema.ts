@@ -5,7 +5,7 @@
 
 import type { Database } from 'sql.js'
 
-const SCHEMA_VERSION = 18
+const SCHEMA_VERSION = 20
 
 function tableExists(database: Database, name: string): boolean {
   const stmt = database.prepare(
@@ -53,10 +53,19 @@ const DDL_STATEMENTS = [
     created_at TEXT NOT NULL,
     is_round_up INTEGER DEFAULT 0,
     round_up_parent_id TEXT,
+    round_up_amount INTEGER,
+    round_up_boost_portion INTEGER,
     transfer_account_id TEXT,
     transfer_type TEXT,
+    note TEXT,
+    cashback_description TEXT,
+    cashback_amount INTEGER,
+    card_purchase_method TEXT,
+    card_number_suffix TEXT,
+    performing_customer TEXT,
+    transaction_type TEXT,
+    deep_link_url TEXT,
     synced_at TEXT,
-    round_up_amount INTEGER,
     FOREIGN KEY (account_id) REFERENCES accounts(id),
     FOREIGN KEY (round_up_parent_id) REFERENCES transactions(id),
     FOREIGN KEY (transfer_account_id) REFERENCES accounts(id),
@@ -134,6 +143,17 @@ const DDL_STATEMENTS = [
     decided_at TEXT,
     FOREIGN KEY (saver_account_id) REFERENCES accounts(id)
   )`,
+  `CREATE TABLE IF NOT EXISTS tags (
+    id TEXT PRIMARY KEY
+  )`,
+  `CREATE TABLE IF NOT EXISTS transaction_tags (
+    transaction_id TEXT NOT NULL,
+    tag_id TEXT NOT NULL,
+    PRIMARY KEY (transaction_id, tag_id),
+    FOREIGN KEY (transaction_id) REFERENCES transactions(id),
+    FOREIGN KEY (tag_id) REFERENCES tags(id)
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_transaction_tags_transaction_id ON transaction_tags(transaction_id)`,
 ]
 
 export function runSchema(database: Database): void {
@@ -413,6 +433,51 @@ export function runMigrations(database: Database): void {
     database.run(
       `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
       ['18']
+    )
+  }
+  if (version < 19) {
+    const txCols = database.exec(`PRAGMA table_info(transactions)`)
+    const txExisting = new Set(
+      (txCols[0]?.values ?? []).map((r) => String(r[1]))
+    )
+    const newCols: [string, string][] = [
+      ['round_up_boost_portion', 'INTEGER'],
+      ['note', 'TEXT'],
+      ['cashback_description', 'TEXT'],
+      ['cashback_amount', 'INTEGER'],
+      ['card_purchase_method', 'TEXT'],
+      ['card_number_suffix', 'TEXT'],
+      ['performing_customer', 'TEXT'],
+      ['transaction_type', 'TEXT'],
+      ['deep_link_url', 'TEXT'],
+    ]
+    for (const [col, type] of newCols) {
+      if (!txExisting.has(col)) {
+        database.run(`ALTER TABLE transactions ADD COLUMN ${col} ${type}`)
+      }
+    }
+    database.run(
+      `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
+      ['19']
+    )
+  }
+  if (version < 20) {
+    database.run(`CREATE TABLE IF NOT EXISTS tags (id TEXT PRIMARY KEY)`)
+    database.run(`
+      CREATE TABLE IF NOT EXISTS transaction_tags (
+        transaction_id TEXT NOT NULL,
+        tag_id TEXT NOT NULL,
+        PRIMARY KEY (transaction_id, tag_id),
+        FOREIGN KEY (transaction_id) REFERENCES transactions(id),
+        FOREIGN KEY (tag_id) REFERENCES tags(id)
+      )
+    `)
+    database.run(
+      `CREATE INDEX IF NOT EXISTS idx_transaction_tags_transaction_id ON transaction_tags(transaction_id)`
+    )
+    database.run(
+      `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
+      ['20']
     )
   }
 }
