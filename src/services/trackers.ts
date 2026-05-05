@@ -4,6 +4,11 @@
 
 import { getDb, getAppSetting, schedulePersist } from '@/db'
 
+function todayDateString(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export type TrackerResetFrequency =
   | 'WEEKLY'
   | 'FORTNIGHTLY'
@@ -207,7 +212,7 @@ export function getTrackersWithProgress(): TrackerWithProgress[] {
      FROM trackers WHERE is_active = 1 ORDER BY name`
   )
   const list: TrackerWithProgress[] = []
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayDateString()
   while (stmt.step()) {
     const row = stmt.get() as [
       number,
@@ -376,7 +381,7 @@ export function getTrackersWithProgressForPeriod(
      FROM trackers WHERE is_active = 1 ORDER BY name`
   )
   const list: TrackerWithProgress[] = []
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayDateString()
   while (stmt.step()) {
     const row = stmt.get() as [
       number,
@@ -524,7 +529,7 @@ export function createTracker(
   const db = getDb()
   if (!db) throw new Error('Database not ready')
   const now = new Date().toISOString()
-  const today = now.slice(0, 10)
+  const today = todayDateString()
   let lastReset: string
   let nextReset: string
   if (resetFrequency === 'PAYDAY') {
@@ -579,7 +584,7 @@ export function updateTracker(
 ): void {
   const db = getDb()
   if (!db) throw new Error('Database not ready')
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayDateString()
   const existing = getTracker(id)
   const needsPeriodReset =
     !existing ||

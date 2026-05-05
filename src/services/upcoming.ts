@@ -27,7 +27,8 @@ export interface UpcomingGrouped {
 }
 
 function todayDateString(): string {
-  return new Date().toISOString().slice(0, 10)
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 function parseDate(dateStr: string): Date {
@@ -204,8 +205,13 @@ export function getUpcomingChargesGrouped(): UpcomingGrouped {
       today,
       row.cancel_by_date
     )
-    if (!nextOccurrence) continue
-    const projected = { ...row, next_charge_date: nextOccurrence }
+    // Past ONCE charges are shown as overdue until the user explicitly deletes them.
+    // All other frequencies (recurring) are silently dropped once their cycle is exhausted or cancelled.
+    if (!nextOccurrence && row.frequency !== 'ONCE') continue
+    const projected = {
+      ...row,
+      next_charge_date: nextOccurrence ?? row.next_charge_date,
+    }
     if (nextPayday && projected.next_charge_date < nextPayday) {
       nextPay.push(projected)
     } else {

@@ -14,10 +14,10 @@ import {
   type UpCategory,
   type UpTag,
 } from '@/api/upBank'
-/** Return today as YYYY-MM-DD for date-only comparison. */
+/** Return today as YYYY-MM-DD in local time. */
 function todayDateString(): string {
   const d = new Date()
-  return d.toISOString().slice(0, 10)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 /**

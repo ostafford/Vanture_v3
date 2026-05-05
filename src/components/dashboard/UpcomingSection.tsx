@@ -52,10 +52,15 @@ function UpcomingCalendar({
 }) {
   const firstDay = new Date(year, month - 1, 1)
   const lastDay = new Date(year, month, 0)
-  const startWeekday = firstDay.getDay()
+  // Mon=0 … Sun=6 so the grid starts on Monday (AU convention)
+  const startWeekday = (firstDay.getDay() + 6) % 7
   const daysInMonth = lastDay.getDate()
   const totalCells = Math.ceil((startWeekday + daysInMonth) / 7) * 7
   const leadingBlanks = startWeekday
+  const todayLocal = (() => {
+    const t = new Date()
+    return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`
+  })()
   const dayNumbers: (number | null)[] = []
   for (let i = 0; i < leadingBlanks; i++) dayNumbers.push(null)
   for (let d = 1; d <= daysInMonth; d++) dayNumbers.push(d)
@@ -85,13 +90,13 @@ function UpcomingCalendar({
         </Button>
       </div>
       <div className="d-flex flex-wrap small mb-1 text-muted">
-        <span className="upcoming-calendar-dow">Sun</span>
         <span className="upcoming-calendar-dow">Mon</span>
         <span className="upcoming-calendar-dow">Tue</span>
         <span className="upcoming-calendar-dow">Wed</span>
         <span className="upcoming-calendar-dow">Thu</span>
         <span className="upcoming-calendar-dow">Fri</span>
         <span className="upcoming-calendar-dow">Sat</span>
+        <span className="upcoming-calendar-dow">Sun</span>
       </div>
       <div className="upcoming-calendar-grid">
         {dayNumbers.map((d, i) => {
@@ -105,8 +110,12 @@ function UpcomingCalendar({
           }
           const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
           const charges = daysByDate[dateStr] ?? []
+          const isToday = dateStr === todayLocal
           return (
-            <div key={dateStr} className="upcoming-calendar-cell">
+            <div
+              key={dateStr}
+              className={`upcoming-calendar-cell${isToday ? ' upcoming-calendar-cell-today' : ''}`}
+            >
               <span className="upcoming-calendar-day-num">{d}</span>
               {charges.length > 0 && (
                 <div className="upcoming-calendar-cell-charges">
@@ -190,7 +199,10 @@ export function UpcomingSection({
     setName('')
     setAmount('')
     setFrequency('MONTHLY')
-    setNextChargeDate(new Date().toISOString().slice(0, 10))
+    const d = new Date()
+    setNextChargeDate(
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    )
     setCategoryId('')
     setIsReserved(true)
     setReminderDaysBefore('')
@@ -226,6 +238,12 @@ export function UpcomingSection({
     const reminderDays =
       reminder != null && !Number.isNaN(reminder) ? reminder : null
     const cancelBy = cancelByDate.trim() ? cancelByDate.slice(0, 10) : null
+    if (cancelBy && cancelBy < nextChargeDate.slice(0, 10)) {
+      toast.error(
+        'Cancel by date is before the next charge date — this charge would never appear.'
+      )
+      return
+    }
     if (editingCharge) {
       updateUpcomingCharge(
         editingCharge.id,
@@ -260,12 +278,15 @@ export function UpcomingSection({
   }
 
   function handleDelete() {
-    if (editingCharge) {
-      deleteUpcomingCharge(editingCharge.id)
-      setShowModal(false)
-      setRefresh((r) => r + 1)
-      onUpcomingChange?.()
-    }
+    if (!editingCharge) return
+    if (
+      !window.confirm(`Delete "${editingCharge.name}"? This cannot be undone.`)
+    )
+      return
+    deleteUpcomingCharge(editingCharge.id)
+    setShowModal(false)
+    setRefresh((r) => r + 1)
+    onUpcomingChange?.()
   }
 
   const nextPayTotal = nextPay.reduce((s, c) => s + c.amount, 0)
@@ -371,7 +392,7 @@ export function UpcomingSection({
         <Card.Body>
           {nextPayday && viewMode === 'list' && (
             <p className="small text-muted mb-2">
-              Pay day – Due {formatShortDate(nextPayday)}
+              Next pay day — {formatShortDate(nextPayday)}
             </p>
           )}
           {viewMode === 'calendar' ? (
@@ -659,7 +680,7 @@ export function UpcomingSection({
                 id="upcoming-charge-reminder"
                 type="number"
                 min={0}
-                max={31}
+                max={90}
                 placeholder="e.g. 3"
                 value={reminderDaysBefore}
                 onChange={(e) => setReminderDaysBefore(e.target.value)}

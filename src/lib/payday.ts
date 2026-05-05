@@ -45,7 +45,8 @@ export function computeNextPaydayFromReference(
   frequency: PaydayFrequency
 ): { paydayDay: number; nextPayday: string } {
   const ref = new Date(refDate + 'T12:00:00Z')
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const dt = new Date()
+  const todayStr = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
   const today = new Date(todayStr + 'T12:00:00Z')
 
   if (frequency === 'MONTHLY') {

@@ -17,13 +17,17 @@ import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
 import { monthNameLong, previousCalendarMonth } from '@/lib/monthLabels'
 
+function localDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function getDefaultDateRange(): { from: string; to: string } {
   const to = new Date()
   const from = new Date(to)
   from.setDate(from.getDate() - 30)
   return {
-    from: from.toISOString().slice(0, 10),
-    to: to.toISOString().slice(0, 10),
+    from: localDateStr(from),
+    to: localDateStr(to),
   }
 }
 
@@ -59,15 +63,15 @@ function getPresetRange(preset: ReportPreset): { from: string; to: string } {
     const from = new Date(now)
     from.setDate(from.getDate() - preset.days)
     return {
-      from: from.toISOString().slice(0, 10),
-      to: now.toISOString().slice(0, 10),
+      from: localDateStr(from),
+      to: localDateStr(now),
     }
   }
   if (preset.month === 'current') {
     const y = now.getFullYear()
     const m = now.getMonth() + 1
     const from = `${y}-${String(m).padStart(2, '0')}-01`
-    return { from, to: now.toISOString().slice(0, 10) }
+    return { from, to: localDateStr(now) }
   }
   const y = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
   const m = now.getMonth() === 0 ? 12 : now.getMonth()

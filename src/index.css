@@ -633,6 +633,17 @@ html[data-theme='dark'] .app-boot-shell {
   background: var(--vantura-content-bg);
   border-color: transparent;
 }
+.upcoming-calendar-cell-today {
+  border-color: var(--vantura-primary);
+  background: color-mix(
+    in srgb,
+    var(--vantura-primary) 8%,
+    var(--vantura-surface)
+  );
+}
+.upcoming-calendar-cell-today .upcoming-calendar-day-num {
+  color: var(--vantura-primary);
+}
 .upcoming-calendar-day-num {
   font-weight: 600;
   color: var(--vantura-text-secondary);

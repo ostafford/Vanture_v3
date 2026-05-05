@@ -46,11 +46,13 @@ export function showNotification(title: string, body: string): void {
  */
 export function hasNotifiedToday(): boolean {
   const last = getAppSetting(LAST_NOTIFICATION_DATE_KEY)
-  const today = new Date().toISOString().slice(0, 10)
+  const d = new Date()
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   return last === today
 }
 
 export function markNotifiedToday(): void {
-  const today = new Date().toISOString().slice(0, 10)
+  const d = new Date()
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   setAppSetting(LAST_NOTIFICATION_DATE_KEY, today)
 }

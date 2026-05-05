@@ -273,7 +273,9 @@ export function Settings() {
       const d = parseInt(dayStr, 10)
       if (!Number.isNaN(d)) setPaydayDay(d)
     }
-    setNextPayday(next ?? new Date().toISOString().slice(0, 10))
+    const nowDate = new Date()
+    const todayLocal = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}-${String(nowDate.getDate()).padStart(2, '0')}`
+    setNextPayday(next ?? todayLocal)
     if (payAmt != null && payAmt !== '') {
       const cents = parseInt(payAmt, 10)
       if (!Number.isNaN(cents) && cents >= 0) {
