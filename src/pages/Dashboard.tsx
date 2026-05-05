@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import type React from 'react'
 import { Row, Col, Modal, Button, Form } from 'react-bootstrap'
 import { useStore } from 'zustand'
@@ -7,11 +7,14 @@ import {
   getReservedAmount,
   getSpendableBalance,
   getPayAmountCents,
+  getHeldTransactionTotal,
 } from '@/services/balance'
 import { formatMoney, formatShortDate } from '@/lib/format'
 import { MONTH_NAMES } from '@/lib/constants'
 import { getAppSetting, setAppSetting } from '@/db'
 import { syncStore } from '@/stores/syncStore'
+import { performSync } from '@/services/sync'
+import { sessionStore } from '@/stores/sessionStore'
 import { InsightsSection } from '@/components/dashboard/InsightsSection'
 import { TrackersSection } from '@/components/dashboard/TrackersSection'
 import { UpcomingSection } from '@/components/dashboard/UpcomingSection'
@@ -34,8 +37,6 @@ import {
   markNotifiedToday,
   showNotification,
 } from '@/lib/notifications'
-import { useEffect } from 'react'
-
 const SPENDABLE_ALERT_KEY = 'spendable_alert_below_cents'
 const SPENDABLE_ALERT_PCT_PAY_KEY = 'spendable_alert_below_pct_pay'
 
@@ -64,6 +65,8 @@ export function Dashboard() {
     pctPayRaw,
     nextPayday,
     reservedCents,
+    heldCents,
+    lastSyncAgeMs,
   } = useMemo(
     () => ({
       availableCents: getAvailableBalance(),
@@ -73,6 +76,11 @@ export function Dashboard() {
       pctPayRaw: getAppSetting(SPENDABLE_ALERT_PCT_PAY_KEY),
       nextPayday: getAppSetting('next_payday'),
       reservedCents: getReservedAmount(),
+      heldCents: getHeldTransactionTotal(),
+      lastSyncAgeMs: (() => {
+        const ls = getAppSetting('last_sync')
+        return ls ? Date.now() - new Date(ls).getTime() : null
+      })(),
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [lastSyncCompletedAt, dataVersion]
@@ -100,19 +108,32 @@ export function Dashboard() {
     spendableCents < effectiveThresholdCents
   const spendableGradient = isSpendableLow ? 'danger' : 'success'
 
+  const isStale = lastSyncAgeMs != null && lastSyncAgeMs > 60 * 60 * 1000
+  const staleHours =
+    isStale && lastSyncAgeMs != null
+      ? Math.floor(lastSyncAgeMs / (60 * 60 * 1000))
+      : 0
+
   const spendableSubtitle =
-    nextPayday && nextPayday.trim() !== ''
+    (nextPayday && nextPayday.trim() !== ''
       ? `$${formatMoney(reservedCents)} reserved until ${formatShortDate(nextPayday)}`
-      : `$${formatMoney(reservedCents)} reserved for upcoming`
+      : `$${formatMoney(reservedCents)} reserved for upcoming`) +
+    (isStale ? ` · data ${staleHours}h old` : '')
   const availableProjectedSubtitle =
     payAmountCents != null
       ? `Projected post-payday: $${formatMoney(availableCents + payAmountCents)}`
       : 'Projected post-payday unavailable (set pay amount in Settings)'
 
+  const heldNote =
+    heldCents > 0
+      ? ` Held/pending transactions: $${formatMoney(heldCents)} — Up Bank deducts these from their Spendable; Vantura shows them separately here so you can account for the difference.`
+      : ''
+
   const spendableTooltip =
     (isSpendableLow
       ? 'Spendable is below your alert threshold.'
       : 'Spendable = Available minus reserved for upcoming charges. Only charges due before your next payday are reserved; prorated for monthly/quarterly/yearly. Click to set alert threshold.') +
+    heldNote +
     (payAmountCents != null
       ? ` After payday (before new spending): about $${formatMoney(spendableCents)} + $${formatMoney(payAmountCents)} = $${formatMoney(spendableCents + payAmountCents)}.`
       : '')
@@ -179,6 +200,25 @@ export function Dashboard() {
       const t = setTimeout(() => startDashboardTour(), 400)
       return () => clearTimeout(t)
     }
+  }, [])
+
+  useEffect(() => {
+    const token = sessionStore.getState().getToken()
+    if (!token || getAppSetting('demo_mode') === '1') return
+    const lastSync = getAppSetting('last_sync')
+    if (lastSync) {
+      const ageMs = Date.now() - new Date(lastSync).getTime()
+      if (ageMs < 30 * 60 * 1000) return
+    }
+    syncStore.getState().setSyncing(true)
+    performSync(token, () => {})
+      .then(() => {
+        syncStore.getState().syncCompleted()
+      })
+      .catch(() => {})
+      .finally(() => {
+        syncStore.getState().setSyncing(false)
+      })
   }, [])
 
   useEffect(() => {

@@ -96,6 +96,23 @@ export function getPayAmountCents(): number | null {
 }
 
 /**
+ * Sum of absolute amounts (cents) of all HELD (authorised but not yet settled) transactions.
+ * Up Bank deducts these from their displayed Spendable; Vantura's stored account balance may
+ * not yet reflect them depending on when the API last settled them.
+ */
+export function getHeldTransactionTotal(): number {
+  const db = getDb()
+  if (!db) return 0
+  const stmt = db.prepare(
+    `SELECT COALESCE(SUM(ABS(amount)), 0) as total FROM transactions WHERE status = 'HELD' AND amount < 0`
+  )
+  stmt.step()
+  const row = stmt.get()
+  stmt.free()
+  return row ? Number(row[0]) : 0
+}
+
+/**
  * Sum of balances (cents) of all transactional accounts.
  */
 export function getAvailableBalance(): number {
