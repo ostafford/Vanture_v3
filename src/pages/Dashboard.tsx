@@ -118,21 +118,22 @@ export function Dashboard() {
     (nextPayday && nextPayday.trim() !== ''
       ? `$${formatMoney(reservedCents)} reserved until ${formatShortDate(nextPayday)}`
       : `$${formatMoney(reservedCents)} reserved for upcoming`) +
+    (heldCents > 0 ? ` · $${formatMoney(heldCents)} held` : '') +
     (isStale ? ` · data ${staleHours}h old` : '')
   const availableProjectedSubtitle =
     payAmountCents != null
-      ? `Projected post-payday: $${formatMoney(availableCents + payAmountCents)}`
-      : 'Projected post-payday unavailable (set pay amount in Settings)'
+      ? `Projected post-payday: $${formatMoney(availableCents + payAmountCents)}${heldCents > 0 ? ` · $${formatMoney(heldCents)} held` : ''}`
+      : `Gross balance before holds${heldCents > 0 ? ` · $${formatMoney(heldCents)} held` : ''}`
 
   const heldNote =
     heldCents > 0
-      ? ` Held/pending transactions: $${formatMoney(heldCents)} — Up Bank deducts these from their Spendable; Vantura shows them separately here so you can account for the difference.`
+      ? ` Held/pending: $${formatMoney(heldCents)} (authorised but not yet settled — deducted to match Up Bank's Spendable).`
       : ''
 
   const spendableTooltip =
     (isSpendableLow
       ? 'Spendable is below your alert threshold.'
-      : 'Spendable = Available minus reserved for upcoming charges. Only charges due before your next payday are reserved; prorated for monthly/quarterly/yearly. Click to set alert threshold.') +
+      : 'Spendable = Available minus held transactions minus reserved upcoming charges. Click to set alert threshold.') +
     heldNote +
     (payAmountCents != null
       ? ` After payday (before new spending): about $${formatMoney(spendableCents)} + $${formatMoney(payAmountCents)} = $${formatMoney(spendableCents + payAmountCents)}.`

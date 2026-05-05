@@ -154,10 +154,13 @@ export function getReservedAmount(): number {
 }
 
 /**
- * Spendable = Available - Reserved (cents).
+ * Spendable = Available - Held - Reserved (cents).
+ * HELD transactions are authorised but unsettled; Up Bank's API returns the gross ledger balance
+ * so these must be subtracted here to match what Up Bank displays as Spendable.
  */
 export function getSpendableBalance(): number {
   const available = getAvailableBalance()
   const reserved = getReservedAmount()
-  return Math.max(0, available - reserved)
+  const held = getHeldTransactionTotal()
+  return Math.max(0, available - reserved - held)
 }
