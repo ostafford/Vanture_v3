@@ -55,13 +55,29 @@ export function calculateReservedAmount(
       charge.cancel_by_date ?? null
     )
     if (!projectedChargeDate) continue
-    if (projectedChargeDate >= nextPayday) continue
+    // Include charges due ON the payday — Up Bank sees them as needing current funds.
+    // Previously used >=, which excluded payday-date charges.
+    if (projectedChargeDate > nextPayday) continue
 
     const daysUntilCharge = daysBetween(today, projectedChargeDate)
 
     switch (charge.frequency) {
       case 'WEEKLY':
-      case 'FORTNIGHTLY':
+      case 'FORTNIGHTLY': {
+        // Loop through every occurrence up to (and including) the payday date.
+        // A 26-day pay window can contain 3–4 weekly or 2 fortnightly occurrences;
+        // previously only the first occurrence was counted.
+        const stepDays = charge.frequency === 'WEEKLY' ? 7 : 14
+        let occDate = projectedChargeDate
+        while (occDate <= nextPayday) {
+          if (charge.cancel_by_date && occDate > charge.cancel_by_date) break
+          totalReserved += charge.amount
+          const d = new Date(occDate + 'T12:00:00Z')
+          d.setUTCDate(d.getUTCDate() + stepDays)
+          occDate = d.toISOString().slice(0, 10)
+        }
+        break
+      }
       case 'ONCE':
         totalReserved += charge.amount
         break
@@ -69,7 +85,8 @@ export function calculateReservedAmount(
       case 'QUARTERLY':
       case 'YEARLY': {
         const payPeriodDays = paydayDays[paydayFrequency] ?? 30
-        const payPeriodsUntilCharge = Math.ceil(daysUntilCharge / payPeriodDays)
+        const payPeriodsUntilCharge =
+          payPeriodDays > 0 ? Math.ceil(daysUntilCharge / payPeriodDays) : 1
         const amountPerPeriod =
           payPeriodsUntilCharge > 0
             ? charge.amount / payPeriodsUntilCharge
