@@ -92,6 +92,14 @@ function formatOrdinalDayMonth(isoDate: string): string {
   return `${day}${suffix} ${month}`
 }
 
+// period_end is exclusive (the reset date / first day of next period), so subtract
+// one day to get the last inclusive day for display purposes.
+function displayPeriodEnd(isoDate: string): string {
+  const d = new Date(isoDate + 'T12:00:00Z')
+  d.setUTCDate(d.getUTCDate() - 1)
+  return d.toISOString().slice(0, 10)
+}
+
 function getTrackerProgressStyle(progress: number): {
   variant: 'primary' | 'warning' | 'danger' | 'success'
   striped: boolean
@@ -529,7 +537,9 @@ export function TrackersSection({
                       <> ({periodOffsetPhrase(activePeriodOffset)})</>
                     )}
                     : {formatOrdinalDayMonth(visibleTrackers[0].period_start)} -{' '}
-                    {formatOrdinalDayMonth(visibleTrackers[0].period_end)}
+                    {formatOrdinalDayMonth(
+                      displayPeriodEnd(visibleTrackers[0].period_end)
+                    )}
                   </>
                 ) : null
               ) : (
@@ -549,7 +559,9 @@ export function TrackersSection({
                     return (
                       <div key={freq}>
                         {label}: {formatOrdinalDayMonth(sample.period_start)} -{' '}
-                        {formatOrdinalDayMonth(sample.period_end)}
+                        {formatOrdinalDayMonth(
+                          displayPeriodEnd(sample.period_end)
+                        )}
                       </div>
                     )
                   })}
@@ -602,7 +614,7 @@ export function TrackersSection({
                       ?.label ?? t.reset_frequency
                   const periodRangeText =
                     t.period_start && t.period_end
-                      ? `${formatShortDate(t.period_start)} – ${formatShortDate(t.period_end)}`
+                      ? `${formatShortDate(t.period_start)} – ${formatShortDate(displayPeriodEnd(t.period_end))}`
                       : ''
                   const periodTxEntry = periodTxsByTrackerId[t.id]
                   const periodTxs = periodTxEntry?.list ?? []
@@ -736,7 +748,7 @@ export function TrackersSection({
                         {t.period_start && t.period_end && (
                           <span className="small text-muted text-end">
                             {formatShortDate(t.period_start)} –{' '}
-                            {formatShortDate(t.period_end)}
+                            {formatShortDate(displayPeriodEnd(t.period_end))}
                           </span>
                         )}
                       </div>
