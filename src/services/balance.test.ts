@@ -167,4 +167,236 @@ describe('calculateReservedAmount', () => {
       )
     ).toBe(0)
   })
+
+  // ── Multi-occurrence behaviour (WEEKLY / FORTNIGHTLY) ───────────────────────
+
+  it('counts all FORTNIGHTLY occurrences before payday — 2 occurrences in 28-day window', () => {
+    // Today: Feb 23. Payday: Mar 23 (28 days). Fortnightly from Feb 25 → Feb 25, Mar 11 both ≤ Mar 23.
+    expect(
+      calculateReservedAmount(
+        [
+          {
+            next_charge_date: '2025-02-25',
+            frequency: 'FORTNIGHTLY',
+            amount: 15900,
+            is_reserved: 1,
+          },
+        ],
+        '2025-03-23',
+        'FORTNIGHTLY'
+      )
+    ).toBe(31800) // 2 × $159
+  })
+
+  it('counts all WEEKLY occurrences before payday — 4 occurrences in 28-day window', () => {
+    // Today: Feb 23. Payday: Mar 23. Weekly from Feb 24 → Feb 24, Mar 3, Mar 10, Mar 17 all ≤ Mar 23.
+    expect(
+      calculateReservedAmount(
+        [
+          {
+            next_charge_date: '2025-02-24',
+            frequency: 'WEEKLY',
+            amount: 5000,
+            is_reserved: 1,
+          },
+        ],
+        '2025-03-23',
+        'FORTNIGHTLY'
+      )
+    ).toBe(20000) // 4 × $50
+  })
+
+  it('counts only 1 WEEKLY occurrence when payday is within the same week', () => {
+    // Today: Feb 23. Payday: Mar 1 (6 days). Only Feb 25 is within window.
+    expect(
+      calculateReservedAmount(
+        [
+          {
+            next_charge_date: '2025-02-25',
+            frequency: 'WEEKLY',
+            amount: 3000,
+            is_reserved: 1,
+          },
+        ],
+        '2025-03-01',
+        'WEEKLY'
+      )
+    ).toBe(3000)
+  })
+
+  it('counts only 1 FORTNIGHTLY occurrence when payday is within same fortnight', () => {
+    // Today: Feb 23. Payday: Mar 1. Fortnightly from Feb 24 → only Feb 24 ≤ Mar 1; Mar 10 > Mar 1.
+    expect(
+      calculateReservedAmount(
+        [
+          {
+            next_charge_date: '2025-02-24',
+            frequency: 'FORTNIGHTLY',
+            amount: 8000,
+            is_reserved: 1,
+          },
+        ],
+        '2025-03-01',
+        'FORTNIGHTLY'
+      )
+    ).toBe(8000)
+  })
+
+  it('stops FORTNIGHTLY loop at cancel_by_date — only first occurrence counted', () => {
+    // Feb 25 is below cancel_by_date Mar 1, so it's counted.
+    // Mar 11 > cancel_by_date Mar 1, so loop breaks.
+    expect(
+      calculateReservedAmount(
+        [
+          {
+            next_charge_date: '2025-02-25',
+            frequency: 'FORTNIGHTLY',
+            amount: 15900,
+            is_reserved: 1,
+            cancel_by_date: '2025-03-01',
+          },
+        ],
+        '2025-03-23',
+        'FORTNIGHTLY'
+      )
+    ).toBe(15900) // only 1 × $159
+  })
+
+  it('stops WEEKLY loop at cancel_by_date — 2 of 4 occurrences counted', () => {
+    // Weekly from Feb 24. Payday Mar 23. cancel_by_date Mar 10.
+    // Feb 24 ≤ Mar 10 → count; Mar 3 ≤ Mar 10 → count; Mar 10 ≤ Mar 10 → count; Mar 17 > Mar 10 → break.
+    expect(
+      calculateReservedAmount(
+        [
+          {
+            next_charge_date: '2025-02-24',
+            frequency: 'WEEKLY',
+            amount: 5000,
+            is_reserved: 1,
+            cancel_by_date: '2025-03-10',
+          },
+        ],
+        '2025-03-23',
+        'FORTNIGHTLY'
+      )
+    ).toBe(15000) // 3 × $50 (Feb 24, Mar 3, Mar 10)
+  })
+
+  // ── Payday boundary: charges ON the payday date are now included ────────────
+
+  it('includes a ONCE charge due exactly on the payday date', () => {
+    expect(
+      calculateReservedAmount(
+        [
+          {
+            next_charge_date: '2025-03-01',
+            frequency: 'ONCE',
+            amount: 9900,
+            is_reserved: 1,
+          },
+        ],
+        '2025-03-01',
+        'MONTHLY'
+      )
+    ).toBe(9900)
+  })
+
+  it('excludes a ONCE charge due the day after payday', () => {
+    expect(
+      calculateReservedAmount(
+        [
+          {
+            next_charge_date: '2025-03-02',
+            frequency: 'ONCE',
+            amount: 9900,
+            is_reserved: 1,
+          },
+        ],
+        '2025-03-01',
+        'MONTHLY'
+      )
+    ).toBe(0)
+  })
+
+  it('includes FORTNIGHTLY occurrence that falls exactly on payday date', () => {
+    // Fortnightly from Feb 23 → Feb 23, Mar 9, Mar 23 (= payday). All three ≤ Mar 23.
+    expect(
+      calculateReservedAmount(
+        [
+          {
+            next_charge_date: '2025-02-23',
+            frequency: 'FORTNIGHTLY',
+            amount: 2000,
+            is_reserved: 1,
+          },
+        ],
+        '2025-03-23',
+        'FORTNIGHTLY'
+      )
+    ).toBe(6000) // 3 × $20 (Feb 23, Mar 9, Mar 23)
+  })
+
+  // ── Real-world regression: the $159 Up Bank discrepancy ────────────────────
+
+  it('real-world: fortnightly $159 charge with 26-day pay window reserves full two occurrences', () => {
+    vi.setSystemTime(new Date('2026-05-06T12:00:00Z'))
+    // Fortnightly charge of $159 next due May 13. Payday June 1 (26 days away).
+    // Occurrences: May 13, May 27 — both before June 1. June 10 > June 1 → stop.
+    expect(
+      calculateReservedAmount(
+        [
+          {
+            next_charge_date: '2026-05-13',
+            frequency: 'FORTNIGHTLY',
+            amount: 15900,
+            is_reserved: 1,
+          },
+        ],
+        '2026-06-01',
+        'FORTNIGHTLY'
+      )
+    ).toBe(31800) // 2 × $159 = $318
+  })
+
+  // ── Multiple charges combined ───────────────────────────────────────────────
+
+  it('combines ONCE, WEEKLY multi-occurrence, MONTHLY prorated, and ignored charge correctly', () => {
+    // Today Feb 23, payday Mar 23 (28 days), fortnightly pay.
+    // ONCE $20 due Feb 28 → $20 = 2000 cents
+    // WEEKLY $10 from Feb 24 → Feb 24, Mar 3, Mar 10, Mar 17 = 4 × $10 = $40 = 4000 cents
+    // MONTHLY $300 due Mar 10 (15 days away): ceil(15/14)=2 periods → $300/2=$150 = 15000 cents
+    // is_reserved=0 charge → ignored
+    const reserved = calculateReservedAmount(
+      [
+        {
+          next_charge_date: '2025-02-28',
+          frequency: 'ONCE',
+          amount: 2000,
+          is_reserved: 1,
+        },
+        {
+          next_charge_date: '2025-02-24',
+          frequency: 'WEEKLY',
+          amount: 1000,
+          is_reserved: 1,
+        },
+        {
+          next_charge_date: '2025-03-10',
+          frequency: 'MONTHLY',
+          amount: 30000,
+          is_reserved: 1,
+        },
+        {
+          next_charge_date: '2025-02-26',
+          frequency: 'ONCE',
+          amount: 9999,
+          is_reserved: 0,
+        },
+      ],
+      '2025-03-23',
+      'FORTNIGHTLY'
+    )
+    // $20 + $40 + $150 = $210 = 21000 cents
+    expect(reserved).toBe(21000)
+  })
 })
