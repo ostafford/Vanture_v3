@@ -6,9 +6,7 @@ import { AnalyticsLayout } from '@/pages/analytics/AnalyticsLayout'
 import { AnalyticsIndex } from '@/pages/analytics/AnalyticsIndex'
 import { AnalyticsTrackers } from '@/pages/analytics/AnalyticsTrackers'
 import { AnalyticsTrackersDetail } from '@/pages/analytics/AnalyticsTrackersDetail'
-import { AnalyticsInsights } from '@/pages/analytics/AnalyticsInsights'
 import { AnalyticsReports } from '@/pages/analytics/AnalyticsReports'
-import { AnalyticsMonthlyReview } from '@/pages/analytics/AnalyticsMonthlyReview'
 import { AnalyticsSavers } from '@/pages/analytics/AnalyticsSavers'
 import { AnalyticsMaybuys } from '@/pages/analytics/AnalyticsMaybuys'
 import { Settings } from '@/pages/Settings'
@@ -25,6 +23,10 @@ export const appRouter = createBrowserRouter(
         { index: true, element: <Dashboard /> },
         { path: 'plan', element: <Navigate to="/analytics" replace /> },
         { path: 'transactions', element: <Transactions /> },
+        {
+          path: 'maybuys',
+          element: <AnalyticsMaybuys />,
+        },
         {
           path: 'analytics',
           element: <AnalyticsLayout />,
@@ -84,20 +86,15 @@ export const appRouter = createBrowserRouter(
             },
             {
               path: 'maybuys',
-              element: <AnalyticsMaybuys />,
-              handle: {
-                breadcrumbLabel: 'Maybuys',
-                pageTitle: 'Maybuys',
-                pageTitleIcon: 'mdi-cart-heart',
-              } satisfies AppRouteHandle,
+              element: <Navigate to="/maybuys" replace />,
             },
             {
               path: 'wants',
-              element: <Navigate to="/analytics/maybuys" replace />,
+              element: <Navigate to="/maybuys" replace />,
             },
             {
               path: 'wants/:wantId',
-              element: <Navigate to="/analytics/maybuys" replace />,
+              element: <Navigate to="/maybuys" replace />,
             },
             {
               path: 'goals',
@@ -109,12 +106,7 @@ export const appRouter = createBrowserRouter(
             },
             {
               path: 'insights',
-              element: <AnalyticsInsights />,
-              handle: {
-                breadcrumbLabel: 'Weekly insights',
-                pageTitle: 'Weekly insights',
-                pageTitleIcon: 'mdi-chart-bar',
-              } satisfies AppRouteHandle,
+              element: <Navigate to="/analytics/reports" replace />,
             },
             {
               path: 'reports',
@@ -131,12 +123,7 @@ export const appRouter = createBrowserRouter(
             },
             {
               path: 'monthly-review',
-              element: <AnalyticsMonthlyReview />,
-              handle: {
-                breadcrumbLabel: 'Monthly review',
-                pageTitle: 'Monthly review',
-                pageTitleIcon: 'mdi-calendar-month',
-              } satisfies AppRouteHandle,
+              element: <Navigate to="/analytics/reports" replace />,
             },
           ],
         },

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useStore } from 'zustand'
 import { Link } from 'react-router-dom'
 import { Card, Row, Col, Badge, Form } from 'react-bootstrap'
 import {
@@ -6,6 +7,7 @@ import {
   type TrackerResetFrequency,
 } from '@/services/trackers'
 import { formatMoney } from '@/lib/format'
+import { syncStore } from '@/stores/syncStore'
 const RESET_FREQUENCIES: { value: TrackerResetFrequency; label: string }[] = [
   { value: 'WEEKLY', label: 'Weekly' },
   { value: 'FORTNIGHTLY', label: 'Fortnightly' },
@@ -22,6 +24,7 @@ const FREQUENCY_ORDER: TrackerResetFrequency[] = [
 
 export function AnalyticsTrackers() {
   const [frequencyFilter, setFrequencyFilter] = useState<string>('')
+  useStore(syncStore, (s) => s.lastSyncCompletedAt)
 
   const trackers = getTrackersWithProgressForPeriod(0)
   const filtered = frequencyFilter

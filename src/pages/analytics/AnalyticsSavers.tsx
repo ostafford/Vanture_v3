@@ -1,3 +1,4 @@
+import { useStore } from 'zustand'
 import { Link } from 'react-router-dom'
 import { Card, Row, Col } from 'react-bootstrap'
 import {
@@ -5,8 +6,11 @@ import {
   sumAccountBalancesCents,
 } from '@/services/accounts'
 import { formatMoney } from '@/lib/format'
+import { syncStore } from '@/stores/syncStore'
 
 export function AnalyticsSavers() {
+  useStore(syncStore, (s) => s.lastSyncCompletedAt)
+
   const savers = getAccountsByTypes(['SAVER'])
   const homeLoans = getAccountsByTypes(['HOME_LOAN'])
   const saverTotal = sumAccountBalancesCents(savers)

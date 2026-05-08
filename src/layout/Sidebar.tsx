@@ -55,6 +55,12 @@ export function Sidebar({
       icon: 'mdi-credit-card-multiple',
       short: 'T',
     },
+    {
+      to: '/maybuys',
+      label: 'Maybuys',
+      icon: 'mdi-cart-heart',
+      short: 'M',
+    },
     { to: '/settings', label: 'Settings', icon: 'mdi-cog', short: 'S' },
     {
       to: '/help',

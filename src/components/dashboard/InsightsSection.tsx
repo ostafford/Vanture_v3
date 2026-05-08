@@ -161,7 +161,7 @@ export function InsightsSection({
   const navControls = (
     <>
       <Link
-        to="/analytics/insights"
+        to="/analytics/reports"
         className="btn btn-outline-secondary btn-sm"
         aria-label="View insights analytics"
       >

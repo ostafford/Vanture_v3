@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useStore } from 'zustand'
 import { useParams, Link } from 'react-router-dom'
 import { Card, Row, Col, Button, Form, Badge } from 'react-bootstrap'
 import {
@@ -15,6 +16,7 @@ import { TrackerHistoryChart } from '@/components/charts/TrackerHistoryChart'
 import { TrackerCumulativeChart } from '@/components/charts/TrackerCumulativeChart'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
+import { syncStore } from '@/stores/syncStore'
 
 const PERIOD_OPTIONS = [
   { value: 3, label: 'Last 3 periods' },
@@ -31,16 +33,19 @@ export function AnalyticsTrackersDetail() {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY)
+  const lastSyncCompletedAt = useStore(syncStore, (s) => s.lastSyncCompletedAt)
 
   const id = trackerId != null ? parseInt(trackerId, 10) : NaN
   const tracker = useMemo(
     () => (Number.isNaN(id) ? null : getTracker(id)),
-    [id]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [id, lastSyncCompletedAt]
   )
 
   const periodHistory = useMemo(
     () => (tracker ? getTrackerPeriodHistory(id, periodsBack) : []),
-    [tracker, id, periodsBack]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tracker, id, periodsBack, lastSyncCompletedAt]
   )
 
   const transactionTimeline = useMemo(
@@ -52,7 +57,8 @@ export function AnalyticsTrackersDetail() {
             limit: 500,
           })
         : [],
-    [tracker, id, dateFrom, dateTo]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tracker, id, dateFrom, dateTo, lastSyncCompletedAt]
   )
 
   const dateFilter = useMemo(() => {
@@ -71,12 +77,14 @@ export function AnalyticsTrackersDetail() {
             offset: page * PAGE_SIZE,
           })
         : [],
-    [tracker, id, dateFilter, page]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tracker, id, dateFilter, page, lastSyncCompletedAt]
   )
 
   const totalTransactions = useMemo(
     () => (tracker ? getTrackerTransactionsCount(id, dateFilter) : 0),
-    [tracker, id, dateFilter]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tracker, id, dateFilter, lastSyncCompletedAt]
   )
 
   const categories = getCategories()

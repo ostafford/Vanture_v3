@@ -80,7 +80,7 @@ export function MonthSummarySection({
         </div>
         <div className="d-flex gap-2 align-items-center">
           <Link
-            to="/analytics/monthly-review"
+            to="/analytics/reports"
             className="btn btn-outline-secondary btn-sm"
             aria-label="View full monthly review"
           >

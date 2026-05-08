@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useStore } from 'zustand'
 import {
   Card,
   Button,
@@ -32,6 +33,7 @@ import {
   formatWeekStartLabel,
   monthNameLong,
 } from '@/lib/monthLabels'
+import { syncStore } from '@/stores/syncStore'
 
 const WEEK_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -66,6 +68,7 @@ export function AnalyticsAtAGlanceSection() {
   const [monthOffset, setMonthOffset] = useState(0)
   const [weekOffset, setWeekOffset] = useState(0)
   const [metric, setMetric] = useState<MonthMetric>('spending')
+  const lastSyncCompletedAt = useStore(syncStore, (s) => s.lastSyncCompletedAt)
 
   const [showCurrentYear, setShowCurrentYear] = useState(true)
   const [showPreviousYear, setShowPreviousYear] = useState(true)
@@ -85,10 +88,19 @@ export function AnalyticsAtAGlanceSection() {
     if (mode === 'year') return getYearComparison(year)
     if (mode === 'month') return getMonthComparison(monthFrom, monthTo)
     return getWeekComparison(weekOffset)
-  }, [mode, year, monthFrom, monthTo, weekOffset])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, year, monthFrom, monthTo, weekOffset, lastSyncCompletedAt])
 
-  const pointsCurrent = useMemo(() => getYearMonthlyTotals(year), [year])
-  const pointsPrevious = useMemo(() => getYearMonthlyTotals(year - 1), [year])
+   
+  const pointsCurrent = useMemo(
+    () => getYearMonthlyTotals(year),
+    [year, lastSyncCompletedAt]
+  )
+   
+  const pointsPrevious = useMemo(
+    () => getYearMonthlyTotals(year - 1),
+    [year, lastSyncCompletedAt]
+  )
   const previousYear = year - 1
 
   const monthPairLabels = useMemo(
@@ -146,12 +158,14 @@ export function AnalyticsAtAGlanceSection() {
 
   const monthSeries = useMemo(
     () => getMonthDayByDaySeries(monthFrom, monthTo),
-    [monthFrom, monthTo]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [monthFrom, monthTo, lastSyncCompletedAt]
   )
 
   const weekSeries = useMemo(
     () => getWeekDayByDaySeries(weekOffset),
-    [weekOffset]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [weekOffset, lastSyncCompletedAt]
   )
 
   const activeLineSeries =
@@ -244,7 +258,7 @@ export function AnalyticsAtAGlanceSection() {
         </div>
         <div className="d-flex gap-2 align-items-center flex-wrap">
           <Link
-            to="/analytics/monthly-review"
+            to="/analytics/reports"
             className="btn btn-outline-secondary btn-sm"
             aria-label="View monthly review"
           >

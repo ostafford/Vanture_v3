@@ -32,7 +32,7 @@ export function MaybuySection({ dragHandleProps }: MaybuySectionProps) {
           />
         </div>
         <Link
-          to="/analytics/maybuys"
+          to="/maybuys"
           className="btn btn-primary btn-sm"
           aria-label="Go to Maybuys"
         >
@@ -45,10 +45,7 @@ export function MaybuySection({ dragHandleProps }: MaybuySectionProps) {
             <p className="text-muted small mb-2">
               Nothing in your wishlist yet.
             </p>
-            <Link
-              to="/analytics/maybuys"
-              className="btn btn-outline-primary btn-sm"
-            >
+            <Link to="/maybuys" className="btn btn-outline-primary btn-sm">
               Add a Maybuy
             </Link>
           </div>
@@ -79,10 +76,7 @@ export function MaybuySection({ dragHandleProps }: MaybuySectionProps) {
               )}
             </div>
             <div className="mt-3">
-              <Link
-                to="/analytics/maybuys"
-                className="btn btn-outline-primary btn-sm"
-              >
+              <Link to="/maybuys" className="btn btn-outline-primary btn-sm">
                 View all Maybuys
               </Link>
             </div>
