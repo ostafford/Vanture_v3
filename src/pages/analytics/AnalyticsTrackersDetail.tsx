@@ -42,6 +42,13 @@ function daysBetween(a: string, b: string): number {
   )
 }
 
+// period_end is exclusive (first day of next period), subtract one day for display.
+function displayPeriodEnd(isoDate: string): string {
+  const d = new Date(isoDate + 'T12:00:00Z')
+  d.setUTCDate(d.getUTCDate() - 1)
+  return d.toISOString().slice(0, 10)
+}
+
 export function AnalyticsTrackersDetail() {
   const { trackerId } = useParams<{ trackerId: string }>()
   const [periodsBack, setPeriodsBack] = useState(6)
@@ -223,7 +230,7 @@ export function AnalyticsTrackersDetail() {
                 {paceStats && (
                   <span className="small text-muted">
                     {formatDate(paceStats.periodStart)} –{' '}
-                    {formatDate(paceStats.periodEnd)}
+                    {formatDate(displayPeriodEnd(paceStats.periodEnd))}
                   </span>
                 )}
               </div>
@@ -358,7 +365,7 @@ export function AnalyticsTrackersDetail() {
                   {[...periodHistory].reverse().map((p) => (
                     <option key={p.periodOffset} value={p.periodOffset}>
                       {p.periodLabel} ({formatDate(p.periodStart)} –{' '}
-                      {formatDate(p.periodEnd)})
+                      {formatDate(displayPeriodEnd(p.periodEnd))})
                     </option>
                   ))}
                 </Form.Select>

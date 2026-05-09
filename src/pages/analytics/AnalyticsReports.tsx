@@ -1,30 +1,30 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
-import { Card, Row, Col, Form, Button, ButtonGroup, Nav } from 'react-bootstrap'
+import { useState, useMemo } from 'react'
+import { Card, Row, Col, Form, Button, ProgressBar } from 'react-bootstrap'
 import {
-  getCategoryBreakdownForDateRange,
-  getReportsSankeyData,
-  getInsightsHistory,
-  getCategoryBreakdownHistory,
-  getWeekRange,
-  getWeeklyCategoryBreakdown,
   getMonthComparison,
+  getCategoryBreakdownForDateRange,
+  getInsightsForDateRange,
   type MonthDelta,
-  type NarrativeInsight,
 } from '@/services/insights'
+import {
+  getTrackersWithProgress,
+  getTrackerSpentInPeriod,
+} from '@/services/trackers'
+import {
+  getUpcomingChargesForMonth,
+  type UpcomingChargeRow,
+} from '@/services/upcoming'
 import {
   getInsightsCategoryColors,
   normalizeCategoryIdForColor,
-  UNCATEGORISED_COLOR_KEY,
 } from '@/lib/chartColors'
 import { ACCENT_PALETTES } from '@/lib/accentPalettes'
 import { useStore } from 'zustand'
 import { accentStore } from '@/stores/accentStore'
 import { syncStore } from '@/stores/syncStore'
 import { InsightsBarChart } from '@/components/charts/InsightsBarChart'
-import { SankeyFlowChart } from '@/components/charts/SankeyFlowChart'
-import { InsightsHistoryChart } from '@/components/charts/InsightsHistoryChart'
-import { CategoryTrendChart } from '@/components/charts/CategoryTrendChart'
-import type { InsightsChartDatum } from '@/types/charts'
+import { ComparisonDeltaBadge } from '@/components/atAGlance/ComparisonDeltaBadge'
+import { ComparisonNarratives } from '@/components/atAGlance/ComparisonNarratives'
 import { formatMoney } from '@/lib/format'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
@@ -33,12 +33,9 @@ import {
   previousCalendarMonth,
   comparisonMonthPairLabels,
 } from '@/lib/monthLabels'
-import {
-  getTrackersWithProgress,
-  getTrackerSpentInPeriod,
-} from '@/services/trackers'
+import type { InsightsChartDatum } from '@/types/charts'
 
-// ─── Category Spending Tab ────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function localDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -50,410 +47,6 @@ function getDefaultDateRange(): { from: string; to: string } {
   from.setDate(from.getDate() - 30)
   return { from: localDateStr(from), to: localDateStr(to) }
 }
-
-type ReportPreset =
-  | { id: string; label: string; days: number }
-  | { id: string; label: string; month: 'current' | 'previous' }
-
-function buildReportPresets(): ReportPreset[] {
-  const now = new Date()
-  const cy = now.getFullYear()
-  const cm = now.getMonth() + 1
-  const prev = previousCalendarMonth(cy, cm)
-  return [
-    { id: 'd7', label: 'Last 7 days', days: 7 },
-    { id: 'd30', label: 'Last 30 days', days: 30 },
-    { id: 'd90', label: 'Last 90 days', days: 90 },
-    { id: 'm_current', label: monthNameLong(cy, cm), month: 'current' },
-    {
-      id: 'm_previous',
-      label: monthNameLong(prev.year, prev.month),
-      month: 'previous',
-    },
-  ]
-}
-
-function getPresetRange(preset: ReportPreset): { from: string; to: string } {
-  const now = new Date()
-  if ('days' in preset) {
-    const from = new Date(now)
-    from.setDate(from.getDate() - preset.days)
-    return { from: localDateStr(from), to: localDateStr(now) }
-  }
-  if (preset.month === 'current') {
-    const y = now.getFullYear()
-    const m = now.getMonth() + 1
-    return {
-      from: `${y}-${String(m).padStart(2, '0')}-01`,
-      to: localDateStr(now),
-    }
-  }
-  const y = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
-  const m = now.getMonth() === 0 ? 12 : now.getMonth()
-  const from = `${y}-${String(m).padStart(2, '0')}-01`
-  const lastDay = new Date(y, m, 0).getDate()
-  return {
-    from,
-    to: `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`,
-  }
-}
-
-function CategorySpendingTab() {
-  const [dateFrom, setDateFrom] = useState(() => getDefaultDateRange().from)
-  const [dateTo, setDateTo] = useState(() => getDefaultDateRange().to)
-  const [showSankey, setShowSankey] = useState(false)
-  const [sankeySize, setSankeySize] = useState({ width: 400, height: 240 })
-  const sankeyContainerRef = useRef<HTMLDivElement>(null)
-  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY)
-  const accent = useStore(accentStore, (s) => s.accent)
-  const lastSyncCompletedAt = useStore(syncStore, (s) => s.lastSyncCompletedAt)
-  const chartPalette = ACCENT_PALETTES[accent].chartPalette
-  const categoryColors = getInsightsCategoryColors()
-  const reportPresets = buildReportPresets()
-
-  const breakdown = useMemo(
-    () => getCategoryBreakdownForDateRange(dateFrom, dateTo),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [dateFrom, dateTo, lastSyncCompletedAt]
-  )
-  const sankeyData = useMemo(
-    () => getReportsSankeyData(dateFrom, dateTo),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [dateFrom, dateTo, lastSyncCompletedAt]
-  )
-  const sankeyHeight = Math.max(200, sankeyData.categories.length * 28)
-
-  const chartData: InsightsChartDatum[] = useMemo(
-    () =>
-      breakdown.map((c, index) => {
-        const totalDollars = Number.isFinite(c.total / 100) ? c.total / 100 : 0
-        const colorKey = normalizeCategoryIdForColor(c.category_id)
-        return {
-          category_id: c.category_id ?? '',
-          name: c.category_name,
-          totalDollars,
-          fill:
-            categoryColors[colorKey] ??
-            chartPalette[index % chartPalette.length],
-          stroke:
-            categoryColors[colorKey] ??
-            chartPalette[index % chartPalette.length],
-        }
-      }),
-    [breakdown, categoryColors, chartPalette]
-  )
-  const maxDomain = useMemo(
-    () =>
-      Math.max(
-        1,
-        ...chartData.map((d) => d.totalDollars).filter(Number.isFinite)
-      ),
-    [chartData]
-  )
-  const totalSpent = breakdown.reduce((s, c) => s + c.total, 0)
-
-  useEffect(() => {
-    if (!showSankey || !sankeyContainerRef.current) return
-    const el = sankeyContainerRef.current
-    const updateSize = () => {
-      if (el) {
-        const w = el.offsetWidth || 400
-        setSankeySize((prev) =>
-          prev.width !== w || prev.height !== sankeyHeight
-            ? { width: w, height: sankeyHeight }
-            : prev
-        )
-      }
-    }
-    updateSize()
-    const ro = new ResizeObserver(updateSize)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [showSankey, sankeyHeight])
-
-  return (
-    <>
-      <Card className="grid-margin">
-        <Card.Header>
-          <Card.Title className="mb-0">Category spending</Card.Title>
-          <Card.Text as="div" className="small text-muted mt-1">
-            Spending by category over a custom date range. Optionally view
-            income-to-spending flow (Sankey).
-          </Card.Text>
-        </Card.Header>
-        <Card.Body>
-          <div className="mb-3">
-            <ButtonGroup size="sm" className="flex-wrap">
-              {reportPresets.map((preset) => (
-                <Button
-                  key={preset.id}
-                  variant="outline-secondary"
-                  onClick={() => {
-                    const r = getPresetRange(preset)
-                    setDateFrom(r.from)
-                    setDateTo(r.to)
-                  }}
-                >
-                  {preset.label}
-                </Button>
-              ))}
-            </ButtonGroup>
-          </div>
-          <Row className="mb-3">
-            <Col xs={12} md={6} lg={4}>
-              <Form.Group className="mb-2">
-                <Form.Label className="small">From</Form.Label>
-                <Form.Control
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  aria-label="Report start date"
-                />
-              </Form.Group>
-            </Col>
-            <Col xs={12} md={6} lg={4}>
-              <Form.Group className="mb-2">
-                <Form.Label className="small">To</Form.Label>
-                <Form.Control
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  aria-label="Report end date"
-                />
-              </Form.Group>
-            </Col>
-            <Col xs={12} md={6} lg={4} className="d-flex align-items-end mb-2">
-              <Form.Check
-                type="switch"
-                id="reports-sankey-toggle"
-                label="Show Sankey diagram"
-                checked={showSankey}
-                onChange={(e) => setShowSankey(e.target.checked)}
-              />
-            </Col>
-          </Row>
-          <div className="mb-3 small text-muted">
-            Income (period): ${formatMoney(sankeyData.moneyIn)} · Spent: $
-            {formatMoney(totalSpent)}
-          </div>
-          {chartData.length === 0 ? (
-            <p className="text-muted mb-0">
-              No spending in this date range. Adjust the dates or make sure
-              transactions are synced.
-            </p>
-          ) : (
-            <div style={{ width: '100%', height: isMobile ? 280 : 320 }}>
-              <InsightsBarChart
-                chartData={chartData}
-                maxDomain={maxDomain}
-                isMobile={isMobile}
-                aria-label={`Spending by category from ${dateFrom} to ${dateTo}`}
-              />
-            </div>
-          )}
-        </Card.Body>
-      </Card>
-
-      {showSankey && (
-        <Card className="grid-margin">
-          <Card.Header>
-            <Card.Title className="mb-0">Income to spending flow</Card.Title>
-            <Card.Text as="div" className="small text-muted mt-1">
-              Flow from Income to each spending category. Link width is
-              proportional to amount.
-            </Card.Text>
-          </Card.Header>
-          <Card.Body>
-            {sankeyData.categories.length === 0 && sankeyData.moneyIn === 0 ? (
-              <p className="text-muted mb-0">
-                No income or spending in this date range.
-              </p>
-            ) : (
-              <div
-                ref={sankeyContainerRef}
-                style={{ width: '100%', height: sankeyHeight }}
-              >
-                <SankeyFlowChart
-                  moneyInCents={sankeyData.moneyIn}
-                  categories={sankeyData.categories}
-                  width={sankeySize.width}
-                  height={sankeySize.height}
-                  ariaLabel="Income to spending by category"
-                />
-              </div>
-            )}
-          </Card.Body>
-        </Card>
-      )}
-    </>
-  )
-}
-
-// ─── Weekly Trends Tab ────────────────────────────────────────────────────────
-
-const WEEK_OPTIONS = [
-  { value: 8, label: 'Last 8 weeks' },
-  { value: 12, label: 'Last 12 weeks' },
-  { value: 26, label: 'Last 26 weeks' },
-]
-
-function WeeklyTrendsTab() {
-  const [weeksBack, setWeeksBack] = useState(12)
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(
-    () => getWeeklyCategoryBreakdown(getWeekRange(0))[0]?.category_id ?? ''
-  )
-  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY)
-  const lastSyncCompletedAt = useStore(syncStore, (s) => s.lastSyncCompletedAt)
-
-  const insightsHistory = useMemo(
-    () => getInsightsHistory(weeksBack),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [weeksBack, lastSyncCompletedAt]
-  )
-
-  const categoriesWithSpending = useMemo(
-    () => getWeeklyCategoryBreakdown(getWeekRange(0)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [lastSyncCompletedAt]
-  )
-
-  const categoryOptions = useMemo(
-    () =>
-      categoriesWithSpending.map((r) => ({
-        id: r.category_id,
-        name: r.category_name,
-      })),
-    [categoriesWithSpending]
-  )
-
-  const activeCategoryId = selectedCategoryId || categoryOptions[0]?.id || ''
-  const activeCategoryName =
-    categoryOptions.find((c) => c.id === activeCategoryId)?.name ?? 'Category'
-
-  const categoryHistory = useMemo(
-    () =>
-      activeCategoryId
-        ? getCategoryBreakdownHistory(activeCategoryId, weeksBack)
-        : [],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeCategoryId, weeksBack, lastSyncCompletedAt]
-  )
-
-  const categoryColors = getInsightsCategoryColors()
-  const categoryColor =
-    activeCategoryId === '' || activeCategoryId == null
-      ? undefined
-      : (categoryColors[activeCategoryId] ??
-        categoryColors[UNCATEGORISED_COLOR_KEY])
-
-  const maxDomainInsights = useMemo(() => {
-    if (insightsHistory.length === 0) return undefined
-    return Math.max(
-      ...insightsHistory.flatMap((d) => [d.moneyIn, d.moneyOut]),
-      100
-    )
-  }, [insightsHistory])
-
-  const maxDomainCategory = useMemo(() => {
-    if (categoryHistory.length === 0) return undefined
-    return Math.max(...categoryHistory.map((d) => d.total), 100)
-  }, [categoryHistory])
-
-  return (
-    <>
-      <Card className="grid-margin">
-        <Card.Header>
-          <Card.Title className="mb-0">Money In vs Money Out</Card.Title>
-          <Card.Text as="div" className="small text-muted mt-1">
-            Weekly comparison of income and spending over time.
-          </Card.Text>
-        </Card.Header>
-        <Card.Body>
-          <Row className="mb-3">
-            <Col md={4}>
-              <Form.Select
-                value={weeksBack}
-                onChange={(e) => setWeeksBack(Number(e.target.value))}
-                aria-label="Weeks to show"
-              >
-                {WEEK_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </Form.Select>
-            </Col>
-          </Row>
-          {insightsHistory.length === 0 ? (
-            <p className="text-muted mb-0">No data available.</p>
-          ) : (
-            <>
-              <div style={{ width: '100%', height: isMobile ? 220 : 260 }}>
-                <InsightsHistoryChart
-                  data={insightsHistory}
-                  maxDomain={maxDomainInsights}
-                  aria-label="Money In and Money Out by week"
-                />
-              </div>
-              <div className="small text-muted mt-2">
-                Green = Money In, Red = Money Out
-              </div>
-            </>
-          )}
-        </Card.Body>
-      </Card>
-
-      <Card className="grid-margin">
-        <Card.Header>
-          <Card.Title className="mb-0">Category Spending Trends</Card.Title>
-          <Card.Text as="div" className="small text-muted mt-1">
-            Compare weekly spending for a category over time.
-          </Card.Text>
-        </Card.Header>
-        <Card.Body>
-          <Row className="mb-3">
-            <Col md={4}>
-              <Form.Select
-                value={activeCategoryId}
-                onChange={(e) => setSelectedCategoryId(e.target.value)}
-                aria-label="Category"
-              >
-                {categoryOptions.length === 0 ? (
-                  <option value="">No categories</option>
-                ) : (
-                  categoryOptions.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))
-                )}
-              </Form.Select>
-            </Col>
-          </Row>
-          {categoryHistory.length === 0 ? (
-            <p className="text-muted mb-0">
-              {categoryOptions.length === 0
-                ? 'No spending categories this week. Make some purchases to see category trends.'
-                : 'No data for this category.'}
-            </p>
-          ) : (
-            <div style={{ width: '100%', height: isMobile ? 200 : 240 }}>
-              <CategoryTrendChart
-                data={categoryHistory}
-                categoryName={activeCategoryName}
-                maxDomain={maxDomainCategory}
-                barColor={categoryColor}
-                aria-label={`${activeCategoryName} spending by week`}
-              />
-            </div>
-          )}
-        </Card.Body>
-      </Card>
-    </>
-  )
-}
-
-// ─── Monthly Review Tab ───────────────────────────────────────────────────────
 
 function getMonthBounds(
   year: number,
@@ -471,66 +64,154 @@ function getExclusiveMonthEnd(year: number, month: number): string {
   return `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`
 }
 
-function DeltaBadge({
+function nextCalendarMonth(
+  year: number,
+  month: number
+): { year: number; month: number } {
+  if (month === 12) return { year: year + 1, month: 1 }
+  return { year, month: month + 1 }
+}
+
+function trackerProgressStyle(progress: number) {
+  if (progress >= 100)
+    return { variant: 'danger' as const, striped: true, animated: true }
+  if (progress >= 81)
+    return { variant: 'danger' as const, striped: false, animated: false }
+  if (progress > 50)
+    return { variant: 'warning' as const, striped: false, animated: false }
+  return { variant: 'success' as const, striped: false, animated: false }
+}
+
+type ChargeGroup = {
+  id: number
+  name: string
+  frequency: string
+  total: number
+  occurrences: number
+}
+
+function groupUpcomingCharges(charges: UpcomingChargeRow[]): ChargeGroup[] {
+  const map = new Map<number, ChargeGroup>()
+  for (const c of charges) {
+    const existing = map.get(c.id)
+    if (existing) {
+      existing.total += c.amount
+      existing.occurrences++
+    } else {
+      map.set(c.id, {
+        id: c.id,
+        name: c.name,
+        frequency: c.frequency,
+        total: c.amount,
+        occurrences: 1,
+      })
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => b.total - a.total)
+}
+
+function makeDelta(current: number, previous: number): MonthDelta {
+  const delta = current - previous
+  const direction: MonthDelta['direction'] =
+    Math.abs(delta) < 1 ? 'flat' : delta > 0 ? 'up' : 'down'
+  return { current, previous, delta, direction }
+}
+
+// ─── KPI Cell ─────────────────────────────────────────────────────────────────
+
+function KpiCell({
+  label,
+  value,
+  valueClass,
   delta,
-  invert,
   vsPriorLabel,
+  invert,
+  detail,
 }: {
-  delta: MonthDelta
+  label: string
+  value: string
+  valueClass?: string
+  delta?: MonthDelta
+  vsPriorLabel?: string
   invert?: boolean
-  vsPriorLabel: string
+  detail?: string
 }) {
-  if (delta.direction === 'flat') return null
-  const isUp = delta.direction === 'up'
-  const positive = invert ? !isUp : isUp
-  const icon = isUp ? 'mdi-arrow-up' : 'mdi-arrow-down'
-  const cls = positive ? 'text-success' : 'text-danger'
-  const absDelta = Math.abs(delta.delta)
-  const isCount = Number.isInteger(delta.current) && absDelta < 10000
-  const label = isCount ? String(absDelta) : `$${formatMoney(absDelta)}`
   return (
     <div
-      className={`small ${cls}`}
-      aria-label={`${delta.direction} ${label} vs ${vsPriorLabel}`}
-      style={{ fontSize: '0.75rem', lineHeight: 1.3 }}
+      className="rounded p-3 flex-fill"
+      style={{
+        background: 'var(--bs-tertiary-bg, rgba(0,0,0,0.04))',
+        minWidth: 120,
+      }}
     >
-      <i
-        className={`mdi ${icon}`}
-        aria-hidden
-        style={{ fontSize: '0.65rem' }}
-      />{' '}
-      {label}
+      <div className="small text-muted mb-1">{label}</div>
+      <div className={`fw-semibold fs-5 ${valueClass ?? ''}`}>{value}</div>
+      {delta && vsPriorLabel && (
+        <ComparisonDeltaBadge
+          delta={delta}
+          vsPriorLabel={vsPriorLabel}
+          invert={invert}
+        />
+      )}
+      {detail && (
+        <div className="small text-muted mt-1" style={{ fontSize: '0.72rem' }}>
+          {detail}
+        </div>
+      )}
     </div>
   )
 }
 
-const NARRATIVE_ICONS: Record<NarrativeInsight['type'], string> = {
-  win: 'mdi-check-circle-outline',
-  challenge: 'mdi-alert-circle-outline',
-  opportunity: 'mdi-lightbulb-outline',
-}
+// ─── Main Export ──────────────────────────────────────────────────────────────
 
-const NARRATIVE_COLORS: Record<NarrativeInsight['type'], string> = {
-  win: 'text-success',
-  challenge: 'text-danger',
-  opportunity: 'text-warning',
-}
-
-function MonthlyReviewTab() {
+export function AnalyticsReports() {
   const now = new Date()
-  const [year, setYear] = useState(now.getFullYear())
-  const [month, setMonth] = useState(now.getMonth() + 1)
-  const lastSyncCompletedAt = useStore(syncStore, (s) => s.lastSyncCompletedAt)
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth() + 1
 
-  const { from, to } = useMemo(() => getMonthBounds(year, month), [year, month])
-  const comparison = useMemo(
-    () => getMonthComparison(from, to),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [from, to, lastSyncCompletedAt]
+  // --- Period state ---
+  const [year, setYear] = useState(currentYear)
+  const [month, setMonth] = useState(currentMonth)
+  const [isCustomRange, setIsCustomRange] = useState(false)
+  const [dateFrom, setDateFrom] = useState(() => getDefaultDateRange().from)
+  const [dateTo, setDateTo] = useState(() => getDefaultDateRange().to)
+
+  // --- Derived period ---
+  const { from, to } = useMemo(
+    () =>
+      isCustomRange
+        ? { from: dateFrom, to: dateTo }
+        : getMonthBounds(year, month),
+    [isCustomRange, dateFrom, dateTo, year, month]
   )
+  const exclusiveEnd = useMemo(
+    () => (isCustomRange ? dateTo : getExclusiveMonthEnd(year, month)),
+    [isCustomRange, dateTo, year, month]
+  )
+  const canGoForward =
+    !isCustomRange && !(year === currentYear && month === currentMonth)
   const monthPairLabels = useMemo(
     () => comparisonMonthPairLabels(year, month),
     [year, month]
+  )
+
+  // --- Store ---
+  const accent = useStore(accentStore, (s) => s.accent)
+  const lastSyncCompletedAt = useStore(syncStore, (s) => s.lastSyncCompletedAt)
+  const chartPalette = ACCENT_PALETTES[accent].chartPalette
+  const categoryColors = getInsightsCategoryColors()
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY)
+
+  // --- Data ---
+  const comparison = useMemo(
+    () => (!isCustomRange ? getMonthComparison(from, to) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [from, to, isCustomRange, lastSyncCompletedAt]
+  )
+  const rangeInsights = useMemo(
+    () => (isCustomRange ? getInsightsForDateRange(dateFrom, dateTo) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dateFrom, dateTo, isCustomRange, lastSyncCompletedAt]
   )
   const categories = useMemo(
     () => getCategoryBreakdownForDateRange(from, to),
@@ -542,223 +223,417 @@ function MonthlyReviewTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [lastSyncCompletedAt]
   )
-  const trackerExclusiveEnd = useMemo(
-    () => getExclusiveMonthEnd(year, month),
-    [year, month]
-  )
-  const trackerSpendInMonth = useMemo(
+  const trackerSpend = useMemo(
     () =>
       trackers.map((t) => ({
         tracker: t,
-        spent: getTrackerSpentInPeriod(t.id, from, trackerExclusiveEnd),
+        spent: getTrackerSpentInPeriod(t.id, from, exclusiveEnd),
       })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [trackers, from, trackerExclusiveEnd, lastSyncCompletedAt]
+    [trackers, from, exclusiveEnd, lastSyncCompletedAt]
+  )
+  const upcomingCharges = useMemo(
+    () => (!isCustomRange ? getUpcomingChargesForMonth(year, month) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isCustomRange, year, month, lastSyncCompletedAt]
+  )
+  const chargeGroups = useMemo(
+    () => groupUpcomingCharges(upcomingCharges),
+    [upcomingCharges]
   )
 
-  const yearOptions = useMemo(() => {
-    const current = new Date().getFullYear()
-    return Array.from({ length: 5 }, (_, i) => current - i)
-  }, [])
+  // --- Derived stats ---
+  const moneyIn = comparison
+    ? comparison.moneyIn.current
+    : (rangeInsights?.moneyIn ?? 0)
+  const moneyOut = comparison
+    ? comparison.moneyOut.current
+    : (rangeInsights?.moneyOut ?? 0)
+  const chargesCount = comparison
+    ? comparison.charges.current
+    : (rangeInsights?.charges ?? 0)
+  const net = moneyIn - moneyOut
+
+  const committedTotal = useMemo(
+    () => chargeGroups.reduce((s, g) => s + g.total, 0),
+    [chargeGroups]
+  )
+
+  const netDelta = useMemo(
+    () =>
+      comparison?.hasPreviousData
+        ? makeDelta(
+            comparison.moneyIn.current - comparison.moneyOut.current,
+            comparison.moneyIn.previous - comparison.moneyOut.previous
+          )
+        : null,
+    [comparison]
+  )
+
+  const chartData: InsightsChartDatum[] = useMemo(
+    () =>
+      categories.map((c, index) => {
+        const colorKey = normalizeCategoryIdForColor(c.category_id)
+        return {
+          category_id: c.category_id ?? '',
+          name: c.category_name,
+          totalDollars: c.total / 100,
+          fill:
+            categoryColors[colorKey] ??
+            chartPalette[index % chartPalette.length],
+          stroke:
+            categoryColors[colorKey] ??
+            chartPalette[index % chartPalette.length],
+        }
+      }),
+    [categories, categoryColors, chartPalette]
+  )
+  const maxDomain = useMemo(
+    () =>
+      Math.max(
+        1,
+        ...chartData.map((d) => d.totalDollars).filter(Number.isFinite)
+      ),
+    [chartData]
+  )
+
+  const totalSpent = categories.reduce((s, c) => s + c.total, 0)
+  const top3Total = categories.slice(0, 3).reduce((s, c) => s + c.total, 0)
+  const top3Pct =
+    totalSpent > 0 ? Math.round((top3Total / totalSpent) * 100) : 0
+  const top3Names = categories
+    .slice(0, 3)
+    .map((c) => c.category_name)
+    .join(', ')
+
+  const trackersWithinBudget = trackerSpend.filter(
+    ({ tracker, spent }) => spent <= tracker.budget_amount
+  ).length
+
+  const committedPct =
+    moneyIn > 0 ? Math.round((committedTotal / moneyIn) * 100) : 0
+
+  const periodLabel = isCustomRange
+    ? `${dateFrom} → ${dateTo}`
+    : `${monthNameLong(year, month)} ${year}`
+
+  // --- Navigation ---
+  function goToPrevMonth() {
+    const p = previousCalendarMonth(year, month)
+    setYear(p.year)
+    setMonth(p.month)
+  }
+
+  function goToNextMonth() {
+    if (!canGoForward) return
+    const n = nextCalendarMonth(year, month)
+    setYear(n.year)
+    setMonth(n.month)
+  }
 
   return (
-    <>
+    <div className="grid-margin">
+      {/* ─── Period Selector ─────────────────────────────────────────────── */}
       <Card className="grid-margin">
-        <Card.Header>
-          <Card.Title className="mb-0">Monthly review</Card.Title>
-          <Card.Text as="div" className="small text-muted mt-1">
-            Summary of money in, money out, top categories, and tracker spend
-            for the selected month.
-          </Card.Text>
-        </Card.Header>
-        <Card.Body>
-          <Row className="mb-3">
-            <Col md={3}>
-              <Form.Select
-                value={month}
-                onChange={(e) => setMonth(Number(e.target.value))}
-                aria-label="Month"
-              >
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                  <option key={m} value={m}>
-                    {monthNameLong(2020, m)}
-                  </option>
-                ))}
-              </Form.Select>
-            </Col>
-            <Col md={3}>
-              <Form.Select
-                value={year}
-                onChange={(e) => setYear(Number(e.target.value))}
-                aria-label="Year"
-              >
-                {yearOptions.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </Form.Select>
-            </Col>
-          </Row>
+        <Card.Body className="py-2">
+          <div className="d-flex flex-wrap align-items-center gap-3 justify-content-between">
+            {!isCustomRange ? (
+              <div className="d-flex align-items-center gap-2">
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  onClick={goToPrevMonth}
+                  aria-label="Previous month"
+                >
+                  <i className="mdi mdi-chevron-left" aria-hidden />
+                </Button>
+                <span
+                  className="fw-medium"
+                  style={{ minWidth: 140, textAlign: 'center' }}
+                >
+                  {monthNameLong(year, month)} {year}
+                </span>
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  onClick={goToNextMonth}
+                  disabled={!canGoForward}
+                  aria-label="Next month"
+                >
+                  <i className="mdi mdi-chevron-right" aria-hidden />
+                </Button>
+              </div>
+            ) : (
+              <Row className="g-2 align-items-end flex-grow-1">
+                <Col xs={12} sm="auto">
+                  <Form.Group>
+                    <Form.Label className="small mb-1">From</Form.Label>
+                    <Form.Control
+                      type="date"
+                      size="sm"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                      aria-label="Report start date"
+                    />
+                  </Form.Group>
+                </Col>
+                <Col xs={12} sm="auto">
+                  <Form.Group>
+                    <Form.Label className="small mb-1">To</Form.Label>
+                    <Form.Control
+                      type="date"
+                      size="sm"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                      aria-label="Report end date"
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
+            )}
+            <Button
+              variant={isCustomRange ? 'primary' : 'outline-primary'}
+              size="sm"
+              onClick={() => setIsCustomRange((v) => !v)}
+            >
+              {isCustomRange ? 'Monthly view' : 'Custom range'}
+            </Button>
+          </div>
         </Card.Body>
       </Card>
 
+      {/* ─── Block 1: Financial Snapshot ──────────────────────────────────── */}
       <Card className="grid-margin">
         <Card.Header>
           <Card.Title className="mb-0">
-            {monthNameLong(year, month)} {year} — Summary
+            {periodLabel} — Financial Snapshot
           </Card.Title>
         </Card.Header>
         <Card.Body>
-          <Row>
-            <Col xs={6} md={3}>
-              <div className="small text-muted">Money in</div>
-              <div className="fw-semibold text-success">
-                ${formatMoney(comparison.moneyIn.current)}
-              </div>
-              {comparison.hasPreviousData && (
-                <DeltaBadge
-                  delta={comparison.moneyIn}
-                  vsPriorLabel={monthPairLabels.vsPriorShort}
-                />
-              )}
-            </Col>
-            <Col xs={6} md={3}>
-              <div className="small text-muted">Money out</div>
-              <div className="fw-semibold text-danger">
-                ${formatMoney(comparison.moneyOut.current)}
-              </div>
-              {comparison.hasPreviousData && (
-                <DeltaBadge
-                  delta={comparison.moneyOut}
-                  invert
-                  vsPriorLabel={monthPairLabels.vsPriorShort}
-                />
-              )}
-            </Col>
-            <Col xs={6} md={3}>
-              <div className="small text-muted">Charges (count)</div>
-              <div className="fw-semibold">{comparison.charges.current}</div>
-              {comparison.hasPreviousData && (
-                <DeltaBadge
-                  delta={comparison.charges}
-                  invert
-                  vsPriorLabel={monthPairLabels.vsPriorShort}
-                />
-              )}
-            </Col>
-            {comparison.currentTopCategory && (
-              <Col xs={6} md={3}>
-                <div className="small text-muted">Top category</div>
-                <div className="fw-semibold">
-                  {comparison.currentTopCategory.category_name} ($
-                  {formatMoney(comparison.currentTopCategory.total)})
-                </div>
-              </Col>
+          <div className="d-flex flex-wrap gap-3">
+            <KpiCell
+              label="Money in"
+              value={`$${formatMoney(moneyIn)}`}
+              valueClass="text-success"
+              delta={
+                comparison?.hasPreviousData ? comparison.moneyIn : undefined
+              }
+              vsPriorLabel={monthPairLabels.vsPriorShort}
+            />
+            <KpiCell
+              label="Money out"
+              value={`$${formatMoney(moneyOut)}`}
+              valueClass="text-danger"
+              delta={
+                comparison?.hasPreviousData ? comparison.moneyOut : undefined
+              }
+              vsPriorLabel={monthPairLabels.vsPriorShort}
+              invert
+              detail={
+                chargesCount > 0 ? `${chargesCount} transactions` : undefined
+              }
+            />
+            <KpiCell
+              label="Net"
+              value={`${net >= 0 ? '+' : '−'}$${formatMoney(Math.abs(net))}`}
+              valueClass={net >= 0 ? 'text-success' : 'text-danger'}
+              delta={
+                comparison?.hasPreviousData && netDelta ? netDelta : undefined
+              }
+              vsPriorLabel={monthPairLabels.vsPriorShort}
+            />
+            {!isCustomRange && chargeGroups.length > 0 && (
+              <KpiCell
+                label="Committed"
+                value={`$${formatMoney(committedTotal)}`}
+                valueClass="text-warning"
+                detail={
+                  committedPct > 0 ? `${committedPct}% of income` : undefined
+                }
+              />
             )}
-          </Row>
+          </div>
+        </Card.Body>
+      </Card>
 
-          {comparison.hasPreviousData && comparison.narratives.length > 0 && (
-            <div className="mt-3 pt-2 border-top">
-              <div className="small text-muted mb-2">
-                vs {monthPairLabels.previousLabel}
-              </div>
-              {comparison.narratives.map((n, i) => (
-                <div key={i} className="d-flex align-items-start gap-1 mb-1">
-                  <i
-                    className={`mdi ${NARRATIVE_ICONS[n.type]} ${NARRATIVE_COLORS[n.type]}`}
-                    aria-hidden
-                    style={{ fontSize: '0.95rem', marginTop: 1 }}
-                  />
-                  <span className="small">{n.label}</span>
-                </div>
-              ))}
+      {/* ─── Block 1b: What changed ───────────────────────────────────────── */}
+      {!isCustomRange &&
+        comparison?.hasPreviousData &&
+        comparison.narratives.length > 0 && (
+          <Card className="grid-margin">
+            <Card.Header>
+              <Card.Title className="mb-0">
+                What changed vs {monthPairLabels.previousLabel}
+              </Card.Title>
+            </Card.Header>
+            <Card.Body>
+              <ComparisonNarratives narratives={comparison.narratives} />
+            </Card.Body>
+          </Card>
+        )}
+
+      {/* ─── Block 2: Spending Habits ─────────────────────────────────────── */}
+      <Card className="grid-margin">
+        <Card.Header>
+          <Card.Title className="mb-0">Spending Habits</Card.Title>
+          {chartData.length > 0 && top3Pct > 0 && (
+            <Card.Text as="div" className="small text-muted mt-1">
+              {top3Names} account for {top3Pct}% of spending
+            </Card.Text>
+          )}
+        </Card.Header>
+        <Card.Body>
+          {chartData.length === 0 ? (
+            <p className="text-muted mb-0">
+              No spending recorded for this period.
+            </p>
+          ) : (
+            <div style={{ width: '100%', height: isMobile ? 280 : 320 }}>
+              <InsightsBarChart
+                chartData={chartData}
+                maxDomain={maxDomain}
+                isMobile={isMobile}
+                aria-label={`Spending by category for ${periodLabel}`}
+              />
             </div>
           )}
         </Card.Body>
       </Card>
 
-      <Card className="grid-margin">
-        <Card.Header>
-          <Card.Title className="mb-0">Top categories</Card.Title>
-        </Card.Header>
-        <Card.Body>
-          {categories.length === 0 ? (
-            <p className="text-muted mb-0">No spending in this month.</p>
-          ) : (
-            <ul className="list-group list-group-flush">
-              {categories.slice(0, 10).map((c) => (
-                <li
-                  key={c.category_id ?? 'uncategorised'}
-                  className="list-group-item d-flex justify-content-between align-items-center"
-                >
-                  <span>{c.category_name}</span>
-                  <span>${formatMoney(c.total)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card.Body>
-      </Card>
+      {/* ─── Block 3: Tracker Performance ─────────────────────────────────── */}
+      {trackerSpend.length > 0 && (
+        <Card className="grid-margin">
+          <Card.Header>
+            <Card.Title className="mb-0">Tracker Performance</Card.Title>
+            <Card.Text as="div" className="small text-muted mt-1">
+              Spend vs budget for this period.
+              {!isCustomRange &&
+                ` ${trackersWithinBudget} of ${trackerSpend.length} within budget.`}
+            </Card.Text>
+          </Card.Header>
+          <Card.Body>
+            {trackerSpend.length > 4 ? (
+              <ul className="list-group list-group-flush">
+                {trackerSpend.map(({ tracker, spent }) => {
+                  const progress =
+                    tracker.budget_amount > 0
+                      ? (spent / tracker.budget_amount) * 100
+                      : 0
+                  const style = trackerProgressStyle(progress)
+                  const overBudget = spent > tracker.budget_amount
+                  return (
+                    <li key={tracker.id} className="list-group-item px-0 py-2">
+                      <div className="d-flex justify-content-between align-items-center mb-1">
+                        <span className="fw-medium small">{tracker.name}</span>
+                        <span
+                          className={`small ${overBudget ? 'text-danger' : 'text-muted'}`}
+                        >
+                          ${formatMoney(spent)} / $
+                          {formatMoney(tracker.budget_amount)}
+                        </span>
+                      </div>
+                      <ProgressBar
+                        now={Math.min(100, progress)}
+                        variant={style.variant}
+                        striped={style.striped}
+                        animated={style.animated}
+                        style={{ height: 6 }}
+                      />
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : (
+              <Row className="g-3">
+                {trackerSpend.map(({ tracker, spent }) => {
+                  const progress =
+                    tracker.budget_amount > 0
+                      ? (spent / tracker.budget_amount) * 100
+                      : 0
+                  const style = trackerProgressStyle(progress)
+                  const overBudget = spent > tracker.budget_amount
+                  return (
+                    <Col key={tracker.id} xs={12} md={6}>
+                      <div className="border rounded p-3">
+                        <div className="d-flex justify-content-between align-items-start mb-2">
+                          <span className="fw-medium">{tracker.name}</span>
+                          <span
+                            className="badge bg-secondary"
+                            style={{ fontSize: '0.65rem' }}
+                          >
+                            {tracker.reset_frequency}
+                          </span>
+                        </div>
+                        <ProgressBar
+                          now={Math.min(100, progress)}
+                          variant={style.variant}
+                          striped={style.striped}
+                          animated={style.animated}
+                          label={`${Math.round(progress)}%`}
+                          className="mb-2"
+                        />
+                        <div
+                          className={`small ${overBudget ? 'text-danger' : 'text-muted'}`}
+                        >
+                          ${formatMoney(spent)} spent · $
+                          {formatMoney(tracker.budget_amount)} budget
+                          {overBudget && (
+                            <span className="ms-1 fw-medium">
+                              (${formatMoney(spent - tracker.budget_amount)}{' '}
+                              over)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Col>
+                  )
+                })}
+              </Row>
+            )}
+          </Card.Body>
+        </Card>
+      )}
 
-      <Card className="grid-margin">
-        <Card.Header>
-          <Card.Title className="mb-0">Trackers (spend in month)</Card.Title>
-        </Card.Header>
-        <Card.Body>
-          {trackerSpendInMonth.length === 0 ? (
-            <p className="text-muted mb-0">No trackers.</p>
-          ) : (
+      {/* ─── Block 4: Committed Charges ───────────────────────────────────── */}
+      {!isCustomRange && chargeGroups.length > 0 && (
+        <Card className="grid-margin">
+          <Card.Header>
+            <Card.Title className="mb-0">
+              Committed Charges — {monthNameLong(year, month)} {year}
+            </Card.Title>
+            <Card.Text as="div" className="small text-muted mt-1">
+              Recurring and scheduled charges for this month.
+            </Card.Text>
+          </Card.Header>
+          <Card.Body>
             <ul className="list-group list-group-flush">
-              {trackerSpendInMonth.map(({ tracker, spent }) => (
+              {chargeGroups.map((g) => (
                 <li
-                  key={tracker.id}
-                  className="list-group-item d-flex justify-content-between align-items-center"
+                  key={g.id}
+                  className="list-group-item d-flex justify-content-between align-items-center px-0"
                 >
-                  <span>{tracker.name}</span>
                   <span>
-                    ${formatMoney(spent)} of $
-                    {formatMoney(tracker.budget_amount)}
+                    {g.name}
+                    {g.occurrences > 1 && (
+                      <span
+                        className="ms-2 badge bg-secondary"
+                        style={{ fontSize: '0.65rem' }}
+                      >
+                        ×{g.occurrences}
+                      </span>
+                    )}
                   </span>
+                  <span className="fw-medium">${formatMoney(g.total)}</span>
                 </li>
               ))}
             </ul>
-          )}
-        </Card.Body>
-      </Card>
-    </>
-  )
-}
-
-// ─── Main Export ──────────────────────────────────────────────────────────────
-
-type ReportsTab = 'categories' | 'weekly' | 'monthly'
-
-export function AnalyticsReports() {
-  const [activeTab, setActiveTab] = useState<ReportsTab>('categories')
-
-  return (
-    <div className="grid-margin">
-      <Nav
-        variant="tabs"
-        className="mb-4"
-        activeKey={activeTab}
-        onSelect={(k) => setActiveTab((k as ReportsTab) ?? 'categories')}
-      >
-        <Nav.Item>
-          <Nav.Link eventKey="categories">By category</Nav.Link>
-        </Nav.Item>
-        <Nav.Item>
-          <Nav.Link eventKey="weekly">Weekly trends</Nav.Link>
-        </Nav.Item>
-        <Nav.Item>
-          <Nav.Link eventKey="monthly">Monthly review</Nav.Link>
-        </Nav.Item>
-      </Nav>
-
-      {activeTab === 'categories' && <CategorySpendingTab />}
-      {activeTab === 'weekly' && <WeeklyTrendsTab />}
-      {activeTab === 'monthly' && <MonthlyReviewTab />}
+            <div className="mt-2 pt-2 border-top d-flex justify-content-between fw-medium">
+              <span>Total committed</span>
+              <span>${formatMoney(committedTotal)}</span>
+            </div>
+          </Card.Body>
+        </Card>
+      )}
     </div>
   )
 }
