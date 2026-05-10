@@ -24,7 +24,7 @@ import { accentStore } from '@/stores/accentStore'
 import { syncStore } from '@/stores/syncStore'
 import { InsightsBarChart } from '@/components/charts/InsightsBarChart'
 import { ComparisonDeltaBadge } from '@/components/atAGlance/ComparisonDeltaBadge'
-import { ComparisonNarratives } from '@/components/atAGlance/ComparisonNarratives'
+import { ComparisonVisual } from '@/components/atAGlance/ComparisonVisual'
 import { formatMoney } from '@/lib/format'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { MOBILE_MEDIA_QUERY } from '@/lib/constants'
@@ -457,20 +457,27 @@ export function AnalyticsReports() {
       </Card>
 
       {/* ─── Block 1b: What changed ───────────────────────────────────────── */}
-      {!isCustomRange &&
-        comparison?.hasPreviousData &&
-        comparison.narratives.length > 0 && (
-          <Card className="grid-margin">
-            <Card.Header>
-              <Card.Title className="mb-0">
-                What changed vs {monthPairLabels.previousLabel}
-              </Card.Title>
-            </Card.Header>
-            <Card.Body>
-              <ComparisonNarratives narratives={comparison.narratives} />
-            </Card.Body>
-          </Card>
-        )}
+      {!isCustomRange && comparison?.hasPreviousData && (
+        <Card className="grid-margin">
+          <Card.Header>
+            <Card.Title className="mb-0">
+              What changed vs {monthPairLabels.previousLabel}
+            </Card.Title>
+            {comparison.periodNote && (
+              <Card.Text as="div" className="small text-muted mt-1">
+                {comparison.periodNote}
+              </Card.Text>
+            )}
+          </Card.Header>
+          <Card.Body>
+            <ComparisonVisual
+              comparison={comparison}
+              currentLabel={monthPairLabels.currentLabel}
+              priorLabel={monthPairLabels.previousLabel}
+            />
+          </Card.Body>
+        </Card>
+      )}
 
       {/* ─── Block 2: Spending Habits ─────────────────────────────────────── */}
       <Card className="grid-margin">

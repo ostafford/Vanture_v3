@@ -446,14 +446,28 @@ export interface NarrativeInsight {
   type: 'win' | 'challenge' | 'opportunity'
 }
 
+export interface BiggestCategoryMover {
+  category_name: string
+  /** Signed cents: positive = spent more this period, negative = spent less. */
+  deltaTotal: number
+  currentTotal: number
+  previousTotal: number
+}
+
 export interface MonthComparisonData {
   moneyIn: MonthDelta
   moneyOut: MonthDelta
   charges: MonthDelta
+  /** Net (moneyIn − moneyOut) delta between current and previous periods. */
+  netDelta: MonthDelta
   currentTopCategory: CategoryBreakdownRow | null
   previousTopCategory: CategoryBreakdownRow | null
+  /** Category with the largest absolute spend change between periods. */
+  biggestCategoryMover?: BiggestCategoryMover
   narratives: NarrativeInsight[]
   hasPreviousData: boolean
+  /** Set when the current period is partial (e.g. "May 1–9 vs Apr 1–9"). */
+  periodNote?: string
 }
 
 function makeDelta(current: number, previous: number): MonthDelta {
@@ -468,6 +482,33 @@ function fmtCentsDelta(cents: number): string {
   const dollars = Math.floor(abs / 100)
   const remainder = abs % 100
   return `${dollars}.${String(remainder).padStart(2, '0')}`
+}
+
+function fmtPct(delta: number, base: number): string {
+  if (base === 0 || Math.abs(delta) < 1) return ''
+  const pct = Math.round((Math.abs(delta) / Math.abs(base)) * 100)
+  return pct > 0 ? ` (${pct}%)` : ''
+}
+
+const MONTH_ABBR = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+]
+
+function fmtDayMonth(dateStr: string): string {
+  const monthIdx = parseInt(dateStr.slice(5, 7), 10) - 1
+  const day = parseInt(dateStr.slice(8, 10), 10)
+  return `${MONTH_ABBR[monthIdx]} ${day}`
 }
 
 /** Labels for period-over-period narratives (vs last month/year/week). */
@@ -520,41 +561,68 @@ export function getPeriodComparison(
   const moneyIn = makeDelta(curInsights.moneyIn, prevInsights.moneyIn)
   const moneyOut = makeDelta(curInsights.moneyOut, prevInsights.moneyOut)
   const charges = makeDelta(curInsights.charges, prevInsights.charges)
+  const netDelta = makeDelta(
+    curInsights.moneyIn - curInsights.moneyOut,
+    prevInsights.moneyIn - prevInsights.moneyOut
+  )
 
   const currentTopCategory = curCategories.length > 0 ? curCategories[0] : null
   const previousTopCategory =
     prevCategories.length > 0 ? prevCategories[0] : null
+
+  // Find the category with the largest absolute spend change.
+  const curCatMap = new Map(curCategories.map((c) => [c.category_id, c]))
+  const prevCatMap = new Map(prevCategories.map((c) => [c.category_id, c]))
+  let biggestCategoryMover: BiggestCategoryMover | undefined
+  let biggestAbs = 0
+  for (const id of new Set([...curCatMap.keys(), ...prevCatMap.keys()])) {
+    const cur = curCatMap.get(id)
+    const prev = prevCatMap.get(id)
+    const curTotal = cur?.total ?? 0
+    const prevTotal = prev?.total ?? 0
+    const delta = curTotal - prevTotal
+    const absD = Math.abs(delta)
+    if (absD > biggestAbs) {
+      biggestAbs = absD
+      biggestCategoryMover = {
+        category_name: cur?.category_name ?? prev?.category_name ?? 'Unknown',
+        deltaTotal: delta,
+        currentTotal: curTotal,
+        previousTotal: prevTotal,
+      }
+    }
+  }
 
   const narratives: NarrativeInsight[] = []
 
   if (hasPreviousData) {
     if (moneyIn.direction === 'up') {
       narratives.push({
-        label: `Income is up $${fmtCentsDelta(moneyIn.delta)} vs ${prior}`,
+        label: `Income is up $${fmtCentsDelta(moneyIn.delta)}${fmtPct(moneyIn.delta, moneyIn.previous)} vs ${prior}`,
         type: 'win',
       })
     }
 
     if (moneyOut.direction === 'down') {
       narratives.push({
-        label: `Spending is down $${fmtCentsDelta(Math.abs(moneyOut.delta))} vs ${prior}`,
+        label: `Spending is down $${fmtCentsDelta(Math.abs(moneyOut.delta))}${fmtPct(moneyOut.delta, moneyOut.previous)} vs ${prior}`,
         type: 'win',
       })
     } else if (moneyOut.direction === 'up') {
       narratives.push({
-        label: `Spending is up $${fmtCentsDelta(moneyOut.delta)} vs ${prior}`,
+        label: `Spending is up $${fmtCentsDelta(moneyOut.delta)}${fmtPct(moneyOut.delta, moneyOut.previous)} vs ${prior}`,
         type: 'challenge',
       })
     }
 
     if (charges.direction === 'up') {
       narratives.push({
-        label: `${charges.delta} more charges than ${prior}`,
+        label: `${charges.delta} more purchases than ${prior}`,
         type: 'challenge',
       })
     } else if (charges.direction === 'down') {
       narratives.push({
-        label: `${Math.abs(charges.delta)} fewer charges than ${prior}`,
+        label: `${Math.abs(charges.delta)} fewer purchases than ${prior}`,
         type: 'win',
       })
     }
@@ -565,8 +633,9 @@ export function getPeriodComparison(
       currentTopCategory.category_id === previousTopCategory.category_id &&
       currentTopCategory.total > previousTopCategory.total
     ) {
+      const catDelta = currentTopCategory.total - previousTopCategory.total
       narratives.push({
-        label: `${currentTopCategory.category_name} spending trending higher — review for savings`,
+        label: `${currentTopCategory.category_name} up $${fmtCentsDelta(catDelta)}${fmtPct(catDelta, previousTopCategory.total)} vs ${prior} — your top category both months`,
         type: 'opportunity',
       })
     }
@@ -577,14 +646,14 @@ export function getPeriodComparison(
       currentTopCategory.category_id !== previousTopCategory.category_id
     ) {
       narratives.push({
-        label: `Top category shifted from ${previousTopCategory.category_name} to ${currentTopCategory.category_name}`,
+        label: `Top category shifted from ${previousTopCategory.category_name} ($${fmtCentsDelta(previousTopCategory.total)}) to ${currentTopCategory.category_name} ($${fmtCentsDelta(currentTopCategory.total)})`,
         type: 'opportunity',
       })
     }
 
     if (moneyIn.direction === 'down') {
       narratives.push({
-        label: `Income is down $${fmtCentsDelta(Math.abs(moneyIn.delta))} — look for ways to supplement`,
+        label: `Income is down $${fmtCentsDelta(Math.abs(moneyIn.delta))}${fmtPct(moneyIn.delta, moneyIn.previous)} vs ${prior}`,
         type: 'opportunity',
       })
     }
@@ -594,8 +663,10 @@ export function getPeriodComparison(
     moneyIn,
     moneyOut,
     charges,
+    netDelta,
     currentTopCategory,
     previousTopCategory,
+    biggestCategoryMover,
     narratives,
     hasPreviousData,
   }
@@ -645,6 +716,9 @@ export function getMonthBoundsForOffset(offset: number): {
 /**
  * Compare current month metrics with the previous month and derive narrative
  * insights (wins, challenges, opportunities).
+ *
+ * When the current month is in progress, caps the previous period to the same
+ * number of elapsed days so the comparison is apples-to-apples.
  */
 export function getMonthComparison(
   currentFrom: string,
@@ -653,13 +727,33 @@ export function getMonthComparison(
   const year = parseInt(currentFrom.slice(0, 4), 10)
   const month = parseInt(currentFrom.slice(5, 7), 10)
   const prev = getPreviousMonthBounds(year, month)
-  return getPeriodComparison(
+
+  const todayStr = toDateOnly(new Date())
+  let effectivePreviousTo = prev.to
+  let periodNote: string | undefined
+
+  if (todayStr < currentTo) {
+    // Month is in progress — cap previous period to the same elapsed-day count.
+    const fromMs = new Date(currentFrom + 'T00:00:00').getTime()
+    const todayMs = new Date(todayStr + 'T00:00:00').getTime()
+    const daysElapsed = Math.floor((todayMs - fromMs) / 86400000) + 1
+
+    const prevEnd = new Date(prev.from + 'T00:00:00')
+    prevEnd.setDate(prevEnd.getDate() + daysElapsed - 1)
+    const prevEndStr = toDateOnly(prevEnd)
+    effectivePreviousTo = prevEndStr < prev.to ? prevEndStr : prev.to
+
+    periodNote = `${fmtDayMonth(currentFrom)}–${fmtDayMonth(todayStr)} vs ${fmtDayMonth(prev.from)}–${fmtDayMonth(effectivePreviousTo)}`
+  }
+
+  const result = getPeriodComparison(
     currentFrom,
     currentTo,
     prev.from,
-    prev.to,
+    effectivePreviousTo,
     'month'
   )
+  return { ...result, periodNote }
 }
 
 /**
