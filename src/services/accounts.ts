@@ -57,3 +57,31 @@ export function getAccountsByTypes(
 export function sumAccountBalancesCents(rows: AccountRow[]): number {
   return rows.reduce((s, r) => s + r.balance, 0)
 }
+
+export interface SaverBalanceSnapshot {
+  saver_id: string
+  snapshot_date: string
+  balance_cents: number
+}
+
+/** Returns balance snapshots for the given saver account, oldest to newest. */
+export function getSaverBalanceHistory(
+  saverId: string
+): SaverBalanceSnapshot[] {
+  const db = getDb()
+  if (!db) return []
+  const stmt = db.prepare(
+    `SELECT saver_id, snapshot_date, balance_cents
+     FROM saver_balance_snapshots
+     WHERE saver_id = ?
+     ORDER BY snapshot_date ASC`
+  )
+  stmt.bind([saverId])
+  const out: SaverBalanceSnapshot[] = []
+  while (stmt.step()) {
+    const r = stmt.get() as [string, string, number]
+    out.push({ saver_id: r[0], snapshot_date: r[1], balance_cents: r[2] })
+  }
+  stmt.free()
+  return out
+}

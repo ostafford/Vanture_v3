@@ -207,6 +207,18 @@ function upsertTransactionTags(transactionId: string, tagIds: string[]): void {
   }
 }
 
+function snapshotSaverBalances(accounts: UpAccount[]): void {
+  const today = todayDateString()
+  for (const acc of accounts) {
+    if (acc.attributes.accountType !== 'SAVER') continue
+    const balance = acc.attributes.balance?.valueInBaseUnits ?? 0
+    run(
+      `INSERT OR REPLACE INTO saver_balance_snapshots (saver_id, snapshot_date, balance_cents) VALUES (?, ?, ?)`,
+      [acc.id, today, balance]
+    )
+  }
+}
+
 function upsertCategory(cat: UpCategory): void {
   const parentData = cat.relationships?.parent?.data
   const parentId =
@@ -319,6 +331,7 @@ export async function performInitialSync(
   const accounts = await fetchAccounts(apiToken)
   for (const a of accounts) upsertAccount(a)
   reconcileClosedAccounts(new Set(accounts.map((a) => a.id)))
+  snapshotSaverBalances(accounts)
   progressCallback({ phase: 'transactions', fetched: 0, hasMore: true })
   await fetchAllTransactions(apiToken, null, (p) => {
     progressCallback({
@@ -352,6 +365,7 @@ export async function performSync(
   const accounts = await fetchAccounts(apiToken)
   for (const a of accounts) upsertAccount(a)
   reconcileClosedAccounts(new Set(accounts.map((a) => a.id)))
+  snapshotSaverBalances(accounts)
   const sinceDate = getAppSetting('last_sync')
   progressCallback({ phase: 'transactions', fetched: 0, hasMore: true })
   await fetchAllTransactions(apiToken, sinceDate, (p) => {
@@ -388,6 +402,7 @@ export async function performFullSync(
   const accounts = await fetchAccounts(apiToken)
   for (const a of accounts) upsertAccount(a)
   reconcileClosedAccounts(new Set(accounts.map((a) => a.id)))
+  snapshotSaverBalances(accounts)
   progressCallback({ phase: 'transactions', fetched: 0, hasMore: true })
   await fetchAllTransactions(apiToken, null, (p) => {
     progressCallback({

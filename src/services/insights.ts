@@ -9,10 +9,12 @@
  * - Money Out: Spending only (purchases, charges). Excludes internal transfers out
  *   (e.g. to a saver). Filter: amount < 0 AND transfer_account_id IS NULL.
  *
- * - Savers: Net movement to/from any saver account (Loose Change, Investing, Bupa Insurance,
- *   Rego, etc.). Sum of (1) transactions whose transfer_account_id points at a SAVER account,
- *   plus (2) round_up_amount on rows with is_round_up = 1 (parent purchase lines where Up
- *   exposes roundUp; transfer_account_id is intentionally not set on those rows in sync).
+ * - Savers: Net movement to/from any saver account (Loose Change, Investing, etc.).
+ *   Computed from the SAVER account side: negated SUM(amount) for transactions whose
+ *   account_id is a SAVER and either transfer_account_id IS NOT NULL (explicit transfer) or
+ *   round_up_parent_id IS NOT NULL (round-up credit). Negating flips the sign so that a credit
+ *   into a saver (positive amount) yields a negative saverChanges value (saving), and a debit
+ *   out of a saver yields a positive value (withdrawal).
  *
  * - Charges: Count of spending transactions. Same rules as Money Out (negative, non-transfer).
  *   One charge per purchase (e.g. Coles, ALDI).
@@ -184,20 +186,14 @@ export function getWeeklyInsights(weekRange?: WeekRange): WeeklyInsightsData {
   spendingStmt.free()
   const moneyOut = spendingRow ? Number(spendingRow[0]) : 0
   const charges = spendingRow ? Number(spendingRow[1]) : 0
-  // Savers: explicit transfers to savers + round-up amounts recorded on purchase lines
-  const saverTransfers = runOne(
-    `SELECT COALESCE(SUM(amount), 0) FROM transactions
-     WHERE transfer_account_id IN (SELECT id FROM accounts WHERE account_type = 'SAVER')
+  // Savers: read from the saver account side and negate so credits (saving) are negative
+  const saverChanges = runOne(
+    `SELECT COALESCE(-SUM(amount), 0) FROM transactions
+     WHERE account_id IN (SELECT id FROM accounts WHERE account_type = 'SAVER')
+     AND (transfer_account_id IS NOT NULL OR round_up_parent_id IS NOT NULL)
      AND COALESCE(created_at, settled_at) >= ? AND COALESCE(created_at, settled_at) <= ?`,
     [startIso, endIso]
   )
-  const saverRoundUps = runOne(
-    `SELECT COALESCE(SUM(round_up_amount), 0) FROM transactions
-     WHERE is_round_up = 1
-     AND COALESCE(created_at, settled_at) >= ? AND COALESCE(created_at, settled_at) <= ?`,
-    [startIso, endIso]
-  )
-  const saverChanges = saverTransfers + saverRoundUps
   return { moneyIn, moneyOut, saverChanges, charges }
 }
 
@@ -239,6 +235,80 @@ export function getInsightsHistory(weeksBack: number): InsightsHistoryRow[] {
     })
   }
   return result
+}
+
+export interface MonthlyInsightsData {
+  moneyIn: number
+  moneyOut: number
+  saverChanges: number
+  saverRoundUps: number
+  charges: number
+}
+
+/** Returns insight metrics for the given calendar month (month is 1-12). */
+export function getMonthlyInsights(
+  year: number,
+  month: number
+): MonthlyInsightsData {
+  const db = getDb()
+  if (!db)
+    return {
+      moneyIn: 0,
+      moneyOut: 0,
+      saverChanges: 0,
+      saverRoundUps: 0,
+      charges: 0,
+    }
+
+  const runOne = (sql: string, params: (string | number)[]): number => {
+    const stmt = db.prepare(sql)
+    stmt.bind(params)
+    stmt.step()
+    const row = stmt.get()
+    stmt.free()
+    return row ? Number(row[0]) : 0
+  }
+
+  const startDate = new Date(year, month - 1, 1, 0, 0, 0, 0)
+  const endDate = new Date(year, month - 1 + 1, 0, 23, 59, 59, 999)
+  const startIso = startDate.toISOString()
+  const endIso = endDate.toISOString()
+
+  const moneyIn = runOne(
+    `SELECT COALESCE(SUM(amount), 0) FROM transactions
+     WHERE amount > 0 AND transfer_account_id IS NULL
+     AND COALESCE(created_at, settled_at) >= ? AND COALESCE(created_at, settled_at) <= ?`,
+    [startIso, endIso]
+  )
+
+  const spendingStmt = db.prepare(
+    `SELECT COALESCE(SUM(ABS(amount)), 0), COUNT(*) FROM transactions
+     WHERE amount < 0 AND transfer_account_id IS NULL
+     AND COALESCE(created_at, settled_at) >= ? AND COALESCE(created_at, settled_at) <= ?`
+  )
+  spendingStmt.bind([startIso, endIso])
+  spendingStmt.step()
+  const spendingRow = spendingStmt.get()
+  spendingStmt.free()
+  const moneyOut = spendingRow ? Number(spendingRow[0]) : 0
+  const charges = spendingRow ? Number(spendingRow[1]) : 0
+
+  const saverChanges = runOne(
+    `SELECT COALESCE(-SUM(amount), 0) FROM transactions
+     WHERE account_id IN (SELECT id FROM accounts WHERE account_type = 'SAVER')
+     AND (transfer_account_id IS NOT NULL OR round_up_parent_id IS NOT NULL)
+     AND COALESCE(created_at, settled_at) >= ? AND COALESCE(created_at, settled_at) <= ?`,
+    [startIso, endIso]
+  )
+  const saverRoundUps = runOne(
+    `SELECT COALESCE(-SUM(amount), 0) FROM transactions
+     WHERE account_id IN (SELECT id FROM accounts WHERE account_type = 'SAVER')
+     AND round_up_parent_id IS NOT NULL
+     AND COALESCE(created_at, settled_at) >= ? AND COALESCE(created_at, settled_at) <= ?`,
+    [startIso, endIso]
+  )
+
+  return { moneyIn, moneyOut, saverChanges, saverRoundUps, charges }
 }
 
 /**
@@ -414,19 +484,13 @@ export function getInsightsForDateRange(
   spendingStmt.free()
   const moneyOut = spendingRow ? Number(spendingRow[0]) : 0
   const charges = spendingRow ? Number(spendingRow[1]) : 0
-  const saverTransfers = runOne(
-    `SELECT COALESCE(SUM(amount), 0) FROM transactions
-     WHERE transfer_account_id IN (SELECT id FROM accounts WHERE account_type = 'SAVER')
+  const saverChanges = runOne(
+    `SELECT COALESCE(-SUM(amount), 0) FROM transactions
+     WHERE account_id IN (SELECT id FROM accounts WHERE account_type = 'SAVER')
+     AND (transfer_account_id IS NOT NULL OR round_up_parent_id IS NOT NULL)
      AND COALESCE(created_at, settled_at) >= ? AND COALESCE(created_at, settled_at) <= ?`,
     [dateFrom, endStr]
   )
-  const saverRoundUps = runOne(
-    `SELECT COALESCE(SUM(round_up_amount), 0) FROM transactions
-     WHERE is_round_up = 1
-     AND COALESCE(created_at, settled_at) >= ? AND COALESCE(created_at, settled_at) <= ?`,
-    [dateFrom, endStr]
-  )
-  const saverChanges = saverTransfers + saverRoundUps
   return { moneyIn, moneyOut, saverChanges, charges }
 }
 

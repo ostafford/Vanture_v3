@@ -5,7 +5,7 @@
 
 import type { Database } from 'sql.js'
 
-const SCHEMA_VERSION = 20
+const SCHEMA_VERSION = 21
 
 function tableExists(database: Database, name: string): boolean {
   const stmt = database.prepare(
@@ -478,6 +478,20 @@ export function runMigrations(database: Database): void {
     database.run(
       `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
       ['20']
+    )
+  }
+  if (version < 21) {
+    database.run(
+      `CREATE TABLE IF NOT EXISTS saver_balance_snapshots (
+        saver_id TEXT NOT NULL,
+        snapshot_date TEXT NOT NULL,
+        balance_cents INTEGER NOT NULL,
+        PRIMARY KEY (saver_id, snapshot_date)
+      )`
+    )
+    database.run(
+      `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)`,
+      ['21']
     )
   }
 }
